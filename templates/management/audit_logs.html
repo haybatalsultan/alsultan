@@ -1,0 +1,88 @@
+{% extends 'base.html' %}
+{% block title %}{% if LANGUAGE_CODE == 'en' %}Audit & Security Center{% else %}مركز التدقيق والأمان{% endif %} — Haybat Al Sultan{% endblock %}
+{% block content %}
+<section class="management-page audit-center-page">
+  <div class="container management-shell py-4 py-lg-5">
+    {% include 'management/_page_header.html' with page_title=page_title page_description=page_description %}
+
+    <div class="management-security-note audit-center-note">
+      <svg class="ui-icon"><use href="#icon-shield"></use></svg>
+      <div>
+        <strong>{% if LANGUAGE_CODE == 'en' %}Owner-only immutable records{% else %}سجلات غير قابلة للتعديل ومخصصة للمالك{% endif %}</strong>
+        <span>{% if LANGUAGE_CODE == 'en' %}Sensitive values are redacted server-side. Audit records cannot be edited or deleted from the application.{% else %}يتم حجب القيم الحساسة من جهة السيرفر، ولا يمكن تعديل أو حذف سجلات التدقيق من التطبيق.{% endif %}</span>
+      </div>
+    </div>
+
+    <div class="audit-stats-grid">
+      <article><small>{% if LANGUAGE_CODE == 'en' %}Audit records{% else %}سجلات التدقيق{% endif %}</small><strong>{{ audit_stats.total }}</strong></article>
+      <article><small>{% if LANGUAGE_CODE == 'en' %}Last 24 hours{% else %}آخر 24 ساعة{% endif %}</small><strong>{{ audit_stats.last_24h }}</strong></article>
+      <article><small>{% if LANGUAGE_CODE == 'en' %}Failed operations{% else %}عمليات فاشلة{% endif %}</small><strong>{{ audit_stats.failures }}</strong></article>
+      <article><small>{% if LANGUAGE_CODE == 'en' %}Security events{% else %}أحداث الأمان{% endif %}</small><strong>{{ audit_stats.security_events }}</strong></article>
+    </div>
+
+    <div class="audit-tabs">
+      <a class="{% if view_mode == 'audit' %}active{% endif %}" href="?view=audit">{% if LANGUAGE_CODE == 'en' %}Business Audit Trail{% else %}سجل العمليات{% endif %}</a>
+      <a class="{% if view_mode == 'security' %}active{% endif %}" href="?view=security">{% if LANGUAGE_CODE == 'en' %}Security Events{% else %}أحداث الأمان{% endif %}</a>
+    </div>
+
+    <form method="get" class="audit-filter-card">
+      <input type="hidden" name="view" value="{{ view_mode }}">
+      <div class="audit-search-main">
+        <label for="audit-search">{% if LANGUAGE_CODE == 'en' %}Search{% else %}بحث{% endif %}</label>
+        <input id="audit-search" name="q" value="{{ q }}" placeholder="{% if LANGUAGE_CODE == 'en' %}Action, reference, user or request ID{% else %}الإجراء أو المرجع أو المستخدم أو Request ID{% endif %}" autocomplete="off">
+      </div>
+      {% if view_mode == 'audit' %}
+      <div><label for="audit-category">{% if LANGUAGE_CODE == 'en' %}Category{% else %}القسم{% endif %}</label><select id="audit-category" name="category"><option value="">{% if LANGUAGE_CODE == 'en' %}All{% else %}الكل{% endif %}</option>{% for item in audit_categories %}<option value="{{ item }}" {% if category == item %}selected{% endif %}>{{ item }}</option>{% endfor %}</select></div>
+      <div><label for="audit-role">{% if LANGUAGE_CODE == 'en' %}Role{% else %}الدور{% endif %}</label><select id="audit-role" name="actor_role"><option value="">{% if LANGUAGE_CODE == 'en' %}All{% else %}الكل{% endif %}</option><option value="OWNER" {% if actor_role == 'OWNER' %}selected{% endif %}>OWNER</option><option value="SUPERVISOR" {% if actor_role == 'SUPERVISOR' %}selected{% endif %}>SUPERVISOR</option><option value="CUSTOMER" {% if actor_role == 'CUSTOMER' %}selected{% endif %}>CUSTOMER</option></select></div>
+      <div><label for="audit-outcome">{% if LANGUAGE_CODE == 'en' %}Result{% else %}النتيجة{% endif %}</label><select id="audit-outcome" name="outcome"><option value="">{% if LANGUAGE_CODE == 'en' %}All{% else %}الكل{% endif %}</option><option value="SUCCESS" {% if outcome == 'SUCCESS' %}selected{% endif %}>{% if LANGUAGE_CODE == 'en' %}Success{% else %}ناجح{% endif %}</option><option value="FAILURE" {% if outcome == 'FAILURE' %}selected{% endif %}>{% if LANGUAGE_CODE == 'en' %}Failure{% else %}فشل{% endif %}</option></select></div>
+      <div><label for="audit-source">{% if LANGUAGE_CODE == 'en' %}Source{% else %}المصدر{% endif %}</label><select id="audit-source" name="source"><option value="">{% if LANGUAGE_CODE == 'en' %}All{% else %}الكل{% endif %}</option><option value="MANAGEMENT" {% if source == 'MANAGEMENT' %}selected{% endif %}>Management</option><option value="STOREFRONT" {% if source == 'STOREFRONT' %}selected{% endif %}>Storefront</option></select></div>
+      {% endif %}
+      <button class="management-primary-btn" type="submit">{% if LANGUAGE_CODE == 'en' %}Apply{% else %}تطبيق{% endif %}</button>
+    </form>
+
+    <div class="management-content-card">
+      {% if view_mode == 'audit' %}
+        {% if logs %}
+        <div class="table-responsive management-table-wrap">
+          <table class="table management-table audit-table align-middle mb-0">
+            <thead><tr>
+              <th>{% if LANGUAGE_CODE == 'en' %}Date{% else %}التاريخ{% endif %}</th>
+              <th>{% if LANGUAGE_CODE == 'en' %}Actor{% else %}المنفذ{% endif %}</th>
+              <th>{% if LANGUAGE_CODE == 'en' %}Action{% else %}العملية{% endif %}</th>
+              <th>{% if LANGUAGE_CODE == 'en' %}Object{% else %}الكائن{% endif %}</th>
+              <th>{% if LANGUAGE_CODE == 'en' %}Result{% else %}النتيجة{% endif %}</th>
+              <th></th>
+            </tr></thead>
+            <tbody>{% for l in logs %}<tr>
+              <td><strong>{{ l.created_at|date:"Y-m-d" }}</strong><small>{{ l.created_at|date:"H:i:s" }}</small></td>
+              <td><strong>{{ l.actor_username|default:'System' }}</strong><small>{{ l.actor_role|default:'SYSTEM' }}</small></td>
+              <td><code>{{ l.action }}</code><small>{{ l.category }}</small></td>
+              <td><strong>{{ l.object_type }}</strong><small dir="ltr">{{ l.object_reference }}</small></td>
+              <td><span class="audit-outcome audit-{{ l.outcome|lower }}">{{ l.get_outcome_display }}</span></td>
+              <td><a class="icon-action gold" href="{% url 'core:management_audit_detail' l.pk %}" title="{% if LANGUAGE_CODE == 'en' %}Details{% else %}التفاصيل{% endif %}"><svg class="ui-icon"><use href="#icon-search"></use></svg></a></td>
+            </tr>{% endfor %}</tbody>
+          </table>
+        </div>
+        {% else %}<div class="management-empty-state"><svg class="empty-icon"><use href="#icon-history"></use></svg><strong>{% if LANGUAGE_CODE == 'en' %}No audit records found{% else %}لا توجد سجلات مطابقة{% endif %}</strong></div>{% endif %}
+      {% else %}
+        {% if security_events %}
+        <div class="table-responsive management-table-wrap">
+          <table class="table management-table audit-table align-middle mb-0">
+            <thead><tr><th>{% if LANGUAGE_CODE == 'en' %}Date{% else %}التاريخ{% endif %}</th><th>{% if LANGUAGE_CODE == 'en' %}User{% else %}المستخدم{% endif %}</th><th>{% if LANGUAGE_CODE == 'en' %}Event{% else %}الحدث{% endif %}</th><th>Peer IP</th><th>{% if LANGUAGE_CODE == 'en' %}Details{% else %}التفاصيل{% endif %}</th></tr></thead>
+            <tbody>{% for e in security_events %}<tr>
+              <td>{{ e.created_at|date:"Y-m-d H:i:s" }}</td>
+              <td>{{ e.user.username|default:'Anonymous' }}</td>
+              <td><code>{{ e.event }}</code></td>
+              <td dir="ltr">{{ e.ip_address|default:'—' }}</td>
+              <td><small>{{ e.details }}</small></td>
+            </tr>{% endfor %}</tbody>
+          </table>
+        </div>
+        {% else %}<div class="management-empty-state"><svg class="empty-icon"><use href="#icon-shield"></use></svg><strong>{% if LANGUAGE_CODE == 'en' %}No security events found{% else %}لا توجد أحداث أمان مطابقة{% endif %}</strong></div>{% endif %}
+      {% endif %}
+    </div>
+
+    {% include 'management/_pagination.html' %}
+  </div>
+</section>
+{% endblock %}

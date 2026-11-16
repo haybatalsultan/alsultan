@@ -1,0 +1,127 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}{% if LANGUAGE_CODE == 'en' %}Checkout{% else %}إتمام الطلب{% endif %} — HaybatAlsultan{% endblock %}
+{% block content %}
+<div class="container py-5">
+  <div class="checkout-intro mb-4">
+    <h1>{% if LANGUAGE_CODE == 'en' %}Checkout{% else %}إتمام الطلب{% endif %}</h1>
+    {% if not user.is_authenticated %}
+      <div class="guest-checkout-banner">
+        <div>
+          <strong>{% if LANGUAGE_CODE == 'en' %}Continue as a guest{% else %}يمكنك الشراء كضيف{% endif %}</strong>
+          <span>{% if LANGUAGE_CODE == 'en' %}No account is required. Enter only the details needed to deliver and track this order.{% else %}لا يشترط إنشاء حساب. أدخل فقط البيانات اللازمة للتوصيل وتتبع هذا الطلب.{% endif %}</span>
+        </div>
+        <a class="management-secondary-btn" href="{% url 'accounts:login' %}?next={% url 'orders:checkout' %}">{% if LANGUAGE_CODE == 'en' %}I have an account{% else %}لدي حساب{% endif %}</a>
+      </div>
+    {% else %}
+      <p>{% if LANGUAGE_CODE == 'en' %}Your saved default address is loaded automatically when available.{% else %}يتم تحميل عنوانك الافتراضي المحفوظ تلقائيًا إن وجد.{% endif %}</p>
+    {% endif %}
+  </div>
+
+  <div class="row g-4">
+    <div class="col-lg-8">
+      <form class="card-lux checkout-address-form" method="post" novalidate data-location-scope data-google-maps-key="{{ GOOGLE_MAPS_API_KEY }}" data-google-maps-language="{{ LANGUAGE_CODE|default:'ar' }}" data-phone-country-scope>
+        {% csrf_token %}
+        {{ form.idempotency_key }}
+
+        {% if saved_addresses %}
+          <section class="saved-address-picker mb-4">
+            <h3>{% if LANGUAGE_CODE == 'en' %}Choose a saved address{% else %}اختر عنوانًا محفوظًا{% endif %}</h3>
+            <div class="saved-address-picker-grid">
+              {% for a in saved_addresses %}
+                <button type="button" class="saved-address-choice{% if a.is_default %} is-default{% endif %}"
+                  data-saved-address
+                  data-country="{{ a.country }}"
+                  data-emirate="{{ a.emirate }}"
+                  data-city="{{ a.city }}"
+                  data-area="{{ a.area }}"
+                  data-street="{{ a.street }}"
+                  data-building="{{ a.building }}"
+                  data-apartmentorvilla="{{ a.apartment_or_villa }}"
+                  data-postalcode="{{ a.postal_code }}"
+                  data-latitude="{{ a.latitude|default:'' }}"
+                  data-longitude="{{ a.longitude|default:'' }}">
+                  <strong>{{ a.label|default:a.area }}</strong>
+                  <span>{{ a.area }}{% if a.city %} · {{ a.city }}{% endif %}</span>
+                </button>
+              {% endfor %}
+            </div>
+          </section>
+        {% endif %}
+
+        <div class="checkout-location-panel">
+          <button
+            type="button"
+            class="location-action-btn"
+            data-use-location
+            data-endpoint="{% url 'core:reverse_geocode_location' %}"
+            data-locating="{% if LANGUAGE_CODE == 'en' %}Locating…{% else %}جاري تحديد موقعك…{% endif %}"
+            data-success="{% if LANGUAGE_CODE == 'en' %}Address updated from your location. Please review it.{% else %}تم تحديث العنوان من موقعك، يرجى مراجعته قبل الطلب.{% endif %}"
+            data-partial="{% if LANGUAGE_CODE == 'en' %}Coordinates captured. Complete the remaining fields manually.{% else %}تم حفظ الإحداثيات، أكمل بقية الحقول يدويًا.{% endif %}"
+            data-denied="{% if LANGUAGE_CODE == 'en' %}Location permission was not granted.{% else %}لم يتم منح إذن استخدام الموقع.{% endif %}"
+            data-blocked="{% if LANGUAGE_CODE == 'en' %}Location access is blocked. Allow Location for this site in your browser settings, then try again.{% else %}الوصول إلى الموقع محظور. اسمح للموقع باستخدام Location من إعدادات المتصفح ثم حاول مرة أخرى.{% endif %}"
+          data-blocked="{% if LANGUAGE_CODE == 'en' %}Location access is blocked. Allow Location for this site in your browser settings, then try again.{% else %}الوصول إلى الموقع محظور. اسمح للموقع باستخدام Location من إعدادات المتصفح ثم حاول مرة أخرى.{% endif %}"
+            data-unsupported="{% if LANGUAGE_CODE == 'en' %}Location is not supported by this browser.{% else %}المتصفح لا يدعم تحديد الموقع.{% endif %}"
+            data-insecure="{% if LANGUAGE_CODE == 'en' %}Location requires a secure HTTPS connection.{% else %}تحديد الموقع يتطلب اتصال HTTPS آمنًا.{% endif %}"
+            data-unavailable="{% if LANGUAGE_CODE == 'en' %}Your location is currently unavailable. You can enter the address manually.{% else %}تعذر الحصول على موقعك حاليًا. يمكنك إدخال العنوان يدويًا.{% endif %}"
+            data-timeout="{% if LANGUAGE_CODE == 'en' %}Location request timed out. Please try again.{% else %}انتهت مهلة تحديد الموقع. حاول مرة أخرى.{% endif %}">
+            <svg class="ui-icon"><use href="#icon-location"></use></svg>
+            {% if LANGUAGE_CODE == 'en' %}Use My Current Location{% else %}استخدام موقعي الحالي{% endif %}
+          </button>
+          <small>{% if LANGUAGE_CODE == 'en' %}Location is requested only after you press the button. Google may fill available address details for your country; review them before ordering. Nothing is stored until the order is submitted.{% else %}لن نطلب موقعك إلا بعد الضغط على الزر. قد تعبئ Google تفاصيل العنوان المتاحة حسب دولتك؛ راجعها قبل الطلب. لن يتم تخزين الموقع حتى ترسل الطلب.{% endif %}</small>
+          <div class="location-status" data-location-status aria-live="polite"></div>
+        </div>
+
+        {% if ambassador_program.enabled %}
+        <section class="checkout-ambassador-panel">
+          <div><span class="ambassador-eyebrow">{% if LANGUAGE_CODE == 'en' %}Haybat Alsultan Ambassador{% else %}سفير هيبة السلطان{% endif %}</span><h3>{% if LANGUAGE_CODE == 'en' %}Ambassador benefits{% else %}مزايا سفير هيبة السلطان{% endif %}</h3>
+          <p>{% if LANGUAGE_CODE == 'en' %}If a friend shared an ambassador code with you, enter it below before placing the order. Points are awarded only after the order becomes paid and delivered.{% else %}إذا أعطاك أحد الأصدقاء رمز سفير هيبة السلطان فأدخله أدناه قبل تأكيد الطلب. لا تُمنح النقاط للسفير إلا بعد أن يصبح الطلب مدفوعًا ومسلّمًا.{% endif %}</p></div>
+          {% if user.is_authenticated and user.role == 'CUSTOMER' %}<div class="ambassador-balance-chip"><small>{% if LANGUAGE_CODE == 'en' %}Your available points{% else %}نقاطك المتاحة{% endif %}</small><strong>{{ ambassador_balance }}</strong><span>{% if LANGUAGE_CODE == 'en' %}Use in blocks of 1,000 points = AED 25{% else %}الاستخدام بمضاعفات 1,000 نقطة = 25 د.إ{% endif %}</span></div>{% endif %}
+        </section>
+        {% endif %}
+
+        <div class="checkout-fields-grid">
+          {% for field in form %}
+            {% if field.name != 'policy_acceptance' and field.name != 'idempotency_key' %}
+              <div class="checkout-field{% if field.is_hidden %} d-none{% endif %}">
+                {{ field.label_tag }}
+                {% if field.name == 'customer_phone' %}
+                  <div class="phone-country-input">
+                    <span class="dial-code-chip" data-dial-code>+971</span>
+                    {{ field }}
+                  </div>
+                {% else %}
+                  {{ field }}
+                {% endif %}
+                {% if field.errors %}<div class="text-danger small">{{ field.errors }}</div>{% endif %}
+              </div>
+            {% endif %}
+          {% endfor %}
+        </div>
+
+        <div class="policy-acceptance checkout-policy-acceptance mt-3 mb-3">
+          <label class="checkout-policy-row" for="{{ form.policy_acceptance.id_for_label }}">
+            <span class="checkout-policy-check">{{ form.policy_acceptance }}</span>
+            <span class="checkout-policy-copy">{% if LANGUAGE_CODE == 'en' %}I confirm that I reviewed the item description, photographs, specifications and condition, and I have read the <a href="{% url 'core:info' 'terms' %}" target="_blank" rel="noopener">Terms & Conditions</a> and <a href="{% url 'core:info' 'returns' %}" target="_blank" rel="noopener">Returns Policy</a>.{% else %}أقر بأنني راجعت وصف القطعة وصورها ومواصفاتها وحالتها، واطلعت على <a href="{% url 'core:info' 'terms' %}" target="_blank" rel="noopener">الشروط والأحكام</a> و<a href="{% url 'core:info' 'returns' %}" target="_blank" rel="noopener">سياسة الاسترجاع والاستبدال</a>.{% endif %}</span>
+          </label>
+          {% if form.policy_acceptance.errors %}<div class="text-danger small mt-2">{{ form.policy_acceptance.errors }}</div>{% endif %}
+        </div>
+        {% if form.non_field_errors %}<div class="text-danger small mb-3">{{ form.non_field_errors }}</div>{% endif %}
+        <button class="btn btn-gold w-100">{% if LANGUAGE_CODE == 'en' %}Place Order{% else %}تأكيد وإنشاء الطلب{% endif %}</button>
+      </form>
+    </div>
+
+    <div class="col-lg-4">
+      <div class="card-lux checkout-summary-card">
+        <h3>{% if LANGUAGE_CODE == 'en' %}Order Summary{% else %}ملخص الطلب{% endif %}</h3>
+        {% for item in cart.items.all %}
+          <div class="d-flex justify-content-between gap-3"><span>{% if LANGUAGE_CODE == 'en' %}{{ item.product.name_en }}{% else %}{{ item.product.name_ar }}{% endif %} × {{ item.quantity }}</span><span>AED {{ item.product.effective_price }}</span></div>
+        {% endfor %}
+        <hr>
+        <b>{% if LANGUAGE_CODE == 'en' %}Total{% else %}الإجمالي{% endif %}: AED {{ totals.grand_total }}</b>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}<script src="{% static 'js/address-location.js' %}" defer></script>{% endblock %}

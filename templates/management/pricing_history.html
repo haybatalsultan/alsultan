@@ -1,0 +1,9 @@
+{% extends 'base.html' %}
+{% block content %}<section class="management-page"><div class="container management-shell py-4 py-lg-5">
+{% include 'management/_page_header.html' with page_title=page_title page_description=page_description %}
+<div class="management-content-card">
+<div class="pricing-history-head"><div><strong>{{ product.name_ar }}</strong><small>{{ product.sku }} · {{ product.product_reference }}</small></div><a class="management-secondary-btn" href="{% url 'core:management_pricing' product.public_id %}">العودة للتسعير</a></div>
+{% if pricing_history %}<div class="pricing-history-list">{% for event in pricing_history %}
+<article><strong>{% if event.action == 'direct_discount_cleared' %}إلغاء خصم مباشر{% else %}تعديل التسعير{% endif %}</strong><span>{{ event.actor_username|default:"غير معروف" }} · {{ event.created_at|date:"d/m/Y H:i" }}</span><small>قبل: {{ event.old_values.discount_price|default:"—" }} · بعد: {{ event.new_values.discount_price|default:"—" }}{% if event.new_values.discount_reason %} · السبب: {{ event.new_values.discount_reason }}{% elif event.metadata.reason %} · السبب: {{ event.metadata.reason }}{% endif %}</small></article>
+{% endfor %}</div>{% else %}<div class="management-empty-state"><strong>خصم قديم — بيانات المصدر غير متوفرة في سجل التدقيق.</strong></div>{% endif %}
+</div></div></section>{% endblock %}

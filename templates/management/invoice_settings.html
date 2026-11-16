@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+{% block title %}{% if LANGUAGE_CODE == 'en' %}Invoice Settings{% else %}إعدادات الفاتورة{% endif %} — Haybat Al Sultan{% endblock %}
+{% block content %}
+<section class="management-page">
+  <div class="container management-shell py-4 py-lg-5">
+    {% include 'management/_page_header.html' with page_title=page_title page_description=page_description %}
+    <div class="invoice-settings-grid">
+      <section class="management-content-card">
+        <div class="content-card-title"><svg class="ui-icon"><use href="#icon-edit"></use></svg><h2>{% if LANGUAGE_CODE == 'en' %}Invoice identity{% else %}هوية الفاتورة{% endif %}</h2></div>
+        <div class="management-inline-note is-secure">{% if LANGUAGE_CODE == 'en' %}These settings change branding only. Invoice numbers, item prices, totals, paid amounts and outstanding balances remain protected snapshots.{% else %}هذه الإعدادات تغير الهوية والتنسيق فقط. أرقام الفواتير والأسعار والإجماليات والمدفوع والمتبقي تبقى بيانات مالية محمية ولا يمكن تعديلها من هنا.{% endif %}</div>
+        <form method="post" enctype="multipart/form-data" class="management-form invoice-settings-form">
+          {% csrf_token %}
+          {{ form.as_p }}
+          <button class="management-primary-btn" type="submit">{% if LANGUAGE_CODE == 'en' %}Save invoice settings{% else %}حفظ إعدادات الفاتورة{% endif %}</button>
+        </form>
+      </section>
+      <aside class="management-content-card invoice-assets-preview">
+        <h2>{% if LANGUAGE_CODE == 'en' %}Current identity{% else %}الهوية الحالية{% endif %}</h2>
+        <div><small>{% if LANGUAGE_CODE == 'en' %}Logo{% else %}الشعار{% endif %}</small>{% if store_setting.invoice_logo_url %}<img src="{{ store_setting.invoice_logo_url }}" alt="">{% else %}<img src="/static/branding/logo-header.png" alt="">{% endif %}</div>
+        <div><small>{% if LANGUAGE_CODE == 'en' %}Stamp{% else %}الختم{% endif %}</small>{% if store_setting.invoice_stamp_url %}<img class="invoice-stamp-preview" src="{{ store_setting.invoice_stamp_url }}" alt="">{% else %}<p>{% if LANGUAGE_CODE == 'en' %}No custom stamp uploaded.{% else %}لم يتم رفع ختم مخصص بعد.{% endif %}</p>{% endif %}</div>
+      </aside>
+    </div>
+  </div>
+</section>
+{% endblock %}

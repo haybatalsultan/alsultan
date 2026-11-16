@@ -1,0 +1,97 @@
+{% extends 'base.html' %}
+{% block title %}{% if LANGUAGE_CODE == 'en' %}Product Location{% else %}مكان القطعة{% endif %} — {{ product.sku }}{% endblock %}
+{% block content %}
+<section class="management-page product-custody-page">
+  <div class="container management-shell py-4 py-lg-5">
+    {% include 'management/_page_header.html' with page_title=page_title page_description=page_description %}
+
+    <div class="custody-product-head">
+      <div>
+        <small>{% if LANGUAGE_CODE == 'en' %}Item code{% else %}رقم القطعة{% endif %}</small>
+        <strong dir="ltr">{{ product.sku }}</strong>
+      </div>
+      <h2>{% if LANGUAGE_CODE == 'en' %}{{ product.name_en }}{% else %}{{ product.name_ar }}{% endif %}</h2>
+    </div>
+
+    <div class="custody-current-summary{% if not current %} is-empty{% endif %}">
+      <div class="custody-current-icon"><svg class="ui-icon"><use href="#icon-location"></use></svg></div>
+      <div>
+        <small>{% if LANGUAGE_CODE == 'en' %}Current recorded location{% else %}الموقع الحالي المسجل{% endif %}</small>
+        {% if current %}
+          <strong>{{ current.location_name }}</strong>
+          <span>
+            {% if current.holder_name %}{% if LANGUAGE_CODE == 'en' %}Held by{% else %}لدى{% endif %}: {{ current.holder_name }} · {% endif %}
+            <span dir="ltr">{{ current.placed_on|date:"d/m/Y" }}</span>
+          </span>
+        {% else %}
+          <strong>{% if LANGUAGE_CODE == 'en' %}No location recorded yet{% else %}لم يتم تسجيل موقع للقطعة بعد{% endif %}</strong>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="custody-grid custody-grid-pro">
+      <section class="management-content-card custody-entry-card">
+        <div class="content-card-title">
+          <svg class="ui-icon"><use href="#icon-location"></use></svg>
+          <h2>{% if LANGUAGE_CODE == 'en' %}Record new movement{% else %}تسجيل حركة جديدة{% endif %}</h2>
+        </div>
+        <p class="custody-helper">{% if LANGUAGE_CODE == 'en' %}Each submission creates a new immutable custody record. Previous locations remain preserved.{% else %}كل تسجيل ينشئ حركة جديدة محفوظة. المواقع السابقة تبقى في السجل ولا يتم استبدالها.{% endif %}</p>
+
+        <form method="post" class="management-form custody-form" novalidate>
+          {% csrf_token %}
+          <div class="custody-field custody-field-wide">
+            <label for="{{ form.location_name.id_for_label }}">{{ form.location_name.label }} <span>*</span></label>
+            {{ form.location_name }}{{ form.location_name.errors }}
+          </div>
+          <div class="custody-field">
+            <label for="{{ form.holder_name.id_for_label }}">{{ form.holder_name.label }}</label>
+            {{ form.holder_name }}{{ form.holder_name.errors }}
+          </div>
+          <div class="custody-field">
+            <label for="{{ form.placed_on.id_for_label }}">{{ form.placed_on.label }}</label>
+            {{ form.placed_on }}{{ form.placed_on.errors }}
+          </div>
+          <div class="custody-field custody-field-wide">
+            <label for="{{ form.note.id_for_label }}">{{ form.note.label }}</label>
+            {{ form.note }}{{ form.note.errors }}
+          </div>
+          <button class="management-primary-btn custody-submit" type="submit">
+            {% if LANGUAGE_CODE == 'en' %}Record location{% else %}تسجيل الموقع{% endif %}
+          </button>
+        </form>
+      </section>
+
+      <section class="management-content-card custody-history-card">
+        <div class="content-card-title">
+          <svg class="ui-icon"><use href="#icon-history"></use></svg>
+          <h2>{% if LANGUAGE_CODE == 'en' %}Item movement history{% else %}سجل حركة القطعة{% endif %}</h2>
+        </div>
+
+        <div class="custody-history-timeline">
+          {% for h in history %}
+          <article class="custody-history-event{% if forloop.first %} is-current{% endif %}">
+            <span class="custody-history-dot"></span>
+            <div class="custody-history-body">
+              <div class="custody-history-top">
+                <strong>{{ h.location_name }}</strong>
+                {% if forloop.first %}<span>{% if LANGUAGE_CODE == 'en' %}Current{% else %}الحالي{% endif %}</span>{% endif %}
+              </div>
+              <time dir="ltr">{{ h.placed_on|date:"d/m/Y" }}</time>
+              {% if h.holder_name %}<p>{% if LANGUAGE_CODE == 'en' %}Held by{% else %}لدى{% endif %}: <b>{{ h.holder_name }}</b></p>{% endif %}
+              {% if h.note %}<p>{{ h.note }}</p>{% endif %}
+              <small>{% if LANGUAGE_CODE == 'en' %}Recorded by{% else %}سُجل بواسطة{% endif %}: {{ h.recorded_by.username }} · <span dir="ltr">{{ h.created_at|date:"d/m/Y H:i" }}</span></small>
+            </div>
+          </article>
+          {% empty %}
+          <div class="custody-empty">
+            <svg class="ui-icon"><use href="#icon-location"></use></svg>
+            <strong>{% if LANGUAGE_CODE == 'en' %}No movement history yet{% else %}لا يوجد سجل حركة لهذه القطعة بعد{% endif %}</strong>
+            <p>{% if LANGUAGE_CODE == 'en' %}The first recorded location will appear here automatically.{% else %}عند تسجيل أول موقع ستظهر الحركة هنا تلقائيًا.{% endif %}</p>
+          </div>
+          {% endfor %}
+        </div>
+      </section>
+    </div>
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,23 @@
+{
+  "version": "v20.7.1",
+  "base": "v20.7",
+  "scope": "Desktop-only spacing between Digital Services and customer action icons",
+  "changes": [
+    "Kept all existing navigation/action icons unchanged.",
+    "Added logical RTL/LTR spacing only at >=992px.",
+    "No separator markup, icon, route, backend or mobile-header change."
+  ],
+  "security": [
+    "CSS-only production change.",
+    "No authentication, permission, API, form, model or JavaScript change.",
+    "MFA, CSRF, CSP, rate limiting, audit and Smart Accountant protections unchanged."
+  ],
+  "checks": {
+    "compile": "PASS",
+    "ast": "PASS",
+    "static_security": "PASS",
+    "static_security_output": "Static security pattern + project invariant scan: PASS",
+    "branding_unchanged": "PASS",
+    "test_methods_present": 215
+  }
+}

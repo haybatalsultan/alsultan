@@ -1,0 +1,95 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}{% if LANGUAGE_CODE == 'en' %}Record Payment{% else %}تسجيل دفعة{% endif %} — Haybat Al Sultan{% endblock %}
+{% block content %}
+<section class="management-page receivable-payment-page">
+  <div class="container management-shell py-4 py-lg-5">
+    {% include 'management/_page_header.html' with page_title=page_title page_description=page_description %}
+
+    <div class="management-content-card receivable-card receivable-card-pro"
+         data-receivable-payment
+         data-outstanding="{{ outstanding }}"
+         data-lang="{{ LANGUAGE_CODE }}">
+      <div class="receivable-order-head">
+        <div>
+          <small>{% if LANGUAGE_CODE == 'en' %}Deferred direct sale{% else %}بيع مباشر مؤجل{% endif %}</small>
+          <strong dir="ltr">{{ order.reference }}</strong>
+        </div>
+        <span>{{ customer_display }}</span>
+      </div>
+
+      <div class="receivable-balance">
+        <article>
+          <span>{% if LANGUAGE_CODE == 'en' %}Total{% else %}الإجمالي{% endif %}</span>
+          <b dir="ltr">{{ order.grand_total|floatformat:2 }} AED</b>
+        </article>
+        <article>
+          <span>{% if LANGUAGE_CODE == 'en' %}Collected{% else %}المدفوع{% endif %}</span>
+          <b dir="ltr">{{ paid|floatformat:2 }} AED</b>
+        </article>
+        <article class="is-outstanding">
+          <span>{% if LANGUAGE_CODE == 'en' %}Outstanding{% else %}المتبقي{% endif %}</span>
+          <b dir="ltr">{{ outstanding|floatformat:2 }} AED</b>
+        </article>
+      </div>
+
+      <div class="receivable-workspace">
+        <form method="post" class="management-form receivable-payment-form" novalidate>
+          {% csrf_token %}
+          {% if form.non_field_errors %}<div class="quick-sale-error">{{ form.non_field_errors }}</div>{% endif %}
+
+          <div class="receivable-field receivable-amount-field">
+            <label for="{{ form.amount.id_for_label }}">{{ form.amount.label }}</label>
+            <div class="receivable-money-input">{{ form.amount }}<span>AED</span></div>
+            {{ form.amount.errors }}
+            <button type="button" class="receivable-pay-full" data-pay-full>
+              {% if LANGUAGE_CODE == 'en' %}Pay full balance{% else %}سداد كامل المتبقي{% endif %}
+              <strong dir="ltr">{{ outstanding|floatformat:2 }} AED</strong>
+            </button>
+          </div>
+
+          <div class="receivable-field">
+            <label for="{{ form.payment_method.id_for_label }}">{{ form.payment_method.label }}</label>
+            {{ form.payment_method }}
+            {{ form.payment_method.errors }}
+          </div>
+
+          <div class="receivable-field">
+            <label for="{{ form.note.id_for_label }}">{{ form.note.label }}</label>
+            {{ form.note }}
+            {{ form.note.errors }}
+          </div>
+
+          <div class="receivable-preview">
+            <h2>{% if LANGUAGE_CODE == 'en' %}After this payment{% else %}بعد تسجيل هذه الدفعة{% endif %}</h2>
+            <div><span>{% if LANGUAGE_CODE == 'en' %}Current outstanding{% else %}المتبقي الحالي{% endif %}</span><strong dir="ltr"><span data-current-balance>{{ outstanding|floatformat:2 }}</span> AED</strong></div>
+            <div><span>{% if LANGUAGE_CODE == 'en' %}Today's payment{% else %}دفعة اليوم{% endif %}</span><strong dir="ltr"><span data-payment-preview>0.00</span> AED</strong></div>
+            <div class="receivable-preview-total"><span>{% if LANGUAGE_CODE == 'en' %}Remaining after payment{% else %}المتبقي بعد الدفعة{% endif %}</span><strong dir="ltr"><span data-after-preview>{{ outstanding|floatformat:2 }}</span> AED</strong></div>
+          </div>
+
+          <label class="receivable-confirm">
+            {{ form.confirm_received }}
+            <span>{{ form.confirm_received.label }}</span>
+          </label>
+          {{ form.confirm_received.errors }}
+
+          <button class="management-primary-btn receivable-submit" type="submit" data-payment-submit disabled>
+            {% if LANGUAGE_CODE == 'en' %}Record payment{% else %}تسجيل الدفعة{% endif %}
+          </button>
+        </form>
+
+        <aside class="receivable-safety-note">
+          <svg class="ui-icon"><use href="#icon-shield"></use></svg>
+          <div>
+            <strong>{% if LANGUAGE_CODE == 'en' %}Financial record{% else %}سجل مالي{% endif %}</strong>
+            <p>{% if LANGUAGE_CODE == 'en' %}Record only funds actually received. Previous payments remain preserved in the audit trail.{% else %}سجّل فقط المبلغ الذي تم استلامه فعليًا. الدفعات السابقة تبقى محفوظة في السجل ولا يتم استبدالها.{% endif %}</p>
+          </div>
+        </aside>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}
+{% block scripts %}
+<script src="{% static 'js/receivable-payment.js' %}" defer></script>
+{% endblock %}

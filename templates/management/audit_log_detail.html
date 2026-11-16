@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+{% load audit_tags %}
+{% block title %}{% if LANGUAGE_CODE == 'en' %}Audit Record{% else %}تفاصيل سجل التدقيق{% endif %} — Haybat Al Sultan{% endblock %}
+{% block content %}
+<section class="management-page audit-detail-page">
+  <div class="container management-shell py-4 py-lg-5">
+    {% include 'management/_page_header.html' with page_title=page_title page_description=page_description %}
+    <div class="audit-detail-toolbar">
+      <a class="management-secondary-btn" href="{% url 'core:management_audit' %}">{% if LANGUAGE_CODE == 'en' %}Back to Audit Center{% else %}العودة لمركز التدقيق{% endif %}</a>
+      <span class="audit-integrity {% if integrity_valid == True %}valid{% elif integrity_valid == False %}invalid{% else %}legacy{% endif %}">
+        {% if integrity_valid == True %}
+          {% if LANGUAGE_CODE == 'en' %}Integrity verified{% else %}سلامة السجل مؤكدة{% endif %}
+        {% elif integrity_valid == False %}
+          {% if LANGUAGE_CODE == 'en' %}Integrity check failed{% else %}فشل فحص سلامة السجل{% endif %}
+        {% else %}
+          {% if LANGUAGE_CODE == 'en' %}Legacy unsigned record{% else %}سجل قديم غير موقّع{% endif %}
+        {% endif %}
+      </span>
+    </div>
+
+    <div class="audit-detail-grid">
+      <section class="management-content-card audit-summary-card">
+        <h2>{% if LANGUAGE_CODE == 'en' %}Event summary{% else %}ملخص العملية{% endif %}</h2>
+        <dl>
+          <dt>{% if LANGUAGE_CODE == 'en' %}Action{% else %}العملية{% endif %}</dt><dd><code>{{ log.action }}</code></dd>
+          <dt>{% if LANGUAGE_CODE == 'en' %}Category{% else %}القسم{% endif %}</dt><dd>{{ log.category }}</dd>
+          <dt>{% if LANGUAGE_CODE == 'en' %}Actor{% else %}المنفذ{% endif %}</dt><dd>{{ log.actor_username|default:'System' }} · {{ log.actor_role|default:'SYSTEM' }}</dd>
+          <dt>{% if LANGUAGE_CODE == 'en' %}Object{% else %}الكائن{% endif %}</dt><dd>{{ log.object_type }} · <span dir="ltr">{{ log.object_reference }}</span></dd>
+          <dt>{% if LANGUAGE_CODE == 'en' %}Result{% else %}النتيجة{% endif %}</dt><dd>{{ log.get_outcome_display }}</dd>
+          <dt>{% if LANGUAGE_CODE == 'en' %}Date{% else %}التاريخ{% endif %}</dt><dd>{{ log.created_at|date:"Y-m-d H:i:s" }}</dd>
+        </dl>
+      </section>
+
+      <section class="management-content-card audit-summary-card">
+        <h2>{% if LANGUAGE_CODE == 'en' %}Request context{% else %}سياق الطلب{% endif %}</h2>
+        <dl>
+          <dt>Request ID</dt><dd dir="ltr">{{ log.request_id|default:'—' }}</dd>
+          <dt>HTTP</dt><dd dir="ltr">{{ log.http_method }} {{ log.path }}</dd>
+          <dt>Peer IP</dt><dd dir="ltr">{{ log.ip_address|default:'—' }}</dd>
+          <dt>User-Agent</dt><dd class="audit-wrap">{{ log.user_agent|default:'—' }}</dd>
+          <dt>{% if LANGUAGE_CODE == 'en' %}Source{% else %}المصدر{% endif %}</dt><dd>{{ log.get_source_display }}</dd>
+        </dl>
+      </section>
+    </div>
+
+    <div class="audit-values-grid">
+      <section class="management-content-card"><h2>{% if LANGUAGE_CODE == 'en' %}Before{% else %}قبل{% endif %}</h2><pre>{{ log.old_values|json_pretty }}</pre></section>
+      <section class="management-content-card"><h2>{% if LANGUAGE_CODE == 'en' %}After{% else %}بعد{% endif %}</h2><pre>{{ log.new_values|json_pretty }}</pre></section>
+      <section class="management-content-card"><h2>{% if LANGUAGE_CODE == 'en' %}Metadata{% else %}بيانات إضافية{% endif %}</h2><pre>{{ log.metadata|json_pretty }}</pre></section>
+    </div>
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,12 @@
+{% extends 'base.html' %}{% load socialaccount %}{% block title %}{% if LANGUAGE_CODE == 'en' %}Sign In{% else %}تسجيل الدخول{% endif %} — {% if LANGUAGE_CODE == 'en' %}Haybat Al Sultan{% else %}هيبة السلطان{% endif %}{% endblock %}{% block content %}<div class="container auth-wrap"><div class="card-lux"><h1>{% if LANGUAGE_CODE == 'en' %}Sign In{% else %}تسجيل الدخول{% endif %}</h1><p>{% if LANGUAGE_CODE == 'en' %}Access your Haybat Al Sultan account securely.{% else %}ادخل إلى حسابك في هيبة السلطان بأمان.{% endif %}</p><form method="post">{% csrf_token %}{{ form.as_p }}<button class="btn btn-gold w-100">{% if LANGUAGE_CODE == 'en' %}Sign In{% else %}تسجيل الدخول{% endif %}</button></form>
+{% if GOOGLE_OAUTH_ENABLED %}
+  <div class="auth-divider"><span>{% if LANGUAGE_CODE == 'en' %}or{% else %}أو{% endif %}</span></div>
+  <form method="post" action="{% provider_login_url 'google' process='login' %}" class="google-login-form">
+    {% csrf_token %}
+    <button type="submit" class="google-login-btn">
+      <span class="google-g" aria-hidden="true">G</span>
+      <span>{% if LANGUAGE_CODE == 'en' %}Continue with Google{% else %}المتابعة باستخدام Google{% endif %}</span>
+    </button>
+  </form>
+{% endif %}
+<div class="mt-3"><a href="{% url 'accounts:password_reset' %}">{% if LANGUAGE_CODE == 'en' %}Forgot your password?{% else %}نسيت كلمة المرور؟{% endif %}</a> · <a href="{% url 'accounts:register' %}">{% if LANGUAGE_CODE == 'en' %}Create Account{% else %}إنشاء حساب{% endif %}</a></div></div></div>{% endblock %}

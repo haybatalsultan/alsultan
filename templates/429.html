@@ -1,0 +1,10 @@
+{% extends 'base.html' %}
+{% block title %}{% if LANGUAGE_CODE == 'en' %}Too many requests{% else %}محاولات كثيرة{% endif %} — HaybatAlsultan{% endblock %}
+{% block content %}
+<section class="system-state-shell" aria-labelledby="state-title"><div class="container"><div class="system-state-card">
+<div class="system-state-code" aria-hidden="true">429</div><div class="system-state-icon is-neutral" aria-hidden="true">!</div>
+<h1 id="state-title">{% if LANGUAGE_CODE == 'en' %}Too many requests{% else %}محاولات كثيرة{% endif %}</h1>
+<p>{% if LANGUAGE_CODE == 'en' %}Requests are temporarily limited to protect your account. Please wait and try again.{% else %}تم إيقاف المحاولات مؤقتًا لحماية حسابك. انتظر قليلًا ثم حاول مرة أخرى.{% endif %}</p>
+<div class="system-state-actions"><a class="btn btn-gold" href="{% url 'core:home' %}">{% if LANGUAGE_CODE == 'en' %}Go to home{% else %}العودة إلى الرئيسية{% endif %}</a></div>
+</div></div></section>
+{% endblock %}

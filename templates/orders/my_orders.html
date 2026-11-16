@@ -1,0 +1,82 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load order_ui %}
+{% block title %}{% if LANGUAGE_CODE == 'en' %}My Orders{% else %}طلباتي{% endif %} — Haybat Al Sultan{% endblock %}
+{% block content %}
+<section class="order-history-page">
+  <div class="container order-history-shell py-5">
+    <header class="order-history-hero">
+      <div>
+        <p class="eyebrow">{% if LANGUAGE_CODE == 'en' %}Purchase History{% else %}سجل المشتريات{% endif %}</p>
+        <h1>{% if LANGUAGE_CODE == 'en' %}My Orders{% else %}طلباتي{% endif %}</h1>
+        <p>{% if LANGUAGE_CODE == 'en' %}Track active orders, review completed purchases and find any order securely.{% else %}تابع طلباتك النشطة وراجع مشترياتك المكتملة وابحث عن أي طلب بسهولة وأمان.{% endif %}</p>
+      </div>
+    </header>
+
+    <div class="order-history-summary" aria-label="{% if LANGUAGE_CODE == 'en' %}Order summary{% else %}ملخص الطلبات{% endif %}">
+      <a href="?scope=active" class="{% if scope == 'active' %}is-active{% endif %}"><span>{% if LANGUAGE_CODE == 'en' %}Active{% else %}طلبات نشطة{% endif %}</span><strong>{{ summary.active }}</strong></a>
+      <a href="?scope=completed" class="{% if scope == 'completed' %}is-active{% endif %}"><span>{% if LANGUAGE_CODE == 'en' %}Completed{% else %}مكتملة{% endif %}</span><strong>{{ summary.completed }}</strong></a>
+      <a href="?scope=all" class="{% if scope == 'all' %}is-active{% endif %}"><span>{% if LANGUAGE_CODE == 'en' %}All orders{% else %}كل الطلبات{% endif %}</span><strong>{{ summary.total }}</strong></a>
+      {% if summary.cancelled %}<div><span>{% if LANGUAGE_CODE == 'en' %}Cancelled / returned{% else %}ملغاة / مرتجعة{% endif %}</span><strong>{{ summary.cancelled }}</strong></div>{% endif %}
+    </div>
+
+    <form method="get" class="order-history-toolbar" role="search">
+      <input type="hidden" name="scope" value="{{ scope }}">
+      <div class="order-history-search">
+        <svg class="ui-icon" aria-hidden="true"><use href="#icon-search"></use></svg>
+        <input type="search" name="q" value="{{ query }}" maxlength="80" autocomplete="off"
+               placeholder="{% if LANGUAGE_CODE == 'en' %}Order number, SKU or product name{% else %}رقم الطلب أو رقم القطعة أو اسم المنتج{% endif %}"
+               aria-label="{% if LANGUAGE_CODE == 'en' %}Search your orders{% else %}البحث في طلباتك{% endif %}">
+      </div>
+      <select name="status" aria-label="{% if LANGUAGE_CODE == 'en' %}Filter by status{% else %}تصفية حسب الحالة{% endif %}">
+        <option value="">{% if LANGUAGE_CODE == 'en' %}All statuses{% else %}جميع الحالات{% endif %}</option>
+        {% for value,label in status_choices %}<option value="{{ value }}" {% if status_filter == value %}selected{% endif %}>{% if LANGUAGE_CODE == 'en' %}{{ label }}{% else %}{% if value == 'PENDING' %}بانتظار التأكيد{% elif value == 'CONFIRMED' %}تم تأكيد الطلب{% elif value == 'PREPARING' %}جاري التجهيز{% elif value == 'READY' %}جاهز للتوصيل{% elif value == 'SHIPPED' %}تم الشحن{% elif value == 'OUT_FOR_DELIVERY' %}خرج للتوصيل{% elif value == 'DELIVERED' %}تم التسليم{% elif value == 'CANCELLED' %}ملغي{% else %}مرتجع{% endif %}{% endif %}</option>{% endfor %}
+      </select>
+      <button class="btn btn-gold" type="submit">{% if LANGUAGE_CODE == 'en' %}Apply{% else %}تطبيق{% endif %}</button>
+      {% if query or status_filter %}<a class="order-history-reset" href="?scope={{ scope }}">{% if LANGUAGE_CODE == 'en' %}Clear{% else %}مسح{% endif %}</a>{% endif %}
+    </form>
+
+    <div class="order-history-list">
+      {% for order in orders %}
+      <article class="customer-order-card">
+        <a class="customer-order-main" href="{% url 'orders:detail' order.public_id %}" aria-label="{% if LANGUAGE_CODE == 'en' %}Open order{% else %}فتح الطلب{% endif %} {{ order.reference }}">
+          <div class="customer-order-reference">
+            <strong dir="ltr">{{ order.reference }}</strong>
+            <span>{{ order.created_at|date:"Y-m-d H:i" }}</span>
+          </div>
+          <div class="customer-order-badges">
+            <span class="customer-status-badge {{ order|payment_status_class }}">{% if order.payment_status == 'PAID' %}✓ {% endif %}{{ order|payment_status_label:LANGUAGE_CODE }}</span>
+            <span class="customer-status-badge {{ order|order_status_class }}">{% if order.status == 'CONFIRMED' or order.status == 'DELIVERED' %}✓ {% endif %}{{ order|order_status_label:LANGUAGE_CODE }}</span>
+            {% if order.checkout_active %}<span class="customer-status-badge is-warning pending-payment-live" data-pending-order-expiry="{{ order.checkout_deadline|date:'c' }}">{% if LANGUAGE_CODE == 'en' %}Payment pending · <b data-pending-countdown>--:--</b>{% else %}قيد الدفع · متبقي <b data-pending-countdown>--:--</b>{% endif %}</span>{% endif %}
+          </div>
+          <div class="customer-order-total">
+            <span>{% if LANGUAGE_CODE == 'en' %}Total{% else %}الإجمالي{% endif %}</span>
+            <strong dir="ltr">AED {{ order.grand_total|floatformat:2 }}</strong>
+          </div>
+          <span class="customer-order-open">{% if order.can_resume_payment %}{% if LANGUAGE_CODE == 'en' %}Resume payment{% else %}إكمال الدفع{% endif %}{% else %}{% if LANGUAGE_CODE == 'en' %}View order{% else %}عرض الطلب{% endif %}{% endif %} <span aria-hidden="true">←</span></span>
+        </a>
+      </article>
+      {% empty %}
+      <div class="order-history-empty">
+        <svg class="ui-icon" aria-hidden="true"><use href="#icon-orders"></use></svg>
+        <strong>{% if LANGUAGE_CODE == 'en' %}No matching orders{% else %}لا توجد طلبات مطابقة{% endif %}</strong>
+        <span>{% if LANGUAGE_CODE == 'en' %}Try another filter or search term.{% else %}جرّب تغيير الفلتر أو عبارة البحث.{% endif %}</span>
+      </div>
+      {% endfor %}
+    </div>
+
+    {% if page_obj.paginator.num_pages > 1 %}
+    <nav class="customer-order-pagination" aria-label="{% if LANGUAGE_CODE == 'en' %}Orders pages{% else %}صفحات الطلبات{% endif %}">
+      {% if page_obj.has_previous %}<a href="?{% if querystring %}{{ querystring }}&{% endif %}page={{ page_obj.previous_page_number }}">{% if LANGUAGE_CODE == 'en' %}Previous{% else %}السابق{% endif %}</a>{% endif %}
+      <span>{% if LANGUAGE_CODE == 'en' %}Page{% else %}صفحة{% endif %} {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+      {% if page_obj.has_next %}<a href="?{% if querystring %}{{ querystring }}&{% endif %}page={{ page_obj.next_page_number }}">{% if LANGUAGE_CODE == 'en' %}Next{% else %}التالي{% endif %}</a>{% endif %}
+    </nav>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+  {{ block.super }}
+  <script src="{% static 'js/pending-order-countdown.js' %}" defer></script>
+{% endblock %}

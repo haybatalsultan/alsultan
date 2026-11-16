@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+{% block title %}{% if LANGUAGE_CODE == 'en' %}Payment status{% else %}حالة الدفع{% endif %} — {{ order.reference }}{% endblock %}
+{% block content %}
+<section class="container py-5 order-payment-shell">
+  <div class="order-payment-card">
+    {% if order.payment_status == 'PAID' %}
+      <div class="order-payment-icon success" aria-hidden="true">✓</div>
+      <h1>{% if LANGUAGE_CODE == 'en' %}Payment received{% else %}تم استلام الدفعة بنجاح{% endif %}</h1>
+      <p>{% if LANGUAGE_CODE == 'en' %}Your order has been confirmed and will move to preparation.{% else %}تم تأكيد طلبك وسيتم الانتقال إلى مرحلة التجهيز.{% endif %}</p>
+    {% else %}
+      <div class="order-payment-icon" aria-hidden="true">…</div>
+      <h1>{% if LANGUAGE_CODE == 'en' %}Payment is being confirmed{% else %}جاري تأكيد عملية الدفع{% endif %}</h1>
+      <p>{% if LANGUAGE_CODE == 'en' %}Stripe is confirming the payment. Refresh your order shortly; the payment status is updated only from a verified Stripe event.{% else %}يجري التحقق من الدفعة عبر Stripe. سيتم تحديث الحالة فقط بعد وصول إشعار Stripe الموثق.{% endif %}</p>
+    {% endif %}
+    <p class="order-payment-reference">{{ order.reference }}</p>
+    <a class="btn btn-primary w-100" href="{% if request.user.is_authenticated %}{% url 'orders:detail' order.public_id %}{% else %}{% url 'orders:confirmation' order.public_id %}{% endif %}">{% if LANGUAGE_CODE == 'en' %}View order{% else %}عرض الطلب{% endif %}</a>
+  </div>
+</section>
+{% endblock %}

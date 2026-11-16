@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+{% load order_labels %}
+{% block title %}{% if LANGUAGE_CODE == 'en' %}Orders Management{% else %}إدارة الطلبات{% endif %} — Haybat Al Sultan{% endblock %}
+{% block content %}
+<section class="management-page"><div class="container management-shell py-4 py-lg-5">
+{% include 'management/_page_header.html' with page_title=page_title page_description=page_description %}
+<div class="management-page-toolbar"><div class="toolbar-summary"><svg class="ui-icon"><use href="#icon-orders"></use></svg><span>{% if LANGUAGE_CODE == 'en' %}Orders{% else %}الطلبات{% endif %}</span><strong>{{ result_count }}</strong></div>{% if stage == 'delivery' %}<span class="status-chip">{% if LANGUAGE_CODE == 'en' %}Delivery queue{% else %}قائمة التوصيل{% endif %}</span>{% endif %}</div>
+<form method="get" class="management-order-filters" aria-label="{% if LANGUAGE_CODE == 'en' %}Order filters{% else %}فلاتر الطلبات{% endif %}">
+  <div class="management-search-field"><svg class="ui-icon" aria-hidden="true"><use href="#icon-search"></use></svg><label class="visually-hidden" for="management-order-search">{% if LANGUAGE_CODE == 'en' %}Search orders{% else %}البحث في الطلبات{% endif %}</label><input id="management-order-search" type="search" name="q" value="{{ q }}" maxlength="100" autocomplete="off" placeholder="{% if LANGUAGE_CODE == 'en' %}Order reference, customer or phone{% else %}رقم الطلب أو العميل أو الهاتف{% endif %}"></div>
+  <label class="management-filter-select"><span>{% if LANGUAGE_CODE == 'en' %}Order status{% else %}حالة الطلب{% endif %}</span><select name="status"><option value="">{% if LANGUAGE_CODE == 'en' %}All statuses{% else %}جميع الحالات{% endif %}</option>{% for value,label in order_status_choices %}<option value="{{ value }}"{% if status_filter == value %} selected{% endif %}>{{ value|order_status_label }}</option>{% endfor %}</select></label>
+  {% if stage %}<input type="hidden" name="stage" value="{{ stage }}">{% endif %}
+  <button class="management-secondary-btn" type="submit">{% if LANGUAGE_CODE == 'en' %}Apply{% else %}تطبيق{% endif %}</button>
+  {% if q or status_filter %}<a class="management-text-link" href="{% url 'core:management_orders' %}{% if stage %}?stage={{ stage }}{% endif %}">{% if LANGUAGE_CODE == 'en' %}Clear filters{% else %}مسح الفلاتر{% endif %}</a>{% endif %}
+</form>
+<div class="management-content-card">{% if orders %}<div class="table-responsive management-table-wrap"><table class="table management-table align-middle mb-0"><thead><tr>
+<th>{% if LANGUAGE_CODE == 'en' %}Reference{% else %}المرجع{% endif %}</th><th>{% if LANGUAGE_CODE == 'en' %}Customer{% else %}العميل{% endif %}</th><th>{% if LANGUAGE_CODE == 'en' %}Total{% else %}الإجمالي{% endif %}</th><th>{% if LANGUAGE_CODE == 'en' %}Order Status{% else %}حالة الطلب{% endif %}</th><th>{% if LANGUAGE_CODE == 'en' %}Payment{% else %}الدفع{% endif %}</th><th>{% if LANGUAGE_CODE == 'en' %}Method{% else %}الطريقة{% endif %}</th><th>{% if LANGUAGE_CODE == 'en' %}Date{% else %}التاريخ{% endif %}</th>
+</tr></thead><tbody>{% for o in orders %}<tr>
+<td data-label="{% if LANGUAGE_CODE == 'en' %}Reference{% else %}المرجع{% endif %}"><a class="order-reference" href="{% url 'core:management_order' o.public_id %}">{{ o.reference }}</a></td><td data-label="{% if LANGUAGE_CODE == 'en' %}Customer{% else %}العميل{% endif %}">{{ o.customer_name }}<small class="table-subtext" dir="ltr">{{ o.customer_phone }}</small></td><td data-label="{% if LANGUAGE_CODE == 'en' %}Total{% else %}الإجمالي{% endif %}" dir="ltr">AED {{ o.grand_total|floatformat:2 }}</td><td data-label="{% if LANGUAGE_CODE == 'en' %}Order Status{% else %}حالة الطلب{% endif %}"><span class="status-chip">{{ o.status|order_status_label }}</span></td><td data-label="{% if LANGUAGE_CODE == 'en' %}Payment{% else %}الدفع{% endif %}"><span class="status-chip payment">{{ o.payment_status|payment_status_label }}</span></td><td data-label="{% if LANGUAGE_CODE == 'en' %}Method{% else %}الطريقة{% endif %}"><span class="table-subtext">{{ o.payment_method|payment_method_label }}</span></td><td data-label="{% if LANGUAGE_CODE == 'en' %}Date{% else %}التاريخ{% endif %}">{{ o.created_at|date:"Y-m-d H:i" }}</td>
+</tr>{% endfor %}</tbody></table></div>{% else %}<div class="management-empty-state"><svg class="empty-icon"><use href="#icon-orders"></use></svg><strong>{% if LANGUAGE_CODE == 'en' %}No orders found{% else %}لا توجد طلبات{% endif %}</strong></div>{% endif %}</div>
+{% include 'management/_pagination.html' %}
+</div></section>
+{% endblock %}

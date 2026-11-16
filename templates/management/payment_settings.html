@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+{% block title %}{{ page_title }} — {% if LANGUAGE_CODE == 'en' %}Haybat Al Sultan{% else %}هيبة السلطان{% endif %}{% endblock %}
+{% block content %}
+<section class="management-dashboard">
+  <div class="container management-shell py-4 py-lg-5">
+    <header class="management-section-heading">
+      <div>
+        <span class="management-eyebrow">{% if LANGUAGE_CODE == 'en' %}Owner only{% else %}للمالك فقط{% endif %}</span>
+        <h1>{{ page_title }}</h1>
+        <p>{{ page_description }}</p>
+      </div>
+      <a class="management-action secondary" href="{% url 'core:management_dashboard' %}">{% if LANGUAGE_CODE == 'en' %}Back to portal{% else %}العودة للبوابة{% endif %}</a>
+    </header>
+
+    <form method="post" class="management-content-card p-4 payment-settings-form">
+      {% csrf_token %}
+      <div class="management-section-heading mb-3">
+        <div>
+          <h2>{% if LANGUAGE_CODE == 'en' %}Customer payment options{% else %}خيارات الدفع للعميل{% endif %}</h2>
+          <p>{% if LANGUAGE_CODE == 'en' %}You can offer online payment, manual WhatsApp follow-up, or both. Existing paid Stripe orders continue to reconcile even if online checkout is later disabled.{% else %}يمكنك إتاحة الدفع الإلكتروني، أو التواصل عبر واتساب لإتمام التحويل يدويًا، أو الطريقتين معًا. المدفوعات التي بدأت عبر Stripe تستمر في التحقق حتى لو أوقفت بدء دفعات إلكترونية جديدة لاحقًا.{% endif %}</p>
+        </div>
+      </div>
+
+      <div class="management-tool-grid">
+        <label class="management-tool-card payment-method-choice">
+          <span class="tool-symbol" aria-hidden="true"><svg class="ui-icon"><use href="#icon-wallet"></use></svg></span>
+          <span class="tool-copy">
+            <strong>{% if LANGUAGE_CODE == 'en' %}Online payment — Stripe{% else %}الدفع الإلكتروني — Stripe{% endif %}</strong>
+            <small>{% if LANGUAGE_CODE == 'en' %}Customer pays on Stripe Checkout. Payment is confirmed server-side before the order is marked paid.{% else %}يدفع العميل عبر Stripe Checkout، ولا يعتبر الطلب مدفوعًا إلا بعد تحقق السيرفر من Stripe.{% endif %}</small>
+            {% if not stripe_configured %}<small class="text-danger">{% if LANGUAGE_CODE == 'en' %}Stripe is not configured in this environment.{% else %}إعداد Stripe غير مكتمل في هذه البيئة.{% endif %}</small>{% endif %}
+          </span>
+          <input class="form-check-input" type="checkbox" name="online_payment_enabled" {% if store_setting.online_payment_enabled %}checked{% endif %} {% if not stripe_configured %}disabled{% endif %}>
+        </label>
+
+        <label class="management-tool-card payment-method-choice">
+          <span class="tool-symbol" aria-hidden="true"><svg class="ui-icon"><use href="#icon-whatsapp"></use></svg></span>
+          <span class="tool-copy">
+            <strong>{% if LANGUAGE_CODE == 'en' %}Manual payment follow-up{% else %}الدفع بالتواصل مع إدارة هيبة السلطان{% endif %}</strong>
+            <small>{% if LANGUAGE_CODE == 'en' %}Customer contacts the store via WhatsApp for transfer instructions. The order remains unpaid until authorized staff confirms receipt.{% else %}يتواصل العميل عبر واتساب للحصول على تعليمات التحويل، ويبقى الطلب غير مدفوع حتى يؤكد الموظف المخول وصول المبلغ من لوحة الإدارة.{% endif %}</small>
+          </span>
+          <input class="form-check-input" type="checkbox" name="whatsapp_checkout_enabled" {% if store_setting.whatsapp_checkout_enabled %}checked{% endif %}>
+        </label>
+      </div>
+
+      <div class="order-payment-notice warning mt-4">
+        {% if LANGUAGE_CODE == 'en' %}Security rule: at least one payment method must remain enabled. Disabling online checkout never cancels or ignores an already-started Stripe payment.{% else %}قاعدة أمان: يجب إبقاء طريقة دفع واحدة على الأقل مفعلة. إيقاف الدفع الإلكتروني لا يلغي ولا يتجاهل أي عملية Stripe بدأت قبل الإيقاف.{% endif %}
+      </div>
+      <button class="btn btn-primary mt-3" type="submit">{% if LANGUAGE_CODE == 'en' %}Save payment methods{% else %}حفظ طرق الدفع{% endif %}</button>
+    </form>
+  </div>
+</section>
+{% endblock %}

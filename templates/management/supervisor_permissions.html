@@ -1,0 +1,154 @@
+{% extends 'base.html' %}
+{% block title %}{{ title }} — Haybat Al Sultan{% endblock %}
+{% block content %}
+<section class="management-page supervisor-permissions-page">
+  <div class="container management-shell py-4 py-lg-5">
+    {% include 'management/_page_header.html' with page_title=title page_description=page_description %}
+
+    <div class="supervisor-stepper">
+      <div class="supervisor-step complete">
+        <span>✓</span>
+        <div>
+          <strong>{% if LANGUAGE_CODE == 'en' %}Account created{% else %}تم إنشاء الحساب{% endif %}</strong>
+          <small dir="ltr">@{{ supervisor.username }}</small>
+        </div>
+      </div>
+      <div class="supervisor-step-line complete"></div>
+      <div class="supervisor-step active">
+        <span>2</span>
+        <div>
+          <strong>{% if LANGUAGE_CODE == 'en' %}Assign permissions{% else %}منح الصلاحيات{% endif %}</strong>
+          <small>{% if LANGUAGE_CODE == 'en' %}Grant only what is required{% else %}امنح المطلوب فقط{% endif %}</small>
+        </div>
+      </div>
+    </div>
+
+    <div class="supervisor-profile-summary">
+      <span class="supervisor-avatar large"><svg class="ui-icon"><use href="#icon-user"></use></svg></span>
+      <div>
+        <strong>{{ supervisor.get_full_name|default:supervisor.username }}</strong>
+        <span dir="ltr">{{ supervisor.email }}</span>
+        <small dir="ltr">{{ supervisor.phone_e164|default:'—' }}</small>
+      </div>
+      <span class="role-pill role-supervisor">{% if LANGUAGE_CODE == 'en' %}Supervisor{% else %}مشرف{% endif %}</span>
+    </div>
+
+    <div class="management-security-note supervisor-security-note">
+      <svg class="ui-icon"><use href="#icon-shield"></use></svg>
+      <div>
+        <strong>{% if LANGUAGE_CODE == 'en' %}Least-privilege access{% else %}مبدأ أقل صلاحية{% endif %}</strong>
+        <span>{% if LANGUAGE_CODE == 'en' %}Permissions are disabled by default. Enable only the tasks this supervisor is responsible for.{% else %}جميع الصلاحيات معطلة افتراضيًا. فعّل فقط المهام التي يحتاجها هذا المشرف لأداء عمله.{% endif %}</span>
+      </div>
+    </div>
+
+    <form method="post" class="supervisor-permissions-form" novalidate>
+      {% csrf_token %}
+
+      {% if form.non_field_errors %}
+      <div class="management-form-errors">{{ form.non_field_errors }}</div>
+      {% endif %}
+
+      <div class="permission-groups-grid">
+        <section class="management-content-card permission-group-card">
+          <div class="permission-group-head">
+            <span><svg class="ui-icon"><use href="#icon-package"></use></svg></span>
+            <div>
+              <h2>{% if LANGUAGE_CODE == 'en' %}Products{% else %}المنتجات{% endif %}</h2>
+              <p>{% if LANGUAGE_CODE == 'en' %}Catalog and product media access.{% else %}صلاحيات الكتالوج وصور المنتجات.{% endif %}</p>
+            </div>
+          </div>
+          {% for field in form %}
+            {% if field.name == 'view_products' or field.name == 'manage_master_data' or field.name == 'create_products' or field.name == 'edit_products' or field.name == 'archive_products' or field.name == 'manage_product_images' %}
+              <label class="permission-toggle-row" for="{{ field.id_for_label }}">
+                <span>{{ field.label }}</span>
+                {{ field }}
+              </label>
+            {% endif %}
+          {% endfor %}
+        </section>
+
+        <section class="management-content-card permission-group-card">
+          <div class="permission-group-head">
+            <span><svg class="ui-icon"><use href="#icon-boxes"></use></svg></span>
+            <div>
+              <h2>{% if LANGUAGE_CODE == 'en' %}Inventory{% else %}المخزون{% endif %}</h2>
+              <p>{% if LANGUAGE_CODE == 'en' %}Stock visibility and adjustments.{% else %}عرض المخزون وتعديل الكميات والسجل.{% endif %}</p>
+            </div>
+          </div>
+          {% for field in form %}
+            {% if field.name == 'view_inventory' or field.name == 'adjust_inventory' or field.name == 'view_inventory_history' %}
+              <label class="permission-toggle-row" for="{{ field.id_for_label }}">
+                <span>{{ field.label }}</span>
+                {{ field }}
+              </label>
+            {% endif %}
+          {% endfor %}
+        </section>
+
+        <section class="management-content-card permission-group-card">
+          <div class="permission-group-head">
+            <span><svg class="ui-icon"><use href="#icon-orders"></use></svg></span>
+            <div>
+              <h2>{% if LANGUAGE_CODE == 'en' %}Orders & Payments{% else %}الطلبات والمدفوعات{% endif %}</h2>
+              <p>{% if LANGUAGE_CODE == 'en' %}Operational order status and payment actions.{% else %}إدارة حالات الطلب والدفع حسب المسؤولية.{% endif %}</p>
+            </div>
+          </div>
+          {% for field in form %}
+            {% if field.name == 'view_orders' or field.name == 'view_order_timeline' or field.name == 'view_abandoned_carts' or field.name == 'confirm_orders' or field.name == 'prepare_orders' or field.name == 'ship_orders' or field.name == 'cancel_orders' or field.name == 'mark_payment_pending' or field.name == 'mark_paid' %}
+              <label class="permission-toggle-row" for="{{ field.id_for_label }}">
+                <span>{{ field.label }}</span>
+                {{ field }}
+              </label>
+            {% endif %}
+          {% endfor %}
+        </section>
+
+        <section class="management-content-card permission-group-card">
+          <div class="permission-group-head">
+            <span><svg class="ui-icon"><use href="#icon-users"></use></svg></span>
+            <div>
+              <h2>{% if LANGUAGE_CODE == 'en' %}Customers{% else %}العملاء{% endif %}</h2>
+              <p>{% if LANGUAGE_CODE == 'en' %}Customer visibility, editing and contact permissions.{% else %}عرض العملاء وتعديل بياناتهم والتواصل معهم.{% endif %}</p>
+            </div>
+          </div>
+          {% for field in form %}
+            {% if field.name == 'view_customers' or field.name == 'edit_customers' or field.name == 'contact_customers' %}
+              <label class="permission-toggle-row" for="{{ field.id_for_label }}">
+                <span>{{ field.label }}</span>
+                {{ field }}
+              </label>
+            {% endif %}
+          {% endfor %}
+        </section>
+
+        <section class="management-content-card permission-group-card">
+          <div class="permission-group-head">
+            <span><svg class="ui-icon"><use href="#icon-history"></use></svg></span>
+            <div>
+              <h2>{% if LANGUAGE_CODE == 'en' %}Reports{% else %}التقارير{% endif %}</h2>
+              <p>{% if LANGUAGE_CODE == 'en' %}Reporting and export permissions.{% else %}عرض التقارير وتصدير البيانات المسموح بها.{% endif %}</p>
+            </div>
+          </div>
+          {% for field in form %}
+            {% if field.name == 'view_reports' or field.name == 'export_reports' %}
+              <label class="permission-toggle-row" for="{{ field.id_for_label }}">
+                <span>{{ field.label }}</span>
+                {{ field }}
+              </label>
+            {% endif %}
+          {% endfor %}
+        </section>
+      </div>
+
+      <div class="management-form-actions sticky-form-actions supervisor-permission-actions">
+        <a class="management-secondary-btn" href="{% url 'core:management_supervisors' %}">
+          {% if LANGUAGE_CODE == 'en' %}Back to supervisors{% else %}العودة للمشرفين{% endif %}
+        </a>
+        <button class="management-primary-btn" type="submit">
+          {% if LANGUAGE_CODE == 'en' %}Save permissions{% else %}حفظ الصلاحيات{% endif %}
+        </button>
+      </div>
+    </form>
+  </div>
+</section>
+{% endblock %}

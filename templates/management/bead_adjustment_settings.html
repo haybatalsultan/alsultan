@@ -1,0 +1,7 @@
+{% extends 'base.html' %}
+{% block content %}<section class="management-page"><div class="container management-shell py-4 py-lg-5">
+{% include 'management/_page_header.html' with page_title=page_title page_description=page_description %}
+<div class="management-content-card bead-setting-card"><h2>خدمة تقليل عدد الخرز مجانًا</h2>
+<p>عند التفعيل تظهر الخدمة تلقائيًا لكل مسباح عدد خرزه أكثر من 33. العميل يستطيع اختيار أي عدد من 33 وحتى العدد الأصلي.</p>
+<form method="post">{% csrf_token %}<label class="bead-global-toggle"><input type="checkbox" name="bead_adjustment_enabled" {% if store_setting.bead_adjustment_enabled %}checked{% endif %}><span>تفعيل الخدمة لجميع المسابيح المؤهلة</span></label><button class="management-primary-btn" type="submit">حفظ الإعداد</button></form>
+</div></div></section>{% endblock %}

@@ -1,0 +1,29 @@
+{
+  "version": "v20.6.2",
+  "base": "v20.6.1",
+  "scope": "Mobile header structural layout fix",
+  "root_cause": "The previous mobile layout placed logo, menu and action group in separate RTL-sensitive grid columns, allowing controls to collide with the logo.",
+  "fix": [
+    "Moved the mobile menu button into the same header-actions cluster as Search and Cart.",
+    "Compact header now uses a two-zone flex layout: protected logo zone + isolated controls zone.",
+    "RTL places the logo on the right and controls on the left; LTR mirrors naturally.",
+    "Desktop navigation remains unchanged at >=992px.",
+    "Hero, product UI, backend behavior and branding assets are untouched."
+  ],
+  "security": [
+    "No route/API/model/auth/permission change.",
+    "Off-canvas still handled by Bootstrap; no new inline JavaScript.",
+    "CSRF, CSP, MFA, rate limiting and audit controls unchanged.",
+    "No user-controlled URLs introduced."
+  ],
+  "checks": {
+    "compileall": "PASS",
+    "ast": "PASS",
+    "static_security": "PASS",
+    "static_security_output": "Static security pattern + project invariant scan: PASS",
+    "branding_unchanged": "PASS",
+    "test_methods_present": 199
+  },
+  "full_django_suite_here": false,
+  "reason": "Run the full Django suite in the project .venv."
+}

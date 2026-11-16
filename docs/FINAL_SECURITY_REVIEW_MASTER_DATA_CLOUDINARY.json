@@ -1,0 +1,26 @@
+{
+  "python_compileall": "PASS",
+  "ast_parse": "PASS",
+  "ast_errors": [],
+  "static_security_scan": "PASS",
+  "security_hits": {},
+  "manual_cloudinary_url_input": "PASS",
+  "manual_url_hits": [],
+  "django_admin_public_route": false,
+  "public_cost_price_hits": [],
+  "env_packaged": false,
+  "venv_packaged": false,
+  "sqlite_packaged": false,
+  "test_methods_discovered": 70,
+  "checks": {
+    "database_empty_url_fallback": true,
+    "multi_image_request_limit": true,
+    "temp_file_threshold": true,
+    "category_direct_upload": true,
+    "material_direct_upload": true,
+    "multipart_management_form": true,
+    "server_generated_cloudinary_path": true,
+    "migration_0005": true,
+    "python_dotenv_pinned": true
+  }
+}

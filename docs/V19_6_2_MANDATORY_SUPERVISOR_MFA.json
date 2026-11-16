@@ -1,0 +1,35 @@
+{
+  "version": "v19.6.2",
+  "base": "v19.6.1",
+  "feature": "Mandatory MFA for supervisors",
+  "security_policy": {
+    "owner_mfa_required": true,
+    "supervisor_mfa_required": true,
+    "customer_mfa_required": false,
+    "management_portal_requires_verified_mfa_session": true
+  },
+  "enforcement_layers": [
+    "Primary login routes owner/supervisor without MFA to enrollment before authentication.",
+    "Enabled management accounts are challenged for TOTP on every new login.",
+    "ManagementMFAEnforcementMiddleware protects old/pre-existing authenticated sessions.",
+    "staff_required independently enforces MFA and verified-session markers.",
+    "Unconfirmed enrollment secrets are rotated and cancelled setup secrets are deleted.",
+    "Security events record enrollment requirement, challenge, success and failure without storing TOTP secrets."
+  ],
+  "test_changes": [
+    "Supervisor first-login enrollment required.",
+    "Supervisor can enroll and then enter management.",
+    "Enabled supervisor requires OTP on every new login.",
+    "Old supervisor session without MFA is blocked.",
+    "Existing management tests now explicitly create an enabled MFA fixture and verified session."
+  ],
+  "checks": {
+    "compileall": "PASS",
+    "ast_parse": "PASS",
+    "static_security": "PASS",
+    "static_security_output": "Static security pattern + project invariant scan: PASS",
+    "test_methods_present": 167
+  },
+  "full_django_suite_executed_here": false,
+  "reason": "Django is not installed in the artifact runtime; run the full suite in the project .venv."
+}

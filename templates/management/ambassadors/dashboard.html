@@ -1,0 +1,119 @@
+{% extends 'base.html' %}
+{% block title %}{% if LANGUAGE_CODE == 'en' %}Ambassadors{% else %}سفراء هيبة السلطان{% endif %} — Haybat Al Sultan{% endblock %}
+{% block content %}
+<section class="management-page ambassador-management-page">
+  <div class="container management-shell py-4 py-lg-5">
+
+    <div class="ambassador-owner-hero">
+      <div class="ambassador-owner-hero__copy">
+        <span class="management-eyebrow">HAYBAT ALSULTAN</span>
+        <h1>{{ page_title }}</h1>
+        <p>{{ page_description }}</p>
+        <div class="ambassador-owner-hero__meta">
+          <span class="ambassador-state-badge {% if program.enabled %}is-enabled{% else %}is-paused{% endif %}">
+            <i aria-hidden="true"></i>
+            {% if program.enabled %}{% if LANGUAGE_CODE == 'en' %}Program active{% else %}البرنامج مفعّل{% endif %}{% else %}{% if LANGUAGE_CODE == 'en' %}Program paused{% else %}البرنامج متوقف{% endif %}{% endif %}
+          </span>
+          <span class="ambassador-owner-hero__hint">{% if LANGUAGE_CODE == 'en' %}Referral earning and redemption remain fully auditable.{% else %}جميع عمليات الإحالة والنقاط محفوظة وقابلة للتدقيق.{% endif %}</span>
+        </div>
+      </div>
+
+      {% if is_owner %}
+      <form method="post" action="{% url 'core:management_ambassadors_toggle' %}" class="ambassador-toggle-card">
+        {% csrf_token %}
+        <div>
+          <small>{% if LANGUAGE_CODE == 'en' %}Program control{% else %}التحكم بالبرنامج{% endif %}</small>
+          <strong>{% if program.enabled %}{% if LANGUAGE_CODE == 'en' %}Accepting new referrals{% else %}استقبال الإحالات الجديدة مفعّل{% endif %}{% else %}{% if LANGUAGE_CODE == 'en' %}New referrals are paused{% else %}استقبال الإحالات الجديدة متوقف{% endif %}{% endif %}</strong>
+        </div>
+        <button class="ambassador-premium-toggle {% if program.enabled %}is-on{% endif %}" type="submit" aria-pressed="{% if program.enabled %}true{% else %}false{% endif %}">
+          <span class="ambassador-premium-toggle__track"><span class="ambassador-premium-toggle__thumb"></span></span>
+          <span>{% if program.enabled %}{% if LANGUAGE_CODE == 'en' %}Pause program{% else %}إيقاف البرنامج{% endif %}{% else %}{% if LANGUAGE_CODE == 'en' %}Enable program{% else %}تفعيل البرنامج{% endif %}{% endif %}</span>
+        </button>
+      </form>
+      {% endif %}
+    </div>
+
+    <section class="ambassador-rules-section" aria-labelledby="ambassador-rules-title">
+      <div class="ambassador-section-heading">
+        <div>
+          <span>{% if LANGUAGE_CODE == 'en' %}Program rules{% else %}قواعد البرنامج{% endif %}</span>
+          <h2 id="ambassador-rules-title">{% if LANGUAGE_CODE == 'en' %}Haybat Alsultan Ambassador{% else %}سفير هيبة السلطان{% endif %}</h2>
+        </div>
+        <p>{% if LANGUAGE_CODE == 'en' %}The approved earning, redemption and validity rules at a glance.{% else %}القواعد المعتمدة للكسب والاستبدال والصلاحية أمام المالك بشكل واضح.{% endif %}</p>
+      </div>
+      <div class="ambassador-policy-grid">
+        <article>
+          <span class="policy-step">01</span>
+          <small>{% if LANGUAGE_CODE == 'en' %}Earning rule{% else %}قاعدة الكسب{% endif %}</small>
+          <strong><b dir="ltr">AED {{ program.earn_aed_block }}</b> = {{ program.earn_points_per_block }} {% if LANGUAGE_CODE == 'en' %}points{% else %}نقطة{% endif %}</strong>
+        </article>
+        <article>
+          <span class="policy-step">02</span>
+          <small>{% if LANGUAGE_CODE == 'en' %}Redemption rule{% else %}قاعدة الاستبدال{% endif %}</small>
+          <strong>{{ program.redeem_points_block }} {% if LANGUAGE_CODE == 'en' %}points{% else %}نقطة{% endif %} = <b dir="ltr">AED {{ program.redeem_aed_per_block|floatformat:0 }}</b></strong>
+        </article>
+        <article>
+          <span class="policy-step">03</span>
+          <small>{% if LANGUAGE_CODE == 'en' %}Validity{% else %}الصلاحية{% endif %}</small>
+          <strong>{{ program.validity_months }} {% if LANGUAGE_CODE == 'en' %}months for each earned batch{% else %}شهر لكل دفعة نقاط مكتسبة{% endif %}</strong>
+        </article>
+        <article>
+          <span class="policy-step">04</span>
+          <small>{% if LANGUAGE_CODE == 'en' %}Calculation{% else %}طريقة الحساب{% endif %}</small>
+          <strong>{% if LANGUAGE_CODE == 'en' %}Whole AED 1,000 blocks only{% else %}أعداد صحيحة لكل 1,000 د.إ مكتمل{% endif %}</strong>
+        </article>
+      </div>
+    </section>
+
+    <section class="ambassador-overview-section" aria-labelledby="ambassador-overview-title">
+      <div class="ambassador-section-heading compact">
+        <div><span>{% if LANGUAGE_CODE == 'en' %}Live overview{% else %}نظرة سريعة{% endif %}</span><h2 id="ambassador-overview-title">{% if LANGUAGE_CODE == 'en' %}Ambassador performance{% else %}أداء برنامج السفراء{% endif %}</h2></div>
+      </div>
+      <div class="ambassador-admin-stats ambassador-admin-stats--premium">
+        <article><span>{% if LANGUAGE_CODE == 'en' %}Customers with code{% else %}عملاء لديهم رمز{% endif %}</span><strong>{{ stats.registered }}</strong><small>{% if LANGUAGE_CODE == 'en' %}registered customers{% else %}عميل مسجل{% endif %}</small></article>
+        <article><span>{% if LANGUAGE_CODE == 'en' %}Active ambassadors{% else %}سفراء نشطون{% endif %}</span><strong>{{ stats.active }}</strong><small>{% if LANGUAGE_CODE == 'en' %}with successful referrals{% else %}لديهم إحالات ناجحة{% endif %}</small></article>
+        <article><span>{% if LANGUAGE_CODE == 'en' %}Pending referrals{% else %}إحالات معلقة{% endif %}</span><strong>{{ stats.pending }}</strong><small>{% if LANGUAGE_CODE == 'en' %}awaiting completion{% else %}بانتظار اكتمال الطلب{% endif %}</small></article>
+        <article><span>{% if LANGUAGE_CODE == 'en' %}Successful referrals{% else %}إحالات ناجحة{% endif %}</span><strong>{{ stats.successful }}</strong><small>{% if LANGUAGE_CODE == 'en' %}qualified referrals{% else %}إحالة مؤهلة{% endif %}</small></article>
+        <article class="is-wide"><span>{% if LANGUAGE_CODE == 'en' %}Referral sales{% else %}مبيعات الإحالات{% endif %}</span><strong dir="ltr">AED {{ stats.sales|floatformat:2 }}</strong><small>{% if LANGUAGE_CODE == 'en' %}qualified referral sales{% else %}إجمالي المبيعات المؤهلة{% endif %}</small></article>
+        <article><span>{% if LANGUAGE_CODE == 'en' %}Points awarded{% else %}النقاط الممنوحة{% endif %}</span><strong>{{ stats.points }}</strong><small>{% if LANGUAGE_CODE == 'en' %}awarded points{% else %}نقطة ممنوحة{% endif %}</small></article>
+        <article><span>{% if LANGUAGE_CODE == 'en' %}Gift requests{% else %}طلبات الهدايا{% endif %}</span><strong>{{ stats.gift_requests }}</strong><small>{% if LANGUAGE_CODE == 'en' %}pending requests{% else %}طلب قيد المتابعة{% endif %}</small></article>
+      </div>
+    </section>
+
+    <section class="ambassador-directory-section">
+      <div class="ambassador-section-heading ambassador-directory-heading">
+        <div><span>{% if LANGUAGE_CODE == 'en' %}Ambassador directory{% else %}دليل السفراء{% endif %}</span><h2>{% if LANGUAGE_CODE == 'en' %}Customers and participation{% else %}العملاء وحالة المشاركة{% endif %}</h2></div>
+        <p>{% if LANGUAGE_CODE == 'en' %}Search by customer, phone, code or order reference.{% else %}ابحث بالاسم أو الهاتف أو رمز السفير أو رقم الطلب.{% endif %}</p>
+      </div>
+
+      <form method="get" class="ambassador-premium-search" role="search">
+        <input type="search" name="q" maxlength="100" value="{{ q }}" placeholder="{% if LANGUAGE_CODE == 'en' %}Name, phone, ambassador code or order{% else %}الاسم أو الهاتف أو رمز السفير أو رقم الطلب{% endif %}" aria-label="{% if LANGUAGE_CODE == 'en' %}Search ambassadors{% else %}البحث في السفراء{% endif %}">
+        <button class="management-primary-btn" type="submit">{% if LANGUAGE_CODE == 'en' %}Search{% else %}بحث{% endif %}</button>
+      </form>
+
+      <div class="management-content-card ambassador-table-card">
+        <div class="table-responsive management-table-wrap"><table class="table management-table ambassador-premium-table align-middle mb-0">
+          <thead><tr><th>{% if LANGUAGE_CODE == 'en' %}Customer{% else %}العميل{% endif %}</th><th>{% if LANGUAGE_CODE == 'en' %}Ambassador code{% else %}رمز السفير{% endif %}</th><th>{% if LANGUAGE_CODE == 'en' %}Participation{% else %}المشاركة{% endif %}</th><th>{% if LANGUAGE_CODE == 'en' %}Successful{% else %}الناجحة{% endif %}</th><th>{% if LANGUAGE_CODE == 'en' %}Referral sales{% else %}مبيعات الإحالات{% endif %}</th><th>{% if LANGUAGE_CODE == 'en' %}Points earned{% else %}النقاط المكتسبة{% endif %}</th></tr></thead>
+          <tbody>{% for p in profiles %}<tr>
+            <td><div class="ambassador-customer-cell"><span class="ambassador-customer-avatar">{{ p.user.get_full_name|default:p.user.username|first|upper }}</span><div><strong>{{ p.user.get_full_name|default:p.user.username }}</strong><small class="table-subtext" dir="ltr">{{ p.user.phone_e164|default:p.user.email }}</small></div></div></td>
+            <td dir="ltr"><span class="ambassador-code-pill">{{ p.code }}</span></td>
+            <td>{% if p.successful_count %}<span class="ambassador-status active"><i></i>{% if LANGUAGE_CODE == 'en' %}Active ambassador{% else %}سفير نشط{% endif %}</span>{% elif p.pending_count %}<span class="ambassador-status pending"><i></i>{% if LANGUAGE_CODE == 'en' %}Pending referral{% else %}إحالة معلقة{% endif %}</span>{% else %}<span class="ambassador-status idle"><i></i>{% if LANGUAGE_CODE == 'en' %}Not participated{% else %}لم يشارك{% endif %}</span>{% endif %}</td>
+            <td><strong class="table-number">{{ p.successful_count }}</strong></td><td dir="ltr"><strong class="table-money">AED {{ p.referred_sales|default:0|floatformat:2 }}</strong></td><td><strong class="table-number">{{ p.total_points|default:0 }}</strong></td>
+          </tr>{% empty %}<tr><td colspan="6" class="ambassador-empty-state">{% if LANGUAGE_CODE == 'en' %}No ambassador records found.{% else %}لا توجد سجلات سفراء مطابقة.{% endif %}</td></tr>{% endfor %}</tbody>
+        </table></div>
+      </div>
+      {% include 'management/_pagination.html' %}
+    </section>
+
+    <div class="row g-4 mt-1 ambassador-bottom-grid">
+      <div class="col-lg-8"><section class="management-content-card ambassador-activity-card"><div class="content-card-title ambassador-card-heading"><div><small>{% if LANGUAGE_CODE == 'en' %}Activity log{% else %}سجل النشاط{% endif %}</small><h2>{% if LANGUAGE_CODE == 'en' %}Latest referral activity{% else %}آخر نشاط الإحالات{% endif %}</h2></div></div>
+        <div class="table-responsive management-table-wrap"><table class="table management-table ambassador-premium-table align-middle mb-0"><thead><tr><th>{% if LANGUAGE_CODE == 'en' %}Ambassador{% else %}السفير{% endif %}</th><th>{% if LANGUAGE_CODE == 'en' %}Order{% else %}الطلب{% endif %}</th><th>{% if LANGUAGE_CODE == 'en' %}Buyer{% else %}المشتري{% endif %}</th><th>{% if LANGUAGE_CODE == 'en' %}Eligible value{% else %}القيمة المؤهلة{% endif %}</th><th>{% if LANGUAGE_CODE == 'en' %}Points{% else %}النقاط{% endif %}</th><th>{% if LANGUAGE_CODE == 'en' %}Status{% else %}الحالة{% endif %}</th></tr></thead>
+        <tbody>{% for r in recent_referrals %}<tr><td><strong>{{ r.ambassador.user.get_full_name|default:r.ambassador.user.username }}</strong><small class="table-subtext" dir="ltr">{{ r.code_snapshot }}</small></td><td><a class="order-reference" href="{% url 'core:management_order' r.order.public_id %}">{{ r.order.reference }}</a></td><td>{{ r.order.customer_name }}</td><td dir="ltr">AED {{ r.eligible_amount|floatformat:2 }}</td><td>{{ r.points_awarded }}</td><td><span class="ambassador-status {% if r.status == 'AWARDED' %}active{% elif r.status == 'PENDING' or r.status == 'REVIEW' %}pending{% else %}idle{% endif %}"><i></i>{{ r.get_status_display }}</span>{% if is_owner and r.status == 'REVIEW' %}<div class="ambassador-review-actions"><form method="post" action="{% url 'core:management_ambassador_referral_review' r.id %}">{% csrf_token %}<input type="hidden" name="decision" value="approve"><button class="btn btn-sm btn-primary" type="submit">{% if LANGUAGE_CODE == 'en' %}Approve{% else %}اعتماد{% endif %}</button></form><form method="post" action="{% url 'core:management_ambassador_referral_review' r.id %}">{% csrf_token %}<input type="hidden" name="decision" value="reject"><button class="btn btn-sm btn-outline-danger" type="submit">{% if LANGUAGE_CODE == 'en' %}Reject{% else %}رفض{% endif %}</button></form></div>{% endif %}</td></tr>{% empty %}<tr><td colspan="6" class="ambassador-empty-state">{% if LANGUAGE_CODE == 'en' %}No referral activity yet.{% else %}لا يوجد نشاط إحالات حتى الآن.{% endif %}</td></tr>{% endfor %}</tbody></table></div>
+      </section></div>
+      <div class="col-lg-4"><section class="management-content-card ambassador-gifts-card"><div class="content-card-title ambassador-card-heading"><div><small>{% if LANGUAGE_CODE == 'en' %}Rewards{% else %}المكافآت{% endif %}</small><h2>{% if LANGUAGE_CODE == 'en' %}Gift requests{% else %}طلبات الهدايا{% endif %}</h2></div><span class="gift-count">{{ stats.gift_requests }}</span></div>
+        <div class="ambassador-gift-list">{% for g in recent_gift_requests %}<div><strong>{{ g.profile.user.get_full_name|default:g.profile.user.username }}</strong><span dir="ltr">{{ g.profile.code }}</span><small>{{ g.created_at|date:"Y-m-d H:i" }}</small></div>{% empty %}<div class="ambassador-gift-empty"><strong>{% if LANGUAGE_CODE == 'en' %}No pending requests{% else %}لا توجد طلبات معلقة{% endif %}</strong><small>{% if LANGUAGE_CODE == 'en' %}New gift redemption requests will appear here.{% else %}ستظهر هنا طلبات استبدال النقاط بالهدايا عند وصولها.{% endif %}</small></div>{% endfor %}</div>
+      </section></div>
+    </div>
+  </div>
+</section>
+{% endblock %}

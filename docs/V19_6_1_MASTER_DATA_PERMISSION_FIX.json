@@ -1,0 +1,27 @@
+{
+  "version": "v19.6.1",
+  "base": "v19.6",
+  "fix": "Master-data permission test alignment",
+  "runtime_security_policy": {
+    "manage_master_data_required_for_supervisors": true,
+    "default_supervisor_master_data_access": false,
+    "owner_access_unchanged": true,
+    "customer_access_denied": true
+  },
+  "why_previous_suite_failed": "Legacy tests created supervisors without manage_master_data permission but still expected 200/302 responses from master-data endpoints.",
+  "changes": [
+    "Authorized master-data test supervisors now receive manage_master_data=True explicitly.",
+    "Added a negative regression test proving a supervisor without manage_master_data receives 403.",
+    "Runtime permission checks were not weakened or removed."
+  ],
+  "checks": {
+    "compileall": "PASS",
+    "ast_parse": "PASS",
+    "static_security": "PASS",
+    "static_security_output": "Static security pattern + project invariant scan: PASS",
+    "test_methods_present": 164
+  },
+  "full_django_suite_executed_here": false,
+  "reason": "Django is not installed in the artifact build runtime; run in the project virtual environment.",
+  "ast_errors": []
+}

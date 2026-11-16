@@ -1,0 +1,14 @@
+Haybat Al Sultan v20.8.1.2
+Scope: Deferred Quick Sale + Receivables + Owner-only Product Custody
+
+Security:
+- Owner + MFA guard inherited from management portal.
+- Deferred sale due date validated server-side.
+- Partial payment records are append-only.
+- Overpayment rechecked under select_for_update row lock.
+- Product custody history is append-only and Owner-only.
+- Future custody dates rejected.
+- Audit events recorded for payments and custody changes.
+- No invoice/PDF, marketer attribution, or commission included.
+
+Local verification required: Django is not installed in artifact runtime.

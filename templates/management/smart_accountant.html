@@ -1,0 +1,147 @@
+{% extends 'base.html' %}
+{% load expense_labels %}
+{% block title %}{% if LANGUAGE_CODE == 'en' %}Smart Accountant{% else %}المحاسب الذكي{% endif %} — Haybat Al Sultan{% endblock %}
+{% block content %}
+<section class="management-page smart-accountant-page">
+  <div class="container management-shell py-4 py-lg-5">
+    {% include 'management/_page_header.html' with page_title=page_title page_description=page_description %}
+
+    <div class="accountant-owner-note">
+      <svg class="ui-icon"><use href="#icon-lock"></use></svg>
+      <div>
+        <strong>{% if LANGUAGE_CODE == 'en' %}Owner-only financial view{% else %}بيانات مالية خاصة بالمالك فقط{% endif %}</strong>
+        <span>{% if LANGUAGE_CODE == 'en' %}Supervisors cannot access cost, profit or this reporting page.{% else %}لا يستطيع المشرفون الوصول إلى التكلفة أو الربح أو هذه الصفحة المالية.{% endif %}</span>
+      </div>
+    </div>
+
+    <form class="accountant-filter" method="get">
+      <div>
+        <label for="period">{% if LANGUAGE_CODE == 'en' %}Period{% else %}الفترة{% endif %}</label>
+        <select id="period" name="period">
+          <option value="today" {% if period.label == 'today' %}selected{% endif %}>{% if LANGUAGE_CODE == 'en' %}Today{% else %}اليوم{% endif %}</option>
+          <option value="week" {% if period.label == 'week' %}selected{% endif %}>{% if LANGUAGE_CODE == 'en' %}Last 7 days{% else %}آخر 7 أيام{% endif %}</option>
+          <option value="month" {% if period.label == 'month' %}selected{% endif %}>{% if LANGUAGE_CODE == 'en' %}This month{% else %}هذا الشهر{% endif %}</option>
+          <option value="year" {% if period.label == 'year' %}selected{% endif %}>{% if LANGUAGE_CODE == 'en' %}This year{% else %}هذه السنة{% endif %}</option>
+          <option value="custom" {% if period.label == 'custom' %}selected{% endif %}>{% if LANGUAGE_CODE == 'en' %}Custom{% else %}مخصص{% endif %}</option>
+        </select>
+      </div>
+      <div>
+        <label for="start">{% if LANGUAGE_CODE == 'en' %}From{% else %}من{% endif %}</label>
+        <input id="start" type="date" name="start" value="{{ request.GET.start|default:'' }}">
+      </div>
+      <div>
+        <label for="end">{% if LANGUAGE_CODE == 'en' %}To{% else %}إلى{% endif %}</label>
+        <input id="end" type="date" name="end" value="{{ request.GET.end|default:'' }}">
+      </div>
+      <button type="submit" class="management-primary-btn">{% if LANGUAGE_CODE == 'en' %}Apply{% else %}تطبيق{% endif %}</button>
+    </form>
+
+    <div class="accountant-period-note" dir="ltr">
+      {{ period.start|date:"Y-m-d" }} → {{ period.end|date:"Y-m-d" }}
+    </div>
+
+    <div class="accountant-metrics">
+      <article><span>{% if LANGUAGE_CODE == 'en' %}Realized Sales{% else %}المبيعات المحققة{% endif %}</span><strong dir="ltr">AED {{ sales|floatformat:2 }}</strong><small>{% if LANGUAGE_CODE == 'en' %}Delivered + paid{% else %}مسلّم + مدفوع{% endif %}</small></article>
+      <article><span>{% if LANGUAGE_CODE == 'en' %}Historical Cost{% else %}التكلفة التاريخية{% endif %}</span><strong dir="ltr">AED {{ cost|floatformat:2 }}</strong><small>{% if LANGUAGE_CODE == 'en' %}From immutable snapshots{% else %}من Snapshots ثابتة{% endif %}</small></article>
+      <article class="profit"><span>{% if LANGUAGE_CODE == 'en' %}Gross Product Profit{% else %}إجمالي ربح المنتجات{% endif %}</span><strong dir="ltr">AED {{ profit|floatformat:2 }}</strong><small>{% if LANGUAGE_CODE == 'en' %}{{ margin|floatformat:1 }}% · before untracked operating expenses{% else %}{{ margin|floatformat:1 }}% · قبل المصروفات التشغيلية غير المسجلة{% endif %}</small></article>
+      <article class="expense-metric"><span>{% if LANGUAGE_CODE == 'en' %}Recorded Operating Expenses{% else %}المصروفات التشغيلية المسجلة{% endif %}</span><strong dir="ltr">AED {{ expenses_total|floatformat:2 }}</strong><small>{% if LANGUAGE_CODE == 'en' %}Active expenses in selected period{% else %}المصروفات النشطة ضمن الفترة المحددة{% endif %}</small></article>
+      <article class="net-profit"><span>{% if LANGUAGE_CODE == 'en' %}Net Product Profit{% else %}صافي ربح المنتجات{% endif %}</span><strong dir="ltr">AED {{ net_profit|floatformat:2 }}</strong><small>{% if LANGUAGE_CODE == 'en' %}{{ net_margin|floatformat:1 }}% · gross product profit minus recorded operating expenses{% else %}{{ net_margin|floatformat:1 }}% · ربح المنتجات بعد خصم المصروفات التشغيلية المسجلة{% endif %}</small></article>
+      <article><span>{% if LANGUAGE_CODE == 'en' %}Inventory Value{% else %}قيمة المخزون الحالية{% endif %}</span><strong dir="ltr">AED {{ inventory_value|floatformat:2 }}</strong><small>{% if LANGUAGE_CODE == 'en' %}Current cost valuation{% else %}تقييم بالتكلفة الحالية{% endif %}</small></article>
+      <article><span>{% if LANGUAGE_CODE == 'en' %}Outstanding{% else %}مبالغ غير مسددة{% endif %}</span><strong dir="ltr">AED {{ outstanding|floatformat:2 }}</strong><small>{% if LANGUAGE_CODE == 'en' %}Open unpaid/pending orders{% else %}طلبات مفتوحة غير مدفوعة{% endif %}</small></article>
+      <article><span>{% if LANGUAGE_CODE == 'en' %}Average Order{% else %}متوسط الطلب{% endif %}</span><strong dir="ltr">AED {{ avg_order|floatformat:2 }}</strong><small>{{ order_count }} {% if LANGUAGE_CODE == 'en' %}realized orders{% else %}طلبات محققة{% endif %}</small></article>
+      <article><span>{% if LANGUAGE_CODE == 'en' %}Discounts{% else %}الخصومات{% endif %}</span><strong dir="ltr">AED {{ discounts|floatformat:2 }}</strong><small>{% if LANGUAGE_CODE == 'en' %}On realized orders{% else %}على الطلبات المحققة{% endif %}</small></article>
+      <article><span>{% if LANGUAGE_CODE == 'en' %}Refund/Partial Cases{% else %}حالات الاسترجاع{% endif %}</span><strong>{{ refunded_count }}</strong><small>{% if LANGUAGE_CODE == 'en' %}Count only; refund amount is not fabricated{% else %}عدد فقط؛ لا يتم اختلاق مبلغ استرجاع غير مسجل{% endif %}</small></article>
+    </div>
+
+    <section class="management-content-card accountant-expense-section">
+      <div class="accountant-expense-heading"><div><h2>{% if LANGUAGE_CODE == 'en' %}Operating Expenses{% else %}المصروفات التشغيلية{% endif %}</h2><p>{% if LANGUAGE_CODE == 'en' %}Boxes, bags, packaging, delivery, payment fees and other owner-recorded costs. Voided records are excluded from profit calculations.{% else %}الصناديق والأكياس والتغليف والتوصيل ورسوم الدفع وباقي التكاليف التي يسجلها المالك. المصروفات الملغاة لا تدخل في حساب الربح.{% endif %}</p></div><div class="accountant-expense-actions"><a class="management-primary-btn" href="{% url 'core:management_expense_create' %}">{% if LANGUAGE_CODE == 'en' %}Add expense{% else %}إضافة مصروف{% endif %}</a><a class="management-secondary-btn" href="{% url 'core:management_expenses' %}">{% if LANGUAGE_CODE == 'en' %}Expense register{% else %}سجل المصروفات{% endif %}</a></div></div>
+      <div class="expense-breakdown-grid">
+        <article><span>{% if LANGUAGE_CODE == 'en' %}Boxes{% else %}صناديق{% endif %}</span><strong dir="ltr">AED {{ expense_breakdown.BOXES|floatformat:2 }}</strong></article>
+        <article><span>{% if LANGUAGE_CODE == 'en' %}Bags{% else %}أكياس{% endif %}</span><strong dir="ltr">AED {{ expense_breakdown.BAGS|floatformat:2 }}</strong></article>
+        <article><span>{% if LANGUAGE_CODE == 'en' %}Packaging{% else %}تغليف{% endif %}</span><strong dir="ltr">AED {{ expense_breakdown.PACKAGING|floatformat:2 }}</strong></article>
+        <article><span>{% if LANGUAGE_CODE == 'en' %}Cards & labels{% else %}بطاقات وملصقات{% endif %}</span><strong dir="ltr">AED {{ expense_breakdown.CARDS_LABELS|floatformat:2 }}</strong></article>
+        <article><span>{% if LANGUAGE_CODE == 'en' %}Delivery{% else %}شحن وتوصيل{% endif %}</span><strong dir="ltr">AED {{ expense_breakdown.SHIPPING_DELIVERY|floatformat:2 }}</strong></article>
+        <article><span>{% if LANGUAGE_CODE == 'en' %}Payment fees{% else %}رسوم الدفع{% endif %}</span><strong dir="ltr">AED {{ expense_breakdown.PAYMENT_FEES|floatformat:2 }}</strong></article>
+      </div>
+      <div class="recent-expenses"><h3>{% if LANGUAGE_CODE == 'en' %}Latest records{% else %}أحدث المصروفات{% endif %}</h3>{% for expense in recent_expenses %}<div class="recent-expense-row"><span><strong>{{ expense.description }}</strong><small>{{ expense.incurred_on|date:"Y-m-d" }} · {% expense_category_label expense.category %}</small></span><b dir="ltr">AED {{ expense.amount|floatformat:2 }}</b></div>{% empty %}<p class="accountant-section-help">{% if LANGUAGE_CODE == 'en' %}No operating expenses recorded yet.{% else %}لم يتم تسجيل مصروفات تشغيلية حتى الآن.{% endif %}</p>{% endfor %}</div>
+    </section>
+
+    <section class="accountant-loyalty-summary">
+      <div class="accountant-loyalty-heading">
+        <span>{% if LANGUAGE_CODE == 'en' %}Customer Loyalty — Lifetime{% else %}ولاء العملاء — إجمالي دائم{% endif %}</span>
+        <small>{% if LANGUAGE_CODE == 'en' %}Derived from qualifying delivered orders, not editable labels.{% else %}محسوب من الطلبات المسلّمة المؤهلة وليس من تصنيف قابل للتعديل.{% endif %}</small>
+      </div>
+      <div class="accountant-loyalty-grid">
+        <article><span>{% if LANGUAGE_CODE == 'en' %}Customers{% else %}عملاء{% endif %}</span><strong>{{ loyalty_counts.member }}</strong></article>
+        <article class="new"><span>{% if LANGUAGE_CODE == 'en' %}New{% else %}جدد{% endif %}</span><strong>{{ loyalty_counts.new }}</strong></article>
+        <article class="silver"><span>{% if LANGUAGE_CODE == 'en' %}Silver{% else %}فضيون{% endif %}</span><strong>{{ loyalty_counts.silver }}</strong></article>
+        <article class="gold"><span>{% if LANGUAGE_CODE == 'en' %}Gold{% else %}ذهبيون{% endif %}</span><strong>{{ loyalty_counts.gold }}</strong></article>
+        <article class="platinum"><span>{% if LANGUAGE_CODE == 'en' %}Platinum{% else %}بلاتينيون{% endif %}</span><strong>{{ loyalty_counts.platinum }}</strong></article>
+        <article class="royal"><span>{% if LANGUAGE_CODE == 'en' %}Royal{% else %}ملكيون{% endif %}</span><strong>{{ loyalty_counts.royal }}</strong></article>
+      </div>
+    </section>
+
+    <div class="accountant-two-column">
+      <section class="management-content-card accountant-insights">
+        <div class="content-card-title"><svg class="ui-icon"><use href="#icon-alert"></use></svg><h2>{% if LANGUAGE_CODE == 'en' %}Smart Observations{% else %}ملاحظات ذكية{% endif %}</h2></div>
+        <p class="accountant-section-help">{% if LANGUAGE_CODE == 'en' %}Rule-based analysis runs locally in Django. No financial data is sent to an external AI service.{% else %}تحليل قائم على قواعد واضحة داخل Django، ولا يتم إرسال البيانات المالية إلى خدمة ذكاء اصطناعي خارجية.{% endif %}</p>
+        <div class="insight-list">
+          {% for insight in insights %}
+          <article class="insight-item insight-{{ insight.level }}">
+            <span></span>
+            <p>{% if LANGUAGE_CODE == 'en' %}{{ insight.en }}{% else %}{{ insight.ar }}{% endif %}</p>
+          </article>
+          {% endfor %}
+        </div>
+      </section>
+
+      <section class="management-content-card risk-panel">
+        <div class="content-card-title"><svg class="ui-icon"><use href="#icon-shield"></use></svg><h2>{% if LANGUAGE_CODE == 'en' %}Risk Signals{% else %}إشارات المخاطر{% endif %}</h2><span class="risk-count">{{ risk_count }}</span></div>
+        <p class="accountant-section-help">{% if LANGUAGE_CODE == 'en' %}Review signals only. The system never blocks or labels a customer as fraudulent automatically.{% else %}هذه إشارات للمراجعة فقط. النظام لا يحظر العميل ولا يصفه كمحتال تلقائيًا.{% endif %}</p>
+        <div class="risk-list">
+          {% for signal in risk_signals %}
+          <article class="risk-item risk-{{ signal.level|lower }}">
+            <div><span class="risk-level">{{ signal.level }}</span><strong>{{ signal.customer_name }}</strong></div>
+            <p>{% if LANGUAGE_CODE == 'en' %}{{ signal.label_en }}{% else %}{{ signal.label_ar }}{% endif %}</p>
+            <small dir="ltr">{{ signal.evidence }}</small>
+          </article>
+          {% empty %}
+          <div class="management-empty-state"><strong>{% if LANGUAGE_CODE == 'en' %}No review signals in the current scan{% else %}لا توجد إشارات مراجعة في الفحص الحالي{% endif %}</strong></div>
+          {% endfor %}
+        </div>
+      </section>
+    </div>
+
+    <section class="management-content-card accountant-products">
+      <div class="content-card-title"><svg class="ui-icon"><use href="#icon-package"></use></svg><h2>{% if LANGUAGE_CODE == 'en' %}Products by Realized Profit{% else %}المنتجات حسب الربح المحقق{% endif %}</h2></div>
+      {% if missing_cost_items %}
+      <div class="legacy-cost-warning">{% if LANGUAGE_CODE == 'en' %}{{ missing_cost_items }} legacy line item(s) do not contain a historical cost snapshot, so their profit is intentionally not estimated.{% else %}يوجد {{ missing_cost_items }} بندًا قديمًا بدون Snapshot تاريخي للتكلفة؛ لذلك لا يتم تقدير ربحه بقيمة غير موثوقة.{% endif %}</div>
+      {% endif %}
+      <div class="table-responsive management-table-wrap">
+        <table class="table management-table align-middle mb-0">
+          <thead><tr>
+            <th>{% if LANGUAGE_CODE == 'en' %}Item{% else %}القطعة{% endif %}</th>
+            <th>{% if LANGUAGE_CODE == 'en' %}Qty{% else %}الكمية{% endif %}</th>
+            <th>{% if LANGUAGE_CODE == 'en' %}Sales{% else %}المبيعات{% endif %}</th>
+            <th>{% if LANGUAGE_CODE == 'en' %}Cost{% else %}التكلفة{% endif %}</th>
+            <th>{% if LANGUAGE_CODE == 'en' %}Profit{% else %}الربح{% endif %}</th>
+          </tr></thead>
+          <tbody>
+          {% for row in top_products %}
+            <tr>
+              <td><strong>{% if LANGUAGE_CODE == 'en' %}{{ row.name_en }}{% else %}{{ row.name_ar }}{% endif %}</strong><small class="table-subtext" dir="ltr">{{ row.sku }}</small></td>
+              <td>{{ row.quantity }}</td>
+              <td dir="ltr">AED {{ row.sales|floatformat:2 }}</td>
+              <td dir="ltr">{% if row.missing_cost %}—{% else %}AED {{ row.cost|floatformat:2 }}{% endif %}</td>
+              <td dir="ltr">{% if row.profit_known %}AED {{ row.profit|floatformat:2 }}{% else %}—{% endif %}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="5">—</td></tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+</section>
+{% endblock %}

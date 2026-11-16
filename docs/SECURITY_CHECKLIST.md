@@ -1,0 +1,17 @@
+# Security acceptance checklist
+- [ ] `DEBUG=False` and production secret present.
+- [ ] `/admin/` returns 404.
+- [ ] Owner account cannot be deleted/disabled/role-changed by supervisors.
+- [ ] Cost price never rendered to customer/supervisor storefront or management forms.
+- [ ] IDOR tests pass for orders, addresses and wishlist.
+- [ ] CSRF enabled on all state changes; no destructive GET actions.
+- [ ] Login/reset/checkout rate limits tested.
+- [ ] CSP and security headers verified in browser/securityheaders scanner.
+- [ ] Upload rejects SVG, non-images and >5MB files.
+- [ ] Concurrent reservation test passes on PostgreSQL.
+- [ ] Double-click checkout creates one order.
+- [ ] Secrets scan reports no credentials committed.
+- [ ] Dependency audit performed before each production deployment.
+- [ ] `python manage.py check --deploy` passes.
+- [ ] Backups and restore drill completed.
+- [ ] Load test at 1000+ concurrent users performed on staging and Render sized from results.

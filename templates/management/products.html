@@ -1,0 +1,132 @@
+{% extends 'base.html' %}
+{% block title %}{% if LANGUAGE_CODE == 'en' %}Products Management{% else %}إدارة المنتجات{% endif %} — Haybat Al Sultan
+{% if is_owner and direct_discount_count %}
+<script>
+(function(){
+  const modal=document.querySelector("[data-discount-modal]");
+  const open=document.querySelector("[data-discount-modal-open]");
+  const close=document.querySelector("[data-discount-modal-close]");
+  if(!modal||!open)return;
+  const show=()=>{modal.hidden=false; document.body.classList.add("modal-open"); close?.focus();};
+  const hide=()=>{modal.hidden=true; document.body.classList.remove("modal-open"); open.focus();};
+  open.addEventListener("click",show);
+  close?.addEventListener("click",hide);
+  modal.addEventListener("click",(event)=>{if(event.target===modal)hide();});
+  document.addEventListener("keydown",(event)=>{if(event.key==="Escape"&&!modal.hidden)hide();});
+})();
+</script>
+{% endif %}
+{% endblock %}
+{% block content %}
+<section class="management-page"><div class="container management-shell py-4 py-lg-5">
+  {% include 'management/_page_header.html' with page_title=page_title page_description=page_description %}
+  <div class="management-page-toolbar product-toolbar">
+    <div class="product-toolbar-metrics">
+      <div class="toolbar-summary"><svg class="ui-icon"><use href="#icon-package"></use></svg><span>{% if LANGUAGE_CODE == 'en' %}Products{% else %}المنتجات{% endif %}</span><strong>{{ result_count }}</strong></div>
+      <div class="last-item-code-chip">
+        <span>{% if LANGUAGE_CODE == 'en' %}Last item code{% else %}آخر رقم قطعة{% endif %}</span>
+        <strong dir="ltr">{{ last_item_code|default:"—" }}</strong>
+      </div>
+    </div>
+    {% if can_create_products %}<a class="management-primary-btn" href="{% url 'core:management_product_create' %}"><span>+</span>{% if LANGUAGE_CODE == 'en' %}New Product{% else %}منتج جديد{% endif %}</a>{% endif %}
+  </div>
+  {% if LANGUAGE_CODE == 'en' %}{% include 'management/_search_bar.html' with search_placeholder='Reference, SKU, name or category' %}{% else %}{% include 'management/_search_bar.html' with search_placeholder='ابحث بالمرجع أو SKU أو الاسم أو التصنيف' %}{% endif %}
+  {% if is_owner %}
+  <section class="discount-cleanup-card{% if discount_cleanup_result %} is-result{% endif %}">
+    <div class="discount-cleanup-copy">
+      {% if discount_cleanup_result %}
+        <strong>تم تنظيف الخصومات المباشرة</strong>
+        {% if discount_cleanup_result.cleared_count %}
+          <span>تم مسح {{ discount_cleanup_result.cleared_count }} خصم مباشر.</span>
+        {% else %}
+          <span>لم توجد خصومات مباشرة تحتاج إلى مسح.</span>
+        {% endif %}
+        {% if not direct_discount_count %}
+          <span class="discount-cleanup-zero">لا توجد خصومات مباشرة حاليًا.</span>
+        {% endif %}
+        <small>لم يتم تعديل أي Promotion.</small>
+      {% elif direct_discount_count %}
+        <strong>إدارة الخصومات المباشرة</strong>
+        <span>يوجد {{ direct_discount_count }} خصم مباشر محفوظ حاليًا.</span>
+        <small>المسح يعيد القطع إلى السعر الأساسي ما لم يوجد Promotion نشط.</small>
+      {% else %}
+        <strong>الخصومات المباشرة</strong>
+        <span>لا توجد خصومات مباشرة حاليًا.</span>
+        <small>العروض الترويجية Promotions مستقلة ولا تتأثر.</small>
+      {% endif %}
+    </div>
+    {% if direct_discount_count %}
+      <button type="button" class="management-secondary-btn discount-clear-all-btn" data-discount-modal-open>مسح جميع الخصومات المباشرة</button>
+    {% endif %}
+  </section>
+
+  {% if direct_discount_count %}
+  <div class="discount-confirm-backdrop" data-discount-modal hidden>
+    <section class="discount-confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="discount-confirm-title">
+      <div class="discount-confirm-icon" aria-hidden="true">!</div>
+      <h2 id="discount-confirm-title">تأكيد مسح الخصومات المباشرة</h2>
+      <p>سيتم حذف <strong>{{ direct_discount_count }}</strong> خصم مباشر محفوظ على المنتجات.</p>
+      <ul>
+        <li>ستعود القطعة إلى سعرها الأساسي إذا لم يوجد Promotion نشط.</li>
+        <li>لن يتم حذف أو تعديل أي Promotion.</li>
+        <li>سيتم تسجيل العملية في سجل التدقيق لكل قطعة.</li>
+      </ul>
+      <form method="post" action="{% url 'core:management_clear_all_direct_discounts' %}">
+        {% csrf_token %}
+        <input type="hidden" name="confirm" value="CLEAR_ALL_DIRECT_DISCOUNTS">
+        <input type="hidden" name="reason" value="Owner confirmed bulk cleanup of direct discounts">
+        <div class="discount-confirm-actions">
+          <button type="button" class="management-secondary-btn" data-discount-modal-close>إلغاء</button>
+          <button type="submit" class="discount-confirm-danger">نعم، مسح الخصومات المباشرة</button>
+        </div>
+      </form>
+    </section>
+  </div>
+  {% endif %}
+  <nav class="price-audit-filters" aria-label="تدقيق الأسعار">
+    <a href="?{% if q %}q={{ q|urlencode }}&{% endif %}" class="{% if not price_source %}is-active{% endif %}">الكل</a>
+    <a href="?price_source=BASE{% if q %}&q={{ q|urlencode }}{% endif %}" class="{% if price_source == 'BASE' %}is-active{% endif %}">بدون خصم</a>
+    <a href="?price_source=PRODUCT{% if q %}&q={{ q|urlencode }}{% endif %}" class="{% if price_source == 'PRODUCT' %}is-active{% endif %}">خصم مباشر</a>
+    <a href="?price_source=PROMOTION{% if q %}&q={{ q|urlencode }}{% endif %}" class="{% if price_source == 'PROMOTION' %}is-active{% endif %}">عرض ترويجي</a>
+    <a href="?price_source=HIGH{% if q %}&q={{ q|urlencode }}{% endif %}" class="price-audit-danger {% if price_source == 'HIGH' %}is-active{% endif %}">خصم أعلى من 15%</a>
+  </nav>
+  {% endif %}
+  <div class="management-content-card">
+    {% if products %}
+    <div class="table-responsive management-table-wrap"><table class="table management-table align-middle mb-0">
+      <thead><tr><th>{% if LANGUAGE_CODE == 'en' %}Reference{% else %}المرجع{% endif %}</th><th>{% if LANGUAGE_CODE == 'en' %}Product{% else %}المنتج{% endif %}</th><th>SKU</th><th>{% if LANGUAGE_CODE == 'en' %}Status{% else %}الحالة{% endif %}</th><th>{% if LANGUAGE_CODE == 'en' %}Stock{% else %}المخزون{% endif %}</th><th>{% if LANGUAGE_CODE == 'en' %}Current Price / Source{% else %}السعر الحالي / المصدر{% endif %}</th><th>{% if LANGUAGE_CODE == 'en' %}Actions{% else %}الإجراءات{% endif %}</th></tr></thead>
+      <tbody>{% for p in products %}<tr>
+        <td><strong class="product-ref" dir="ltr">{{ p.product_reference }}</strong></td>
+        <td><strong>{% if LANGUAGE_CODE == 'en' %}{{ p.name_en }}{% else %}{{ p.name_ar }}{% endif %}</strong><small class="table-subtext">{% if LANGUAGE_CODE == 'en' %}{{ p.category.name_en }}{% else %}{{ p.category.name_ar }}{% endif %}</small></td>
+        <td dir="ltr">{{ p.sku }}</td><td><span class="status-chip">{{ p.get_status_display }}</span></td><td>{{ p.available_quantity }} <small>/ {{ p.reserved_quantity }} {% if LANGUAGE_CODE == 'en' %}reserved{% else %}محجوز{% endif %}</small></td><td class="price-trace-cell">
+          <strong dir="ltr">AED {{ p.price_final|floatformat:2 }}</strong>
+          {% if p.price_source != 'BASE' %}
+            <small class="price-trace-base" dir="ltr">AED {{ p.price_base|floatformat:2 }}</small>
+            {% if p.price_source == 'PRODUCT' %}
+              <a class="price-source-chip source-product" href="{% url 'core:management_product_pricing_history' p.public_id %}" title="عرض سجل ومصدر الخصم">خصم مباشر على القطعة · التفاصيل</a>
+            {% elif p.price_source == 'PROMOTION' %}
+              <span class="price-source-chip source-promotion">عرض {{ p.price_promotion.name_ar|default:p.price_promotion.name_en }}</span>
+            {% else %}
+              <span class="price-source-chip source-base">السعر الأساسي</span>
+            {% endif %}
+            <small class="price-trace-discount">خصم {{ p.price_discount_amount|floatformat:2 }} AED · {{ p.price_discount_percent|floatformat:2 }}%</small>
+            {% if p.price_source == 'PROMOTION' and p.price_promotion %}<small class="price-trace-expiry">ينتهي {{ p.price_promotion.ends_at|date:"d/m/Y H:i" }}</small>{% endif %}
+            {% if p.price_high_warning %}<span class="price-high-warning">⚠ خصم مرتفع — يحتاج مراجعة</span>{% endif %}
+          {% else %}
+            <span class="price-source-chip source-base">بدون خصم</span>
+          {% endif %}
+        </td>
+        <td><div class="table-actions">
+          {% if can_manage_product_images %}<a class="icon-action" href="{% url 'core:management_product_images' p.public_id %}" title="{% if LANGUAGE_CODE == 'en' %}Images{% else %}الصور{% endif %}"><svg class="ui-icon"><use href="#icon-camera"></use></svg></a>{% endif %}
+          {% if can_edit_products %}<a class="icon-action" href="{% url 'core:management_product_edit' p.public_id %}" title="{% if LANGUAGE_CODE == 'en' %}Edit{% else %}تعديل{% endif %}"><svg class="ui-icon"><use href="#icon-package"></use></svg></a>{% endif %}
+          {% if is_owner %}<a class="icon-action" href="{% url 'core:management_product_custody' p.public_id %}" title="{% if LANGUAGE_CODE == 'en' %}Product location{% else %}مكان القطعة{% endif %}"><svg class="ui-icon"><use href="#icon-location"></use></svg></a>{% endif %}
+          {% if is_owner %}<a class="icon-action gold" href="{% url 'core:management_pricing' p.public_id %}" title="{% if LANGUAGE_CODE == 'en' %}Owner pricing{% else %}التكلفة والتسعير{% endif %}"><svg class="ui-icon"><use href="#icon-price"></use></svg></a>{% endif %}
+          {% if can_adjust_inventory %}<a class="icon-action" href="{% url 'core:management_inventory_adjust' p.public_id %}" title="{% if LANGUAGE_CODE == 'en' %}Inventory{% else %}المخزون{% endif %}"><svg class="ui-icon"><use href="#icon-boxes"></use></svg></a>{% endif %}
+        </div></td>
+      </tr>{% endfor %}</tbody>
+    </table></div>
+    {% else %}<div class="management-empty-state"><svg class="empty-icon"><use href="#icon-package"></use></svg><strong>{% if q %}{% if LANGUAGE_CODE == 'en' %}No products match your search{% else %}لا توجد منتجات مطابقة للبحث{% endif %}{% else %}{% if LANGUAGE_CODE == 'en' %}No products yet{% else %}لا توجد منتجات حتى الآن{% endif %}{% endif %}</strong></div>{% endif %}
+  </div>
+  {% include 'management/_pagination.html' %}
+</div></section>
+{% endblock %}

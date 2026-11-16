@@ -1,0 +1,14 @@
+{
+  "python_compileall": "PASS",
+  "ast_parse": "PASS",
+  "ast_errors": [],
+  "test_methods_discovered": 94,
+  "checks": {
+    "google_form_action_allowed": true,
+    "google_not_allowed_in_script_src": true,
+    "oauth_post_only": true,
+    "pkce_enabled": true,
+    "tokens_not_stored": true,
+    "email_auto_link_disabled": true
+  }
+}

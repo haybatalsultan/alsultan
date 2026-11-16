@@ -1,0 +1,9 @@
+<form method="get" class="management-search-bar" role="search">
+  <label class="visually-hidden" for="management-list-search">{% if LANGUAGE_CODE == 'en' %}Search{% else %}بحث{% endif %}</label>
+  <div class="management-search-field">
+    <svg class="ui-icon" aria-hidden="true"><use href="#icon-search"></use></svg>
+    <input id="management-list-search" type="search" name="q" value="{{ q }}" maxlength="100" autocomplete="off" placeholder="{{ search_placeholder|default:'Search' }}">
+  </div>
+  <button class="management-secondary-btn" type="submit">{% if LANGUAGE_CODE == 'en' %}Search{% else %}بحث{% endif %}</button>
+  {% if q %}<a class="management-text-link" href="{{ request.path }}">{% if LANGUAGE_CODE == 'en' %}Clear{% else %}مسح البحث{% endif %}</a>{% endif %}
+</form>

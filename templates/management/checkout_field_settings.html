@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}{{ page_title }} — HaybatAlsultan{% endblock %}
+{% block content %}
+<section class="management-page">
+  <div class="container management-shell py-4 py-lg-5">
+    <header class="management-page-header">
+      <div class="management-page-heading">
+        <span class="management-eyebrow">OWNER</span>
+        <h1>{{ page_title }}</h1>
+        <p>{{ page_description }}</p>
+      </div>
+      <div class="management-header-actions">
+        <a class="management-secondary-btn" href="{% url 'core:management_dashboard' %}">{% if LANGUAGE_CODE == 'en' %}Back to dashboard{% else %}العودة للوحة التحكم{% endif %}</a>
+      </div>
+    </header>
+
+    <div class="management-content-card checkout-fields-settings-card">
+      <div class="management-inline-note is-secure">
+        <strong>{% if LANGUAGE_CODE == 'en' %}Protected by the system{% else %}حقول محمية من النظام{% endif %}</strong>
+        <p>{% if LANGUAGE_CODE == 'en' %}These fields remain required because order integrity, reservation identity, delivery, tracking or legal acceptance depends on them. They cannot be disabled from this screen.{% else %}تبقى هذه الحقول إجبارية لأن سلامة الطلب أو هوية الحجز أو التوصيل أو التتبع أو الإقرار القانوني تعتمد عليها، ولا يمكن تعطيلها من هذه الشاشة.{% endif %}</p>
+        <div class="checkout-protected-fields">
+          {% for label in protected_fields %}<span>{{ label }}</span>{% endfor %}
+        </div>
+      </div>
+
+      <form method="post" class="checkout-field-settings-form">
+        {% csrf_token %}
+        <div class="checkout-field-setting-list">
+          {% for field in field_rows %}
+          <article class="checkout-field-setting-row">
+            <div class="checkout-field-setting-copy">
+              <strong>{{ field.label }}</strong>
+              <small>{% if LANGUAGE_CODE == 'en' %}Customer checkout field{% else %}حقل بيانات العميل عند إتمام الطلب{% endif %}</small>
+            </div>
+            <label class="checkout-setting-toggle">
+              <input type="checkbox" name="{{ field.name }}_visible"{% if field.visible %} checked{% endif %}>
+              <span>{% if LANGUAGE_CODE == 'en' %}Visible{% else %}ظاهر{% endif %}</span>
+            </label>
+            <label class="checkout-setting-toggle">
+              <input type="checkbox" name="{{ field.name }}_required"{% if field.required %} checked{% endif %}>
+              <span>{% if LANGUAGE_CODE == 'en' %}Required{% else %}إجباري{% endif %}</span>
+            </label>
+          </article>
+          {% endfor %}
+        </div>
+        <div class="management-form-actions checkout-settings-actions">
+          <button class="management-primary-btn" type="submit">{% if LANGUAGE_CODE == 'en' %}Save checkout settings{% else %}حفظ إعدادات إتمام الطلب{% endif %}</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</section>
+{% endblock %}

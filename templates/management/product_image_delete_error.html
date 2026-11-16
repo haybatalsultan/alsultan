@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+{% block title %}{{ page_title }} — HaybatAlsultan{% endblock %}
+{% block content %}
+<section class="management-page">
+  <div class="container management-shell py-5">
+    <div class="management-content-card management-error-state">
+      <svg class="empty-icon"><use href="#icon-alert"></use></svg>
+      <h1>{{ page_title }}</h1>
+      <p>
+        {% if LANGUAGE_CODE == 'en' %}
+          Cloudinary did not confirm deletion. The database record was intentionally kept to avoid a silent mismatch. Try again later and review server logs if the problem continues.
+        {% else %}
+          لم يؤكد Cloudinary عملية الحذف، لذلك تم الاحتفاظ بسجل الصورة في قاعدة البيانات حتى لا يحدث عدم تطابق مخفي. حاول مرة أخرى، وراجع سجل الخادم إذا استمرت المشكلة.
+        {% endif %}
+      </p>
+      <a class="management-primary-btn" href="{% url 'core:management_product_images' product.public_id %}">
+        {% if LANGUAGE_CODE == 'en' %}Return to images{% else %}العودة إلى الصور{% endif %}
+      </a>
+    </div>
+  </div>
+</section>
+{% endblock %}

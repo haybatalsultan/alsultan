@@ -1,0 +1,14 @@
+{
+  "python_compileall": "PASS",
+  "ast_parse": "PASS",
+  "static_security_pattern_scan": "PASS",
+  "security_hits": {},
+  "django_admin_public_route": false,
+  "public_cost_price_template_hits": [],
+  "test_methods_discovered": 65,
+  "env_packaged": false,
+  "virtualenv_packaged": false,
+  "sqlite_packaged": false,
+  "cloudinary_image_migration": true,
+  "python_dotenv_pinned": true
+}

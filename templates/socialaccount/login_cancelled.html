@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}{% if LANGUAGE_CODE == 'en' %}Google Sign-In Cancelled{% else %}تم إلغاء تسجيل الدخول عبر Google{% endif %} — HaybatAlsultan{% endblock %}
+{% block content %}
+<section class="system-state-shell" aria-labelledby="state-title">
+  <div class="container">
+    <div class="system-state-card">
+      <div class="system-state-icon is-neutral" aria-hidden="true">×</div>
+      <p class="system-state-eyebrow">{% if LANGUAGE_CODE == 'en' %}Haybat Al Sultan account{% else %}حساب هيبة السلطان{% endif %}</p>
+      <h1 id="state-title">{% if LANGUAGE_CODE == 'en' %}Google sign-in was cancelled{% else %}تم إلغاء تسجيل الدخول باستخدام Google{% endif %}</h1>
+      <p>{% if LANGUAGE_CODE == 'en' %}No changes were made to your account. You can return to sign in and try again whenever you are ready.{% else %}لم يتم إجراء أي تغيير على حسابك. يمكنك العودة إلى صفحة تسجيل الدخول والمحاولة مرة أخرى متى شئت.{% endif %}</p>
+      <div class="system-state-actions">
+        <a class="btn btn-gold" href="{% url 'accounts:login' %}">{% if LANGUAGE_CODE == 'en' %}Back to sign in{% else %}العودة إلى تسجيل الدخول{% endif %}</a>
+        <a class="btn btn-outline-gold" href="{% url 'core:home' %}">{% if LANGUAGE_CODE == 'en' %}Go to home{% else %}العودة إلى الرئيسية{% endif %}</a>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

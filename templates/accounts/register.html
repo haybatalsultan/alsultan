@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+{% load static socialaccount %}
+{% block title %}{% if LANGUAGE_CODE == 'en' %}Create Account{% else %}إنشاء حساب{% endif %} — HaybatAlsultan{% endblock %}
+{% block content %}
+<div class="container auth-wrap">
+  <div class="card-lux registration-card" data-phone-country-scope>
+    <h1>{% if LANGUAGE_CODE == 'en' %}Create Account{% else %}إنشاء حساب{% endif %}</h1>
+    <p>{% if LANGUAGE_CODE == 'en' %}Choose your country first so the correct international calling code is used for your mobile number.{% else %}اختر دولتك أولًا ليتم استخدام كود الاتصال الدولي الصحيح مع رقم هاتفك.{% endif %}</p>
+    {% if ambassador_program.enabled %}<div class="ambassador-register-note"><strong>{% if LANGUAGE_CODE == 'en' %}Haybat Alsultan Ambassador{% else %}سفير هيبة السلطان{% endif %}</strong><span>{% if LANGUAGE_CODE == 'en' %}After registration you will receive your own ambassador code. Every complete AED 1,000 of eligible referred purchases earns 25 points. Every 1,000 points equals AED 25 at redemption. Each batch is valid for 12 months.{% else %}بعد التسجيل ستحصل على رمز سفير خاص بك. كل 1,000 د.إ مكتملة من مشتريات الإحالة المؤهلة تمنحك 25 نقطة، وكل 1,000 نقطة تساوي 25 د.إ عند الاستبدال. صلاحية كل دفعة نقاط 12 شهرًا من تاريخ اكتسابها.{% endif %}</span></div>{% endif %}
+    <form method="post" novalidate>
+      {% csrf_token %}
+      {% for field in form %}
+        <div class="mb-3">
+          {{ field.label_tag }}
+          {% if field.name == 'phone_local' %}
+            <div class="phone-country-input">
+              <span class="dial-code-chip" data-dial-code>+971</span>
+              {{ field }}
+            </div>
+          {% else %}
+            {{ field }}
+          {% endif %}
+          {% if field.help_text %}<div class="form-text">{{ field.help_text }}</div>{% endif %}
+          {% if field.errors %}<div class="text-danger small">{{ field.errors }}</div>{% endif %}
+        </div>
+      {% endfor %}
+      {% if form.non_field_errors %}<div class="text-danger small mb-3">{{ form.non_field_errors }}</div>{% endif %}
+      <button class="btn btn-gold w-100">{% if LANGUAGE_CODE == 'en' %}Create Account{% else %}إنشاء حساب{% endif %}</button>
+    </form>
+{% if GOOGLE_OAUTH_ENABLED %}
+  <div class="auth-divider"><span>{% if LANGUAGE_CODE == 'en' %}or{% else %}أو{% endif %}</span></div>
+  <form method="post" action="{% provider_login_url 'google' process='login' %}" class="google-login-form">
+    {% csrf_token %}
+    <button type="submit" class="google-login-btn">
+      <span class="google-g" aria-hidden="true">G</span>
+      <span>{% if LANGUAGE_CODE == 'en' %}Continue with Google{% else %}المتابعة باستخدام Google{% endif %}</span>
+    </button>
+  </form>
+{% endif %}
+
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}<script src="{% static 'js/address-location.js' %}" defer></script>{% endblock %}

@@ -1,0 +1,115 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load order_ui %}
+{% block title %}{{ order.reference }} — {% if LANGUAGE_CODE == 'en' %}Haybat Al Sultan{% else %}هيبة السلطان{% endif %}{% endblock %}
+{% block content %}
+<section class="order-proof-page customer-order-detail-page"><div class="container py-5">
+  <div class="order-proof-head customer-order-detail-head">
+    <div>
+      <p class="eyebrow">{% if LANGUAGE_CODE == 'en' %}Order details{% else %}تفاصيل الطلب{% endif %}</p>
+      <h1 dir="ltr">{{ order.reference }}</h1>
+      <p>{% if LANGUAGE_CODE == 'en' %}Follow payment, fulfillment and delivery progress for this order.{% else %}تابع حالة الدفع وتجهيز الطلب والتوصيل من مكان واحد.{% endif %}</p>
+    </div>
+    <div class="customer-detail-badges" aria-label="{% if LANGUAGE_CODE == 'en' %}Current order status{% else %}الحالة الحالية للطلب{% endif %}">
+      <span class="customer-status-badge {{ order|payment_status_class }}">{% if order.payment_status == 'PAID' %}✓ {% endif %}{{ order|payment_status_label:LANGUAGE_CODE }}</span>
+      <span class="customer-status-badge {{ order|order_status_class }}">{% if order.status == 'CONFIRMED' or order.status == 'DELIVERED' %}✓ {% endif %}{{ order|order_status_label:LANGUAGE_CODE }}</span>
+    </div>
+  </div>
+
+  {% if order.status != 'CANCELLED' and order.status != 'RETURNED' %}
+  <section class="customer-order-progress-card" aria-label="{% if LANGUAGE_CODE == 'en' %}Order progress{% else %}مسار الطلب{% endif %}">
+    <div class="customer-order-progress-step {% if order.payment_status == 'PAID' %}is-complete{% elif order.payment_status == 'PENDING' %}is-current{% endif %}"><span></span><small>{% if LANGUAGE_CODE == 'en' %}Paid{% else %}تم الدفع{% endif %}</small></div>
+    <div class="customer-order-progress-step {% if delivery_rank >= 0 %}is-complete{% endif %} {% if delivery_rank == 0 %}is-current{% endif %}"><span></span><small>{% if LANGUAGE_CODE == 'en' %}Confirmed{% else %}تم التأكيد{% endif %}</small></div>
+    <div class="customer-order-progress-step {% if delivery_rank >= 1 %}is-complete{% endif %} {% if delivery_rank == 1 %}is-current{% endif %}"><span></span><small>{% if LANGUAGE_CODE == 'en' %}Preparing{% else %}جاري التجهيز{% endif %}</small></div>
+    <div class="customer-order-progress-step {% if delivery_rank >= 2 %}is-complete{% endif %} {% if delivery_rank == 2 %}is-current{% endif %}"><span></span><small>{% if LANGUAGE_CODE == 'en' %}Ready{% else %}جاهز للتوصيل{% endif %}</small></div>
+    <div class="customer-order-progress-step {% if delivery_rank >= 3 %}is-complete{% endif %} {% if delivery_rank == 3 %}is-current{% endif %}"><span></span><small>{% if LANGUAGE_CODE == 'en' %}Shipped{% else %}تم الشحن{% endif %}</small></div>
+    <div class="customer-order-progress-step {% if delivery_rank >= 4 %}is-complete{% endif %} {% if delivery_rank == 4 %}is-current{% endif %}"><span></span><small>{% if LANGUAGE_CODE == 'en' %}Out for delivery{% else %}خرج للتوصيل{% endif %}</small></div>
+    <div class="customer-order-progress-step {% if delivery_rank >= 5 %}is-complete{% endif %} {% if delivery_rank == 5 %}is-current{% endif %}"><span></span><small>{% if LANGUAGE_CODE == 'en' %}Delivered{% else %}تم التسليم{% endif %}</small></div>
+  </section>
+  {% else %}
+  <div class="customer-order-terminal-notice">{{ order|order_status_label:LANGUAGE_CODE }}</div>
+  {% endif %}
+
+  <div class="order-proof-grid customer-order-detail-grid">
+    <section class="order-proof-card">
+      <div class="customer-card-heading">
+        <h2>{% if LANGUAGE_CODE == 'en' %}Items in this order{% else %}قطع هذا الطلب{% endif %}</h2>
+        <span>{{ item_count }} {% if LANGUAGE_CODE == 'en' %}item{{ item_count|pluralize }}{% else %}قطعة{% endif %}</span>
+      </div>
+
+      <div class="customer-order-items">
+      {% for item in primary_items %}
+      <article class="proof-item customer-proof-item">
+        {% if item.image_url_snapshot %}<img src="{{ item.image_url_snapshot }}" alt="" loading="lazy" referrerpolicy="no-referrer">{% else %}<div class="customer-order-image-placeholder">HS</div>{% endif %}
+        <div><strong>{% if LANGUAGE_CODE == 'en' %}{{ item.name_en }}{% else %}{{ item.name_ar }}{% endif %}</strong>
+          <small dir="ltr">{{ item.product_reference }} · {{ item.sku }}</small>
+          <small>{% if LANGUAGE_CODE == 'en' %}Quantity{% else %}الكمية{% endif %}: {{ item.quantity }}</small>
+          {% if item.verification_status_snapshot %}<small>{% if LANGUAGE_CODE == 'en' %}Verification at purchase{% else %}التوثيق وقت الشراء{% endif %}: {{ item.verification_status_snapshot }}</small>{% endif %}
+          {% if item.promotion_label %}<small>{% if LANGUAGE_CODE == 'en' %}Offer{% else %}العرض{% endif %}: {{ item.promotion_label }}</small>{% endif %}
+          {% if item.gift_label %}<small>{% if LANGUAGE_CODE == 'en' %}Gift{% else %}الهدية{% endif %}: {{ item.gift_label }}</small>{% endif %}
+        </div><strong dir="ltr">AED {{ item.line_total|floatformat:2 }}</strong>
+      </article>{% endfor %}
+
+      {% if additional_items %}
+      <details class="customer-order-more-items">
+        <summary>{% if LANGUAGE_CODE == 'en' %}Show {{ additional_items|length }} more items{% else %}عرض بقية القطع ({{ additional_items|length }}){% endif %}</summary>
+        <div>
+          {% for item in additional_items %}
+          <article class="proof-item customer-proof-item">
+            {% if item.image_url_snapshot %}<img src="{{ item.image_url_snapshot }}" alt="" loading="lazy" referrerpolicy="no-referrer">{% else %}<div class="customer-order-image-placeholder">HS</div>{% endif %}
+            <div><strong>{% if LANGUAGE_CODE == 'en' %}{{ item.name_en }}{% else %}{{ item.name_ar }}{% endif %}</strong><small dir="ltr">{{ item.product_reference }} · {{ item.sku }}</small><small>{% if LANGUAGE_CODE == 'en' %}Quantity{% else %}الكمية{% endif %}: {{ item.quantity }}</small></div>
+            <strong dir="ltr">AED {{ item.line_total|floatformat:2 }}</strong>
+          </article>
+          {% endfor %}
+        </div>
+      </details>
+      {% endif %}
+      </div>
+
+      <div class="proof-total"><span>{% if LANGUAGE_CODE == 'en' %}Order total{% else %}إجمالي الطلب{% endif %}</span><strong dir="ltr">AED {{ order.grand_total|floatformat:2 }}</strong></div>
+
+      {% if order.status == 'READY' or order.status == 'SHIPPED' or order.status == 'OUT_FOR_DELIVERY' or order.status == 'DELIVERED' %}
+      <div class="order-detail-payment-state customer-shipment-state" aria-live="polite">
+        <strong>{% if LANGUAGE_CODE == 'en' %}Delivery{% else %}التوصيل{% endif %}: {{ order|order_status_label:LANGUAGE_CODE }}</strong>
+        {% if order.shipping_carrier %}<span>{% if LANGUAGE_CODE == 'en' %}Carrier{% else %}شركة التوصيل{% endif %}: {{ order.shipping_carrier }}</span>{% endif %}
+        {% if order.tracking_number %}<span>{% if LANGUAGE_CODE == 'en' %}Tracking number{% else %}رقم التتبع{% endif %}: <b dir="ltr">{{ order.tracking_number }}</b></span>{% endif %}
+        {% if order.tracking_url %}<a class="btn btn-outline-dark" href="{{ order.tracking_url }}" target="_blank" rel="noopener noreferrer nofollow">{% if LANGUAGE_CODE == 'en' %}Track shipment{% else %}تتبع الشحنة{% endif %}</a>{% endif %}
+      </div>
+      {% endif %}
+
+      {% if reservation_active and reservation_deadline and order.payment_status != 'PAID' %}
+        <section class="checkout-expiry-card customer-order-expiry" data-checkout-expiry data-expires-at="{{ reservation_deadline|date:'c' }}" data-expired-url="{% url 'orders:detail' order.public_id %}" aria-live="polite">
+          <div class="checkout-expiry-icon" aria-hidden="true">⌛</div>
+          <div class="checkout-expiry-copy"><span>{% if LANGUAGE_CODE == 'en' %}Reservation time remaining{% else %}الوقت المتبقي للحجز{% endif %}</span><strong dir="ltr" data-checkout-countdown>--:--</strong><small data-checkout-expiry-message>{% if LANGUAGE_CODE == 'en' %}Refreshing does not extend the reservation.{% else %}تحديث الصفحة لا يمدد مدة الحجز.{% endif %}</small></div>
+        </section>
+      {% endif %}
+
+      {% if order.payment_status == 'PAID' %}
+        <div class="order-detail-payment-state is-paid" aria-live="polite">
+          <strong>{% if LANGUAGE_CODE == 'en' %}Payment received{% else %}تم استلام الدفعة{% endif %}</strong>
+          <span>{% if LANGUAGE_CODE == 'en' %}Your payment is confirmed. Fulfillment progress is shown above.{% else %}تم تأكيد دفعتك بنجاح ويمكنك متابعة تجهيز وتوصيل الطلب من المسار أعلاه.{% endif %}</span>
+        </div>
+      {% elif stripe_retry_allowed %}
+        <div class="order-detail-payment-state">
+          <div><strong>{% if LANGUAGE_CODE == 'en' %}Payment is still required{% else %}الدفع ما زال مطلوبًا لإكمال الطلب{% endif %}</strong><span>{% if LANGUAGE_CODE == 'en' %}You can securely resume payment for this saved order.{% else %}يمكنك إكمال الدفع الآمن لهذا الطلب المحفوظ دون إنشاء طلب جديد.{% endif %}</span></div>
+          <form method="post" action="{% url 'orders:stripe_payment_start' order.public_id %}" class="order-detail-payment-form">{% csrf_token %}<button class="btn btn-primary" type="submit" data-reservation-payment-button>{% if LANGUAGE_CODE == 'en' %}Pay securely with Stripe{% else %}الدفع الآن عبر Stripe{% endif %}</button></form>
+          <small>{% if LANGUAGE_CODE == 'en' %}Card details are entered on Stripe Checkout and are not stored by Haybat Al Sultan.{% else %}يتم إدخال بيانات البطاقة في صفحة Stripe الآمنة ولا يتم تخزينها لدى هيبة السلطان.{% endif %}</small>
+        </div>
+      {% endif %}
+      {% if manual_payment_enabled and whatsapp_url and order.payment_status != 'PAID' and order.status != 'CANCELLED' and order.status != 'RETURNED' %}
+        <div class="order-detail-payment-state"><div><strong>{% if LANGUAGE_CODE == 'en' %}Manual payment follow-up{% else %}إكمال الدفع بالتواصل مع الإدارة{% endif %}</strong><span>{% if LANGUAGE_CODE == 'en' %}Contact Haybat Al Sultan for transfer instructions. Payment is confirmed only after authorized staff verifies receipt.{% else %}تواصل مع إدارة هيبة السلطان للحصول على تعليمات التحويل. لا يعتبر الطلب مدفوعًا إلا بعد تحقق الموظف المخول من وصول المبلغ.{% endif %}</span></div><form method="post" action="{% url 'orders:manual_payment_start' order.public_id %}">{% csrf_token %}<button class="btn btn-outline-success" type="submit" data-reservation-payment-button>{% if LANGUAGE_CODE == 'en' %}Continue on WhatsApp{% else %}متابعة عبر واتساب{% endif %}</button></form></div>
+      {% endif %}
+    </section>
+
+    <aside class="order-proof-card customer-order-timeline-card">
+      <h2>{% if LANGUAGE_CODE == 'en' %}Order activity{% else %}سجل مراحل الطلب{% endif %}</h2>
+      <div class="order-timeline">{% for event in order.timeline.all %}<div class="timeline-event"><span></span><div><strong>{% if LANGUAGE_CODE == 'en' %}{{ event.label_en }}{% else %}{{ event.label_ar }}{% endif %}</strong><small>{{ event.created_at|date:"Y-m-d H:i" }}</small></div></div>{% empty %}<p>—</p>{% endfor %}</div>
+    </aside>
+  </div>
+</div></section>
+{% endblock %}
+
+{% block scripts %}
+  {{ block.super }}
+  <script src="{% static 'js/checkout-expiry.js' %}" defer></script>
+{% endblock %}

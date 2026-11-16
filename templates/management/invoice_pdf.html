@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<style>
+@page { size:A4; margin:12mm 13mm; }
+body{font-family:Arial, sans-serif;color:#302820;font-size:10px;direction:rtl}
+*{box-sizing:border-box}
+.header{width:100%;border-bottom:2px solid #d7a333;padding-bottom:12px;margin-bottom:14px}
+.header td{vertical-align:top}
+.logo{text-align:right;width:55%}.logo img{max-width:220px;max-height:82px}
+.identity{text-align:left;width:45%;direction:rtl}
+.kicker{font-size:14px;font-weight:bold;color:#8b5a12}.number{font-size:17px;font-weight:bold;direction:ltr}
+.muted{font-size:8px;color:#85735f}.badge{display:inline-block;margin-top:5px;padding:4px 8px;background:#fff5df;color:#744b0f;font-weight:bold;border:1px solid #dec690}
+.meta{width:100%;margin-bottom:14px;border-spacing:7px}
+.card{border:1px solid #eadfce;background:#fcfaf6;padding:10px;vertical-align:top}
+.label{font-size:8px;color:#96836c}.value{font-size:11px;font-weight:bold;margin-top:3px}
+.items{width:100%;border-collapse:collapse;margin-bottom:14px}
+.items th{background:#d7a333;color:#fff;padding:8px 6px;text-align:right;font-size:9px}
+.items td{border:1px solid #eee3d2;padding:9px 6px;text-align:right;vertical-align:middle}
+.items .num{direction:ltr;text-align:left;white-space:nowrap}.items .qty{text-align:center}
+.finance{width:100%;border-spacing:7px;margin-bottom:12px}
+.panel{width:50%;border:1px solid #e7d8c0;padding:10px;vertical-align:top}
+.panel.soft{background:#fcfaf6}.panel h2{font-size:11px;margin:0 0 7px}
+.rows{width:100%;border-collapse:collapse}.rows td{padding:5px 2px;border-bottom:1px solid #f0e7da}
+.rows .rlabel{color:#8c7a64}.rows .rvalue{text-align:left;font-weight:bold}
+.grand td{background:#fff5df;color:#714b12;font-weight:bold;font-size:11px}
+.footer{text-align:center;border-top:1px solid #eadcc7;padding-top:11px;color:#81715f}
+.footer img{max-width:70px;max-height:70px;margin-bottom:4px}.thanks{font-weight:bold;color:#754e14;font-size:10px}
+.contact{direction:ltr;font-size:8px}.note{font-size:7px;color:#9a8a76}
+</style>
+</head>
+<body>
+<table class="header"><tr>
+<td class="logo">{% if logo_data_uri %}<img src="{{ logo_data_uri }}">{% else %}<b>HAYBAT AL SULTAN</b>{% endif %}</td>
+<td class="identity"><div class="kicker">فاتورة</div><div class="number">{{ invoice.invoice_number }}</div><div class="muted">{{ invoice.issued_at|date:"d/m/Y · H:i" }}</div><div class="badge">{{ status_text }}</div></td>
+</tr></table>
+
+<table class="meta"><tr>
+<td class="card"><div class="label">العميل</div><div class="value">{{ customer_display }}</div>{% if invoice.customer_phone_snapshot %}<div class="muted" dir="ltr">{{ invoice.customer_phone_snapshot }}</div>{% endif %}</td>
+{% if invoice_setting.invoice_show_order_reference %}<td class="card"><div class="label">مرجع الطلب</div><div class="value" dir="ltr">{{ invoice.order_reference_snapshot }}</div><div class="muted">أُصدرت بواسطة {{ invoice.issued_by.username }}</div></td>{% endif %}
+</tr></table>
+
+<table class="items">
+<thead><tr><th>رقم القطعة</th><th>البيان</th><th>الكمية</th><th>سعر الوحدة</th><th>الإجمالي</th></tr></thead>
+<tbody>{% for item in invoice.items.all %}<tr><td class="num">{{ item.sku_snapshot|default:item.product_reference_snapshot }}</td><td>{{ item.name_ar_snapshot|default:item.name_en_snapshot }}</td><td class="qty">{{ item.quantity_snapshot }}</td><td class="num">{{ item.unit_price_snapshot|floatformat:2 }} {{ invoice.currency_snapshot }}</td><td class="num">{{ item.line_total_snapshot|floatformat:2 }} {{ invoice.currency_snapshot }}</td></tr>{% endfor %}</tbody>
+</table>
+
+<table class="finance"><tr>
+<td class="panel soft"><h2>الدفع والتسليم</h2><table class="rows">
+<tr><td class="rlabel">حالة الدفع</td><td class="rvalue">{{ payment_status_display }}</td></tr>
+<tr><td class="rlabel">طريقة الدفع</td><td class="rvalue">{{ payment_method_display }}</td></tr>
+{% if invoice.payment_due_date_snapshot %}<tr><td class="rlabel">تاريخ الاستحقاق</td><td class="rvalue">{{ invoice.payment_due_date_snapshot|date:"d/m/Y" }}</td></tr>{% endif %}
+<tr><td class="rlabel">التسليم</td><td class="rvalue">{{ delivery_display }}</td></tr>
+</table></td>
+<td class="panel"><h2>ملخص الفاتورة</h2><table class="rows">
+<tr><td class="rlabel">المجموع</td><td class="rvalue">{{ invoice.subtotal_snapshot|floatformat:2 }} {{ invoice.currency_snapshot }}</td></tr>
+{% if invoice.discount_total_snapshot %}<tr><td class="rlabel">الخصم</td><td class="rvalue">- {{ invoice.discount_total_snapshot|floatformat:2 }} {{ invoice.currency_snapshot }}</td></tr>{% endif %}
+{% if invoice.shipping_total_snapshot %}<tr><td class="rlabel">التوصيل</td><td class="rvalue">{{ invoice.shipping_total_snapshot|floatformat:2 }} {{ invoice.currency_snapshot }}</td></tr>{% endif %}
+{% if invoice.tax_total_snapshot %}<tr><td class="rlabel">الضريبة</td><td class="rvalue">{{ invoice.tax_total_snapshot|floatformat:2 }} {{ invoice.currency_snapshot }}</td></tr>{% endif %}
+<tr class="grand"><td>الإجمالي</td><td class="rvalue">{{ invoice.grand_total_snapshot|floatformat:2 }} {{ invoice.currency_snapshot }}</td></tr>
+<tr><td class="rlabel">المدفوع</td><td class="rvalue">{{ invoice.paid_total_snapshot|floatformat:2 }} {{ invoice.currency_snapshot }}</td></tr>
+{% if invoice.outstanding_snapshot %}<tr><td class="rlabel">المتبقي</td><td class="rvalue">{{ invoice.outstanding_snapshot|floatformat:2 }} {{ invoice.currency_snapshot }}</td></tr>{% endif %}
+</table></td>
+</tr></table>
+
+<div class="footer">
+{% if stamp_data_uri %}<img src="{{ stamp_data_uri }}">{% endif %}
+<div class="thanks">{{ invoice_setting.invoice_thank_you|default:"شكرًا لاختياركم هيبة السلطان" }}</div>
+<div>{{ invoice_setting.invoice_address|default:"أبوظبي، الإمارات العربية المتحدة" }}</div>
+<div class="contact">{% if invoice_setting.invoice_show_phone %}{{ invoice_setting.invoice_phone }}{% endif %}{% if invoice_setting.invoice_show_phone and invoice_setting.invoice_show_email %} · {% endif %}{% if invoice_setting.invoice_show_email %}{{ invoice_setting.invoice_email }}{% endif %}</div>
+{% if invoice_setting.invoice_footer_note %}<div class="note">{{ invoice_setting.invoice_footer_note }}</div>{% endif %}
+</div>
+</body></html>

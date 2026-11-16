@@ -1,0 +1,138 @@
+{% extends 'base.html' %}
+{% block title %}{{ page_title }} — HaybatAlsultan{% endblock %}
+{% block content %}
+<section class="management-page">
+  <div class="container management-shell py-4 py-lg-5">
+    {% include 'management/_page_header.html' with page_title=page_title page_description=page_description %}
+
+    <div class="product-reference-banner">
+      <div>
+        <span>{% if LANGUAGE_CODE == 'en' %}Product Reference{% else %}مرجع المنتج{% endif %}</span>
+        <strong dir="ltr">{{ product.product_reference }}</strong>
+      </div>
+      <div>
+        <span>SKU</span>
+        <strong dir="ltr">{{ product.sku }}</strong>
+      </div>
+      <div>
+        <span>{% if LANGUAGE_CODE == 'en' %}Images{% else %}الصور{% endif %}</span>
+        <strong>{{ images|length }} / {{ max_images }}</strong>
+      </div>
+    </div>
+
+    <section class="management-content-card product-image-upload-card">
+      <div class="content-card-title">
+        <svg class="ui-icon"><use href="#icon-camera"></use></svg>
+        <h2>{% if LANGUAGE_CODE == 'en' %}Upload product images{% else %}رفع صور المنتج{% endif %}</h2>
+      </div>
+
+      <p class="management-muted">
+        {% if LANGUAGE_CODE == 'en' %}
+          JPEG, PNG, WEBP and AVIF only. Maximum {{ max_image_mb }} MB per image. Files are validated by Django before being uploaded to Cloudinary.
+        {% else %}
+          يمكنك رفع 3 صور أو أي عدد تختاره حتى {{ max_images }} صور للمنتج. المتبقي حاليًا {{ remaining_images }}. الأنواع المسموحة JPEG وPNG وWEBP وAVIF فقط، وبحد أقصى {{ max_image_mb }} ميجابايت للصورة.
+        {% endif %}
+      </p>
+
+      <form method="post" enctype="multipart/form-data" class="cloudinary-upload-form" novalidate>
+        {% csrf_token %}
+        <div class="field-wrap">
+          <label for="{{ form.images.id_for_label }}">
+            {% if LANGUAGE_CODE == 'en' %}Choose images{% else %}اختر الصور{% endif %}
+          </label>
+          {{ form.images }}
+          {{ form.images.errors }}
+        </div>
+        <button type="submit" class="management-primary-btn">
+          {% if LANGUAGE_CODE == 'en' %}Upload to Cloudinary{% else %}رفع الصور إلى Cloudinary{% endif %}
+        </button>
+      </form>
+    </section>
+
+    {% if images %}
+      <div class="product-image-management-grid">
+        {% for image in images %}
+          <article class="management-content-card product-image-admin-card">
+            <div class="product-image-preview-wrap">
+              <img
+                src="{{ image.thumbnail_url }}"
+                alt="{{ image.alt_text_ar|default:product.name_ar }}"
+                class="product-image-admin-preview"
+                loading="lazy"
+              >
+              {% if image.is_primary %}
+                <span class="primary-image-badge">
+                  {% if LANGUAGE_CODE == 'en' %}Primary{% else %}الرئيسية{% endif %}
+                </span>
+              {% endif %}
+            </div>
+
+            <div class="product-image-meta">
+              <small dir="ltr">{{ image.format|upper }} · {{ image.width|default:'—' }}×{{ image.height|default:'—' }}</small>
+              <small>
+                {% if image.bytes %}
+                  {{ image.bytes|filesizeformat }}
+                {% endif %}
+              </small>
+            </div>
+
+            <form method="post" action="{% url 'core:management_product_image_update' product.public_id image.public_id %}" class="image-meta-form">
+              {% csrf_token %}
+              <div class="field-wrap">
+                <label for="alt-ar-{{ image.public_id }}">{% if LANGUAGE_CODE == 'en' %}Arabic alt text{% else %}النص البديل بالعربية{% endif %}</label>
+                <input id="alt-ar-{{ image.public_id }}" class="management-input" type="text" name="alt_text_ar" value="{{ image.alt_text_ar }}" maxlength="180">
+              </div>
+              <div class="field-wrap">
+                <label for="alt-en-{{ image.public_id }}">{% if LANGUAGE_CODE == 'en' %}English alt text{% else %}النص البديل بالإنجليزية{% endif %}</label>
+                <input id="alt-en-{{ image.public_id }}" class="management-input" type="text" name="alt_text_en" value="{{ image.alt_text_en }}" maxlength="180">
+              </div>
+              <div class="field-wrap compact-field">
+                <label for="sort-order-{{ image.public_id }}">{% if LANGUAGE_CODE == 'en' %}Sort order{% else %}الترتيب{% endif %}</label>
+                <input id="sort-order-{{ image.public_id }}" class="management-input" type="number" name="sort_order" min="0" max="9999" value="{{ image.sort_order }}">
+              </div>
+              <button class="management-secondary-btn" type="submit">
+                {% if LANGUAGE_CODE == 'en' %}Save image details{% else %}حفظ بيانات الصورة{% endif %}
+              </button>
+            </form>
+
+            <div class="product-image-actions">
+              {% if not image.is_primary %}
+                <form method="post" action="{% url 'core:management_product_image_primary' product.public_id image.public_id %}">
+                  {% csrf_token %}
+                  <button type="submit" class="management-secondary-btn">
+                    {% if LANGUAGE_CODE == 'en' %}Set as primary{% else %}تعيين كرئيسية{% endif %}
+                  </button>
+                </form>
+              {% endif %}
+
+              <form method="post" action="{% url 'core:management_product_image_delete' product.public_id image.public_id %}">
+                {% csrf_token %}
+                <button type="submit" class="management-danger-btn">
+                  {% if LANGUAGE_CODE == 'en' %}Delete image{% else %}حذف الصورة{% endif %}
+                </button>
+              </form>
+            </div>
+          </article>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="management-content-card management-empty-state">
+        <svg class="empty-icon"><use href="#icon-camera"></use></svg>
+        <strong>{% if LANGUAGE_CODE == 'en' %}No images uploaded yet{% else %}لم يتم رفع صور لهذا المنتج بعد{% endif %}</strong>
+      </div>
+    {% endif %}
+
+    <div class="management-form-actions mt-4">
+      <a class="management-primary-btn" href="{% url 'core:management_product_edit' product.public_id %}">
+        {% if LANGUAGE_CODE == 'en' %}Back to product{% else %}العودة إلى المنتج{% endif %}
+      </a>
+      <a class="management-secondary-btn" href="{% url 'core:management_products' %}">
+        {% if LANGUAGE_CODE == 'en' %}Back to products{% else %}العودة إلى المنتجات{% endif %}
+      </a>
+      <a class="management-secondary-btn" href="{% url 'core:management_dashboard' %}">
+        {% if LANGUAGE_CODE == 'en' %}Management dashboard{% else %}لوحة الإدارة{% endif %}
+      </a>
+    </div>
+  </div>
+</section>
+{% endblock %}

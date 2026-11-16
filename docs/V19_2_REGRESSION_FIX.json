@@ -1,0 +1,20 @@
+{
+  "version": "v19.2",
+  "fixes": [
+    "PromotionManagementForm no longer accesses unsaved many-to-many descriptors.",
+    "Owner product creation safely defaults omitted verification_status to NONE."
+  ],
+  "security_notes": [
+    "Omitted verification can never become INSPECTED or CERTIFIED.",
+    "Supervisor verification field remains removed server-side.",
+    "Promotion fixed-discount validation remains enforced; only the unsaved-M2M crash was corrected."
+  ],
+  "checks": {
+    "compileall": "PASS",
+    "ast": "PASS",
+    "static_security": "PASS",
+    "test_methods_present": 138
+  },
+  "full_django_suite_run_here": false,
+  "ast_errors": []
+}

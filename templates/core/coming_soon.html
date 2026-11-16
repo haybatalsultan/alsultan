@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}{{ page_title }} | {% if LANGUAGE_CODE == 'en' %}Haybat Al Sultan{% else %}هيبة السلطان{% endif %}{% endblock %}
+{% block content %}
+<section class="coming-soon-page">
+  <div class="container">
+    <div class="coming-soon-card">
+      <div class="coming-soon-mark" aria-hidden="true">◇</div>
+      <p class="coming-soon-kicker">{{ page_title }}</p>
+      <h1>{{ headline }}</h1>
+      <p class="coming-soon-copy">{{ page_body }}</p>
+      <div class="coming-soon-actions">
+        <a class="btn btn-gold" href="{% url 'core:home' %}">{% if LANGUAGE_CODE == 'en' %}Back to Home{% else %}العودة للرئيسية{% endif %}</a>
+        <a class="btn btn-outline-lux" href="{% url 'core:home' %}#contact-store">{% if LANGUAGE_CODE == 'en' %}Contact Us{% else %}تواصل معنا{% endif %}</a>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

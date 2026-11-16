@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+{% load expense_labels %}
+{% block title %}{% if LANGUAGE_CODE == 'en' %}Expenses{% else %}المصروفات{% endif %} — Haybat Al Sultan{% endblock %}
+{% block content %}
+<section class="management-page expense-register-page">
+  <div class="container management-shell py-4 py-lg-5">
+    {% include 'management/_page_header.html' with page_title=page_title page_description=page_description %}
+
+    <div class="expense-toolbar">
+      <a class="management-primary-btn" href="{% url 'core:management_expense_create' %}">{% if LANGUAGE_CODE == 'en' %}Add expense{% else %}إضافة مصروف{% endif %}</a>
+      <a class="management-secondary-btn" href="{% url 'core:management_smart_accountant' %}">{% if LANGUAGE_CODE == 'en' %}Smart Accountant{% else %}المحاسب الذكي{% endif %}</a>
+    </div>
+
+    <form method="get" class="expense-filter" aria-label="{% if LANGUAGE_CODE == 'en' %}Expense filters{% else %}فلاتر المصروفات{% endif %}">
+      <label class="expense-filter-category">
+        <span>{% if LANGUAGE_CODE == 'en' %}Category{% else %}التصنيف{% endif %}</span>
+        <select name="category">
+          <option value="">{% if LANGUAGE_CODE == 'en' %}All categories{% else %}جميع التصنيفات{% endif %}</option>
+          {% for value,label in expense_categories %}
+            <option value="{{ value }}" {% if selected_category == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <div class="expense-filter-actions">
+        <button class="management-secondary-btn" type="submit">{% if LANGUAGE_CODE == 'en' %}Apply{% else %}تطبيق{% endif %}</button>
+        {% if selected_category %}<a class="management-reset-btn" href="{% url 'core:management_expenses' %}">{% if LANGUAGE_CODE == 'en' %}Reset{% else %}إعادة تعيين{% endif %}</a>{% endif %}
+      </div>
+    </form>
+
+    <div class="management-content-card management-table-wrap expense-table-wrap">
+      <table class="table management-table expense-table align-middle mb-0">
+        <thead><tr>
+          <th>{% if LANGUAGE_CODE == 'en' %}Date{% else %}التاريخ{% endif %}</th>
+          <th>{% if LANGUAGE_CODE == 'en' %}Category{% else %}التصنيف{% endif %}</th>
+          <th>{% if LANGUAGE_CODE == 'en' %}Description{% else %}الوصف{% endif %}</th>
+          <th>{% if LANGUAGE_CODE == 'en' %}Supplier{% else %}المورد{% endif %}</th>
+          <th>{% if LANGUAGE_CODE == 'en' %}Amount{% else %}المبلغ{% endif %}</th>
+          <th>{% if LANGUAGE_CODE == 'en' %}Status{% else %}الحالة{% endif %}</th>
+          <th>{% if LANGUAGE_CODE == 'en' %}Actions{% else %}الإجراءات{% endif %}</th>
+        </tr></thead>
+        <tbody>
+          {% for expense in page_obj %}
+          <tr class="{% if expense.status == 'VOIDED' %}expense-row-voided{% endif %}">
+            <td data-label="{% if LANGUAGE_CODE == 'en' %}Date{% else %}التاريخ{% endif %}">{{ expense.incurred_on|date:"Y-m-d" }}</td>
+            <td data-label="{% if LANGUAGE_CODE == 'en' %}Category{% else %}التصنيف{% endif %}"><span class="expense-category-chip">{% expense_category_label expense.category %}</span></td>
+            <td data-label="{% if LANGUAGE_CODE == 'en' %}Description{% else %}الوصف{% endif %}"><strong>{{ expense.description }}</strong>{% if expense.invoice_reference %}<small class="table-subtext">{{ expense.invoice_reference }}</small>{% endif %}{% if expense.order_id %}<small class="table-subtext" dir="ltr">{{ expense.order.reference }}</small>{% endif %}</td>
+            <td data-label="{% if LANGUAGE_CODE == 'en' %}Supplier{% else %}المورد{% endif %}">{{ expense.supplier|default:'—' }}</td>
+            <td data-label="{% if LANGUAGE_CODE == 'en' %}Amount{% else %}المبلغ{% endif %}" dir="ltr"><strong>AED {{ expense.amount|floatformat:2 }}</strong></td>
+            <td data-label="{% if LANGUAGE_CODE == 'en' %}Status{% else %}الحالة{% endif %}"><span class="status-chip {% if expense.status == 'VOIDED' %}status-chip-muted{% endif %}">{% expense_status_label expense.status %}</span></td>
+            <td data-label="{% if LANGUAGE_CODE == 'en' %}Actions{% else %}الإجراءات{% endif %}">{% if expense.status == 'ACTIVE' %}<div class="expense-actions"><a href="{% url 'core:management_expense_edit' expense.public_id %}">{% if LANGUAGE_CODE == 'en' %}Edit{% else %}تعديل{% endif %}</a><a class="danger" href="{% url 'core:management_expense_void' expense.public_id %}">{% if LANGUAGE_CODE == 'en' %}Void{% else %}إلغاء{% endif %}</a></div>{% else %}<small>{{ expense.void_reason }}</small>{% endif %}</td>
+          </tr>
+          {% empty %}
+          <tr class="expense-empty-row"><td colspan="7"><div class="expense-empty-state"><span class="expense-empty-icon" aria-hidden="true"><svg class="ui-icon"><use href="#icon-wallet"></use></svg></span><strong>{% if LANGUAGE_CODE == 'en' %}No expenses recorded yet{% else %}لا توجد مصروفات مسجلة حتى الآن{% endif %}</strong><p>{% if LANGUAGE_CODE == 'en' %}Add the first operating expense to start tracking boxes, bags, packaging and other store costs.{% else %}أضف أول مصروف تشغيلي لبدء متابعة الصناديق والأكياس والتغليف وباقي تكاليف المتجر.{% endif %}</p><a class="management-primary-btn" href="{% url 'core:management_expense_create' %}">{% if LANGUAGE_CODE == 'en' %}Add first expense{% else %}إضافة أول مصروف{% endif %}</a></div></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% include 'management/_pagination.html' with page_obj=page_obj pagination_query=pagination_query %}
+  </div>
+</section>
+{% endblock %}

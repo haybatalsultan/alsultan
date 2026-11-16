@@ -1,0 +1,143 @@
+{% extends 'base.html' %}
+{% block title %}{{ title }} — Haybat Al Sultan{% endblock %}
+{% block content %}
+<section class="management-page supervisor-create-page">
+  <div class="container management-shell management-form-shell py-4 py-lg-5">
+    {% include 'management/_page_header.html' with page_title=title page_description=page_description %}
+
+    <div class="supervisor-stepper" aria-label="{% if LANGUAGE_CODE == 'en' %}Supervisor setup steps{% else %}خطوات إعداد المشرف{% endif %}">
+      <div class="supervisor-step active">
+        <span>1</span>
+        <div>
+          <strong>{% if LANGUAGE_CODE == 'en' %}Create account{% else %}إنشاء الحساب{% endif %}</strong>
+          <small>{% if LANGUAGE_CODE == 'en' %}Identity and sign-in details{% else %}بيانات الهوية وتسجيل الدخول{% endif %}</small>
+        </div>
+      </div>
+      <div class="supervisor-step-line"></div>
+      <div class="supervisor-step">
+        <span>2</span>
+        <div>
+          <strong>{% if LANGUAGE_CODE == 'en' %}Assign permissions{% else %}منح الصلاحيات{% endif %}</strong>
+          <small>{% if LANGUAGE_CODE == 'en' %}Separate least-privilege step{% else %}خطوة منفصلة بأقل صلاحية{% endif %}</small>
+        </div>
+      </div>
+    </div>
+
+    <div class="management-security-note supervisor-security-note">
+      <svg class="ui-icon"><use href="#icon-shield"></use></svg>
+      <div>
+        <strong>{% if LANGUAGE_CODE == 'en' %}Secure supervisor provisioning{% else %}إنشاء مشرف بطريقة آمنة{% endif %}</strong>
+        <span>
+          {% if LANGUAGE_CODE == 'en' %}
+            The account is created with no management permissions. You will assign only the required permissions on the next page. MFA enrollment is mandatory for the supervisor on first sign-in before Management Portal access.
+          {% else %}
+            يتم إنشاء الحساب بدون أي صلاحيات إدارية، وبعد الحفظ ستنتقل إلى صفحة مستقلة لمنح الصلاحيات المطلوبة فقط. عند أول تسجيل دخول للمشرف سيكون تفعيل التحقق بخطوتين MFA إلزاميًا قبل دخول بوابة الإدارة.
+          {% endif %}
+        </span>
+      </div>
+    </div>
+
+    <div class="management-content-card supervisor-create-card">
+      <form method="post" class="management-form supervisor-create-form" novalidate>
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+          <div class="management-form-errors">{{ form.non_field_errors }}</div>
+        {% endif %}
+
+        <section class="supervisor-form-section">
+          <div class="supervisor-form-section-head">
+            <span class="supervisor-section-icon"><svg class="ui-icon"><use href="#icon-user"></use></svg></span>
+            <div>
+              <h2>{% if LANGUAGE_CODE == 'en' %}Account identity{% else %}بيانات الحساب{% endif %}</h2>
+              <p>{% if LANGUAGE_CODE == 'en' %}Use a clear username and the supervisor's official email.{% else %}استخدم اسم مستخدم واضحًا والبريد الرسمي للمشرف.{% endif %}</p>
+            </div>
+          </div>
+
+          <div class="management-form-grid">
+            <div class="management-field">
+              {{ form.username.label_tag }}
+              {{ form.username }}
+              {% if form.username.help_text %}<div class="management-helptext">{{ form.username.help_text }}</div>{% endif %}
+              {% if form.username.errors %}<div class="management-field-errors">{{ form.username.errors }}</div>{% endif %}
+            </div>
+            <div class="management-field">
+              {{ form.email.label_tag }}
+              {{ form.email }}
+              {% if form.email.errors %}<div class="management-field-errors">{{ form.email.errors }}</div>{% endif %}
+            </div>
+            <div class="management-field">
+              {{ form.first_name.label_tag }}
+              {{ form.first_name }}
+              {% if form.first_name.errors %}<div class="management-field-errors">{{ form.first_name.errors }}</div>{% endif %}
+            </div>
+            <div class="management-field">
+              {{ form.last_name.label_tag }}
+              {{ form.last_name }}
+              {% if form.last_name.errors %}<div class="management-field-errors">{{ form.last_name.errors }}</div>{% endif %}
+            </div>
+          </div>
+        </section>
+
+        <section class="supervisor-form-section">
+          <div class="supervisor-form-section-head">
+            <span class="supervisor-section-icon"><svg class="ui-icon"><use href="#icon-phone"></use></svg></span>
+            <div>
+              <h2>{% if LANGUAGE_CODE == 'en' %}Contact details{% else %}بيانات الاتصال{% endif %}</h2>
+              <p>{% if LANGUAGE_CODE == 'en' %}The number is validated against the selected country and stored in E.164 format.{% else %}يتم التحقق من الرقم حسب الدولة المختارة وحفظه بصيغة E.164 القياسية.{% endif %}</p>
+            </div>
+          </div>
+
+          <div class="management-form-grid">
+            <div class="management-field">
+              {{ form.country.label_tag }}
+              {{ form.country }}
+              {% if form.country.errors %}<div class="management-field-errors">{{ form.country.errors }}</div>{% endif %}
+            </div>
+            <div class="management-field">
+              {{ form.phone_local.label_tag }}
+              {{ form.phone_local }}
+              {% if form.phone_local.help_text %}<div class="management-helptext">{{ form.phone_local.help_text }}</div>{% endif %}
+              {% if form.phone_local.errors %}<div class="management-field-errors">{{ form.phone_local.errors }}</div>{% endif %}
+            </div>
+          </div>
+        </section>
+
+        <section class="supervisor-form-section">
+          <div class="supervisor-form-section-head">
+            <span class="supervisor-section-icon"><svg class="ui-icon"><use href="#icon-lock"></use></svg></span>
+            <div>
+              <h2>{% if LANGUAGE_CODE == 'en' %}Sign-in security{% else %}أمان تسجيل الدخول{% endif %}</h2>
+              <p>{% if LANGUAGE_CODE == 'en' %}Set a strong temporary password and share it through a secure channel.{% else %}عيّن كلمة مرور قوية وشاركها مع المشرف عبر قناة آمنة.{% endif %}</p>
+            </div>
+          </div>
+
+          <div class="management-form-grid">
+            <div class="management-field">
+              {{ form.password1.label_tag }}
+              {{ form.password1 }}
+              {% if form.password1.help_text %}<div class="management-helptext password-help">{{ form.password1.help_text }}</div>{% endif %}
+              {% if form.password1.errors %}<div class="management-field-errors">{{ form.password1.errors }}</div>{% endif %}
+            </div>
+            <div class="management-field">
+              {{ form.password2.label_tag }}
+              {{ form.password2 }}
+              {% if form.password2.help_text %}<div class="management-helptext">{{ form.password2.help_text }}</div>{% endif %}
+              {% if form.password2.errors %}<div class="management-field-errors">{{ form.password2.errors }}</div>{% endif %}
+            </div>
+          </div>
+        </section>
+
+        <div class="management-form-actions management-form-actions-polished supervisor-create-actions">
+          <a class="management-secondary-btn" href="{% url 'core:management_supervisors' %}">
+            {% if LANGUAGE_CODE == 'en' %}Cancel and return{% else %}إلغاء والعودة{% endif %}
+          </a>
+          <button class="management-primary-btn" type="submit">
+            {% if LANGUAGE_CODE == 'en' %}Create and continue to permissions{% else %}إنشاء الحساب والانتقال للصلاحيات{% endif %}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</section>
+{% endblock %}

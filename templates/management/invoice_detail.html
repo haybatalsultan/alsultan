@@ -1,0 +1,104 @@
+{% extends 'base.html' %}
+{% load order_labels %}
+{% block title %}{{ invoice.invoice_number }} — Haybat Al Sultan{% endblock %}
+{% block content %}
+<section class="management-page invoice-management-page">
+  <div class="container management-shell py-4 py-lg-5">
+    <div class="invoice-toolbar no-print">
+      <a class="management-secondary-btn" href="{% url 'core:management_order' invoice.order.public_id %}">العودة للطلب</a>
+      <div>
+        {% if request.user.role == 'OWNER' %}<a class="management-secondary-btn" href="{% url 'core:management_invoice_settings' %}">إعدادات الفاتورة</a>{% endif %}
+        <button class="management-secondary-btn" type="button" onclick="window.print()">طباعة A4</button>
+        <a class="management-primary-btn" href="{% url 'core:management_invoice_pdf' invoice.public_id %}">تحميل PDF</a>
+      </div>
+    </div>
+
+    <article class="haybat-invoice modern-arabic-invoice" dir="rtl" aria-label="فاتورة">
+      <header class="modern-invoice-header">
+        <div class="modern-brand-lockup">
+          {% if invoice_setting.invoice_logo_url %}<img src="{{ invoice_setting.invoice_logo_url }}" alt="{{ invoice_setting.invoice_business_name }}">{% else %}<img src="/static/branding/logo-header.png" alt="Haybat Al Sultan">{% endif %}
+        </div>
+        <div class="modern-invoice-identity">
+          <div class="modern-invoice-kicker">فاتورة</div>
+          <strong dir="ltr">{{ invoice.invoice_number }}</strong>
+          <time dir="ltr">{{ invoice.issued_at|date:"d/m/Y · H:i" }}</time>
+          {% if invoice.payment_status_snapshot == 'PAID' %}
+          <span class="modern-status-badge is-paid">✓ مدفوع</span>
+          {% elif invoice.payment_status_snapshot == 'PARTIALLY_PAID' %}
+          <span class="modern-status-badge is-partial">مدفوع جزئيًا{% if invoice.outstanding_snapshot %} · المتبقي <b dir="ltr">{{ invoice.outstanding_snapshot|floatformat:2 }} {{ invoice.currency_snapshot }}</b>{% endif %}</span>
+          {% elif invoice.payment_method_snapshot == 'DEFERRED' %}
+          <span class="modern-status-badge is-deferred">مؤجل{% if invoice.payment_due_date_snapshot %} · مستحق <b dir="ltr">{{ invoice.payment_due_date_snapshot|date:"d/m/Y" }}</b>{% endif %}</span>
+          {% else %}
+          <span class="modern-status-badge">غير مدفوع</span>
+          {% endif %}
+        </div>
+      </header>
+
+      <section class="modern-invoice-meta">
+        <article>
+          <span>العميل</span>
+          <strong>{% if invoice.customer_name_snapshot == 'Direct Customer' or not invoice.customer_name_snapshot %}عميل مباشر{% else %}{{ invoice.customer_name_snapshot }}{% endif %}</strong>
+          {% if invoice.customer_phone_snapshot %}<small dir="ltr">{{ invoice.customer_phone_snapshot }}</small>{% endif %}
+        </article>
+        {% if invoice_setting.invoice_show_order_reference %}
+        <article>
+          <span>مرجع الطلب</span>
+          <strong dir="ltr">{{ invoice.order_reference_snapshot }}</strong>
+          <small>أُصدرت بواسطة {{ invoice.issued_by.username }}</small>
+        </article>
+        {% endif %}
+      </section>
+
+      <div class="modern-invoice-table-wrap">
+        <table class="modern-invoice-table">
+          <thead><tr><th>رقم القطعة</th><th>البيان</th><th>الكمية</th><th>سعر الوحدة</th><th>الإجمالي</th></tr></thead>
+          <tbody>
+          {% for item in invoice.items.all %}
+          <tr>
+            <td dir="ltr">{{ item.sku_snapshot|default:item.product_reference_snapshot }}</td>
+            <td>{{ item.name_ar_snapshot|default:item.name_en_snapshot }}{% if item.requested_bead_count_snapshot and item.original_bead_count_snapshot and item.requested_bead_count_snapshot < item.original_bead_count_snapshot %}<div class="invoice-bead-service">ضبط الخرز: {{ item.original_bead_count_snapshot }} ← {{ item.requested_bead_count_snapshot }} · مجانًا</div>{% endif %}</td>
+            <td>{{ item.quantity_snapshot }}</td>
+            <td dir="ltr">{{ item.unit_price_snapshot|floatformat:2 }} {{ invoice.currency_snapshot }}</td>
+            <td dir="ltr">{{ item.line_total_snapshot|floatformat:2 }} {{ invoice.currency_snapshot }}</td>
+          </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <section class="modern-invoice-finance">
+        <div class="modern-info-card">
+          <h2>الدفع والتسليم</h2>
+          <dl>
+            <div><dt>حالة الدفع</dt><dd>{{ invoice.payment_status_snapshot|payment_status_label }}</dd></div>
+            <div><dt>طريقة الدفع</dt><dd>{% if invoice.payment_method_snapshot == 'UNSET' and invoice.payment_status_snapshot == 'PAID' %}مدفوع / مؤكد{% else %}{{ invoice.payment_method_snapshot|payment_method_label }}{% endif %}</dd></div>
+            {% if invoice.payment_due_date_snapshot %}<div><dt>تاريخ الاستحقاق</dt><dd dir="ltr">{{ invoice.payment_due_date_snapshot|date:"d/m/Y" }}</dd></div>{% endif %}
+            <div><dt>التسليم</dt><dd>{% if invoice.delivery_method_snapshot == 'HAND_TO_HAND' %}استلام يدًا بيد{% else %}توصيل{% endif %}</dd></div>
+          </dl>
+        </div>
+
+        <div class="modern-summary-card">
+          <h2>ملخص الفاتورة</h2>
+          <dl>
+            <div><dt>المجموع</dt><dd dir="ltr">{{ invoice.subtotal_snapshot|floatformat:2 }} {{ invoice.currency_snapshot }}</dd></div>
+            {% if invoice.discount_total_snapshot %}<div><dt>الخصم</dt><dd dir="ltr">- {{ invoice.discount_total_snapshot|floatformat:2 }} {{ invoice.currency_snapshot }}</dd></div>{% endif %}
+            {% if invoice.shipping_total_snapshot %}<div><dt>التوصيل</dt><dd dir="ltr">{{ invoice.shipping_total_snapshot|floatformat:2 }} {{ invoice.currency_snapshot }}</dd></div>{% endif %}
+            {% if invoice.tax_total_snapshot %}<div><dt>الضريبة</dt><dd dir="ltr">{{ invoice.tax_total_snapshot|floatformat:2 }} {{ invoice.currency_snapshot }}</dd></div>{% endif %}
+            <div class="modern-grand-total"><dt>الإجمالي</dt><dd dir="ltr">{{ invoice.grand_total_snapshot|floatformat:2 }} {{ invoice.currency_snapshot }}</dd></div>
+            <div><dt>المدفوع</dt><dd dir="ltr">{{ invoice.paid_total_snapshot|floatformat:2 }} {{ invoice.currency_snapshot }}</dd></div>
+            {% if invoice.outstanding_snapshot %}<div class="modern-outstanding"><dt>المتبقي</dt><dd dir="ltr">{{ invoice.outstanding_snapshot|floatformat:2 }} {{ invoice.currency_snapshot }}</dd></div>{% endif %}
+          </dl>
+        </div>
+      </section>
+
+      <footer class="modern-invoice-footer">
+        {% if invoice_setting.invoice_stamp_url and invoice_setting.invoice_stamp_mode != 'NEVER' %}{% if invoice_setting.invoice_stamp_mode == 'ALWAYS' or invoice.payment_status_snapshot == 'PAID' %}<img class="invoice-stamp" src="{{ invoice_setting.invoice_stamp_url }}" alt="ختم المتجر">{% endif %}{% endif %}
+        <strong>{{ invoice_setting.invoice_thank_you|default:"شكرًا لاختياركم هيبة السلطان" }}</strong>
+        <p>{{ invoice_setting.invoice_address|default:"أبوظبي، الإمارات العربية المتحدة" }}</p>
+        <p class="modern-invoice-contact">{% if invoice_setting.invoice_show_phone %}<span dir="ltr">{{ invoice_setting.invoice_phone }}</span>{% endif %}{% if invoice_setting.invoice_show_phone and invoice_setting.invoice_show_email %}<i>•</i>{% endif %}{% if invoice_setting.invoice_show_email %}<span>{{ invoice_setting.invoice_email }}</span>{% endif %}</p>
+        {% if invoice_setting.invoice_footer_note %}<small>{{ invoice_setting.invoice_footer_note }}</small>{% endif %}
+      </footer>
+    </article>
+  </div>
+</section>
+{% endblock %}

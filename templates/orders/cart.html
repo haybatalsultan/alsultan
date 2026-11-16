@@ -1,0 +1,127 @@
+{% extends 'base.html' %}
+{% block title %}{% if LANGUAGE_CODE == 'en' %}Shopping Cart{% else %}سلة التسوق{% endif %} — {% if LANGUAGE_CODE == 'en' %}Haybat Al Sultan{% else %}هيبة السلطان{% endif %}{% endblock %}
+{% block content %}
+<div class="container py-4 py-lg-5 cart-page cart-page-v20132" data-cart-live-status-url="{% url 'orders:cart_status' %}" data-cart-live-count="{{ cart_count }}">
+  <header class="cart-hero">
+    <div class="cart-hero-copy">
+      <span class="cart-eyebrow">{% if LANGUAGE_CODE == 'en' %}Your Selection{% else %}اختياراتك من هيبة السلطان{% endif %}</span>
+      <h1>{% if LANGUAGE_CODE == 'en' %}Shopping Cart{% else %}سلة التسوق{% endif %}</h1>
+      <p>{% if LANGUAGE_CODE == 'en' %}Review your pieces before checkout. Adding an item to the cart does not reserve inventory; reservation starts securely at checkout.{% else %}راجع قطعك قبل إتمام الطلب. إضافة القطعة للسلة لا تحجز المخزون؛ يبدأ الحجز الآمن عند إتمام الطلب فقط.{% endif %}</p>
+    </div>
+    <a class="cart-continue-link cart-continue-pill" href="{% url 'catalog:list' %}"><span aria-hidden="true">＋</span>{% if LANGUAGE_CODE == 'en' %}Continue shopping{% else %}إضافة قطع أخرى{% endif %}</a>
+  </header>
+
+  {% if cart_items %}
+  <div class="cart-trust-strip" aria-label="{% if LANGUAGE_CODE == 'en' %}Cart protection{% else %}حماية السلة{% endif %}">
+    <div><svg class="ui-icon"><use href="#icon-shield"></use></svg><span>{% if LANGUAGE_CODE == 'en' %}Secure server-side checkout{% else %}إتمام طلب محمي من السيرفر{% endif %}</span></div>
+    <div><svg class="ui-icon"><use href="#icon-clock"></use></svg><span>{% if LANGUAGE_CODE == 'en' %}10-minute reservation at payment step{% else %}حجز 10 دقائق عند مرحلة الدفع{% endif %}</span></div>
+    <div><svg class="ui-icon"><use href="#icon-cart"></use></svg><span>{% if LANGUAGE_CODE == 'en' %}{{ cart_count }} item{{ cart_count|pluralize }} selected{% else %}{{ cart_count }} قطع مختارة{% endif %}</span></div>
+  </div>
+  {% endif %}
+
+  <div class="cart-layout cart-layout-premium mt-3">
+    <section class="card-lux cart-items-card cart-items-premium" data-cart-items>
+      {% for item in cart_items %}
+        <article class="cart-product-row cart-product-row-premium" data-cart-row data-item-id="{{ item.id }}">
+          <div class="cart-product-visual">
+            {% with img=item.product.images.first %}
+              {% if img %}<img src="{{ img.thumbnail_url }}" alt="{% if LANGUAGE_CODE == 'en' %}{{ item.product.name_en }}{% else %}{{ item.product.name_ar }}{% endif %}" loading="lazy">
+              {% else %}<div class="cart-product-placeholder">HS</div>{% endif %}
+            {% endwith %}
+          </div>
+          <div class="cart-product-info">
+            <div class="cart-product-meta"><span class="cart-product-sku" dir="ltr">{{ item.product.sku }}</span><span class="cart-availability-chip"><span></span>{% if LANGUAGE_CODE == 'en' %}Available until checkout{% else %}متاحة حتى بدء إتمام الطلب{% endif %}</span></div>
+            <a href="{% url 'catalog:detail' item.product.public_id %}"><strong>{% if LANGUAGE_CODE == 'en' %}{{ item.product.name_en }}{% else %}{{ item.product.name_ar }}{% endif %}</strong></a>
+            <span class="cart-product-unit-price">AED {{ item.product.effective_price }}</span>
+            <div class="cart-reservation-info"><svg class="ui-icon"><use href="#icon-clock"></use></svg><span>{% if LANGUAGE_CODE == 'en' %}This item is not reserved yet. Secure reservation starts when you proceed to checkout.{% else %}هذه القطعة غير محجوزة الآن. يبدأ الحجز الآمن عند الانتقال لإتمام الطلب.{% endif %}</span></div>
+            {% if bead_adjustment_enabled and item.product.bead_count and item.product.bead_count > 33 %}
+            <form method="post" action="{% url 'orders:cart_bead_adjustment' item.id %}" class="bead-adjustment-card">
+              {% csrf_token %}
+              <div><strong>خدمة ضبط عدد الخرز — مجانية</strong><span>عدد الخرز الحالي: {{ item.product.bead_count }} خرزة</span></div>
+              <label>العدد المطلوب <input type="number" name="requested_bead_count" min="33" max="{{ item.product.bead_count }}" value="{{ item.requested_bead_count|default:item.product.bead_count }}" inputmode="numeric"></label>
+              <small>يمكنك اختيار أي عدد من 33 إلى {{ item.product.bead_count }}. اختيار العدد الأصلي يعني بدون تعديل.</small>
+              <button type="submit">حفظ الاختيار</button>
+            </form>
+            {% endif %}
+          </div>
+          <div class="cart-product-controls">
+            <form method="post" action="{% url 'orders:cart_quantity' item.id %}" class="cart-quantity-form" data-cart-quantity-form>
+              {% csrf_token %}
+              <div class="quantity-stepper">
+                <button type="button" class="quantity-btn" data-qty-minus aria-label="{% if LANGUAGE_CODE == 'en' %}Decrease quantity{% else %}تقليل الكمية{% endif %}">−</button>
+                <input type="number" name="quantity" value="{{ item.quantity }}" min="1" max="{{ item.ui_max_quantity }}" inputmode="numeric" aria-label="{% if LANGUAGE_CODE == 'en' %}Quantity{% else %}الكمية{% endif %}" data-qty-input>
+                <button type="button" class="quantity-btn" data-qty-plus aria-label="{% if LANGUAGE_CODE == 'en' %}Increase quantity{% else %}زيادة الكمية{% endif %}">+</button>
+              </div>
+            </form>
+            <div class="cart-line-total">AED <span data-line-total>{{ item.display_line_total|floatformat:2 }}</span></div>
+            <form method="post" action="{% url 'orders:cart_expire' item.id %}" data-cart-expire-form hidden>{% csrf_token %}</form>
+            <form method="post" action="{% url 'orders:cart_remove' item.id %}" data-cart-remove-form>{% csrf_token %}<button class="cart-remove-button" type="submit" aria-label="{% if LANGUAGE_CODE == 'en' %}Remove item{% else %}حذف القطعة{% endif %}"><span aria-hidden="true">×</span><span>{% if LANGUAGE_CODE == 'en' %}Remove{% else %}حذف{% endif %}</span></button></form>
+          </div>
+        </article>
+      {% empty %}
+        <div class="cart-empty-state" data-cart-empty>
+          <span class="cart-empty-icon"><svg class="ui-icon"><use href="#icon-cart"></use></svg></span>
+          <h2>{% if LANGUAGE_CODE == 'en' %}Your cart is empty{% else %}سلتك فارغة{% endif %}</h2>
+          <p>{% if LANGUAGE_CODE == 'en' %}Explore the collection and choose the piece that suits you.{% else %}استكشف المجموعة واختر القطعة التي تليق بك.{% endif %}</p>
+          <a class="btn btn-gold" href="{% url 'catalog:list' %}">{% if LANGUAGE_CODE == 'en' %}Shop Now{% else %}تسوق الآن{% endif %}</a>
+        </div>
+      {% endfor %}
+    </section>
+
+    {% if cart_items %}
+    <aside class="cart-sidebar-premium">
+      <section class="card-lux cart-summary-card" data-cart-summary>
+        <div class="cart-summary-title"><span>{% if LANGUAGE_CODE == 'en' %}Order summary{% else %}ملخص السلة{% endif %}</span><span class="cart-summary-count">{{ cart_count }}</span></div>
+        <div class="cart-summary-row"><span>{% if LANGUAGE_CODE == 'en' %}Selected items{% else %}القطع المختارة{% endif %}</span><strong>{{ cart_count }}</strong></div>
+        <div class="cart-summary-row cart-summary-total"><span>{% if LANGUAGE_CODE == 'en' %}Total{% else %}الإجمالي{% endif %}</span><b dir="ltr">AED <span data-cart-grand-total>{{ totals.grand_total }}</span></b></div>
+        <a class="btn btn-gold w-100 cart-checkout-button" data-cart-checkout href="{% url 'orders:checkout' %}">{% if LANGUAGE_CODE == 'en' %}Proceed to secure checkout{% else %}متابعة لإتمام الطلب الآمن{% endif %}</a>
+        <div class="cart-summary-security"><svg class="ui-icon"><use href="#icon-shield"></use></svg><span>{% if LANGUAGE_CODE == 'en' %}Availability and price are revalidated by the server before reservation.{% else %}يُعاد التحقق من توفر القطع والأسعار من السيرفر قبل بدء الحجز.{% endif %}</span></div>
+      </section>
+
+      <section class="card-lux reservation-limit-card{% if over_checkout_limit %} is-over-limit{% elif active_reservation_override %} is-approved{% endif %}">
+        <div class="reservation-limit-head">
+          <span class="reservation-limit-icon"><svg class="ui-icon"><use href="#icon-clock"></use></svg></span>
+          <div><span class="cart-eyebrow">{% if LANGUAGE_CODE == 'en' %}Inventory protection{% else %}حماية توفر القطع{% endif %}</span><h2>{% if LANGUAGE_CODE == 'en' %}Checkout reservation limit{% else %}حد الحجز عند إتمام الطلب{% endif %}</h2></div>
+        </div>
+        {% if active_reservation_override %}
+          <div class="reservation-approved-banner"><svg class="ui-icon"><use href="#icon-shield"></use></svg><div><strong>{% if LANGUAGE_CODE == 'en' %}Temporary limit approved{% else %}تم تفعيل حد مؤقت لك{% endif %}</strong><span>{% if LANGUAGE_CODE == 'en' %}You may reserve up to {{ effective_reservation_limit }} items until {{ active_reservation_override.expires_at|date:"H:i" }}.{% else %}يمكنك حجز حتى {{ effective_reservation_limit }} قطع حتى الساعة {{ active_reservation_override.expires_at|date:"H:i" }}.{% endif %}</span></div></div>
+        {% elif over_checkout_limit %}
+          <p>{% if LANGUAGE_CODE == 'en' %}Your cart contains {{ cart_count }} items while the standard checkout reservation limit is {{ effective_reservation_limit }}. Request a temporary increase or contact us on WhatsApp.{% else %}تحتوي سلتك على {{ cart_count }} قطع بينما الحد القياسي للحجز عند إتمام الطلب هو {{ effective_reservation_limit }} قطع. يمكنك طلب رفع الحد مؤقتًا أو التواصل معنا عبر واتساب.{% endif %}</p>
+          {% if pending_limit_request %}
+            <div class="reservation-pending-banner"><span class="reservation-pulse"></span><div><strong>{% if LANGUAGE_CODE == 'en' %}Request sent to management{% else %}تم إرسال الطلب إلى الإدارة{% endif %}</strong><span>{% if LANGUAGE_CODE == 'en' %}Requested limit: {{ pending_limit_request.requested_items }} items. Refresh this page after approval.{% else %}العدد المطلوب: {{ pending_limit_request.requested_items }} قطع. حدّث الصفحة بعد اعتماد الإدارة.{% endif %}</span></div></div>
+          {% else %}
+            {% if user.is_authenticated %}
+            <form method="post" action="{% url 'orders:reservation_limit_request' %}" class="reservation-request-form">{% csrf_token %}<button class="reservation-request-primary" type="submit"><svg class="ui-icon"><use href="#icon-shield"></use></svg><span>{% if LANGUAGE_CODE == 'en' %}Request temporary increase{% else %}طلب رفع الحد مؤقتًا{% endif %}</span></button></form>
+            {% else %}
+            <a class="reservation-request-primary" href="{% url 'accounts:login' %}?next={% url 'orders:cart' %}"><svg class="ui-icon"><use href="#icon-user"></use></svg><span>{% if LANGUAGE_CODE == 'en' %}Sign in to request an increase{% else %}سجّل الدخول لطلب رفع الحد{% endif %}</span></a>
+            {% endif %}
+          {% endif %}
+          {% if whatsapp_limit_url %}<a class="reservation-whatsapp-btn" href="{{ whatsapp_limit_url }}" target="_blank" rel="noopener noreferrer nofollow"><svg class="ui-icon"><use href="#icon-whatsapp"></use></svg><span>{% if LANGUAGE_CODE == 'en' %}Contact management on WhatsApp{% else %}تواصل مع الإدارة عبر واتساب{% endif %}</span></a>{% endif %}
+        {% else %}
+          <p>{% if LANGUAGE_CODE == 'en' %}Your current cart is within the standard secure limit of {{ effective_reservation_limit }} items. Reservation begins only when you proceed to checkout.{% else %}سلتك الحالية ضمن الحد الآمن وهو {{ effective_reservation_limit }} قطع. يبدأ الحجز فقط عند الانتقال لإتمام الطلب.{% endif %}</p>
+        {% endif %}
+        <small class="reservation-limit-footnote">{% if LANGUAGE_CODE == 'en' %}Temporary approvals expire automatically after 15 minutes and do not reserve items until checkout starts.{% else %}الموافقة المؤقتة تنتهي تلقائيًا بعد 15 دقيقة ولا تحجز أي قطعة قبل بدء إتمام الطلب.{% endif %}</small>
+      </section>
+
+      <details class="card-lux cart-followup-card cart-followup-collapsible" data-cart-followup-card>
+        <summary><span class="cart-followup-summary-icon"><svg class="ui-icon"><use href="#icon-whatsapp"></use></svg></span><div><strong>{% if LANGUAGE_CODE == 'en' %}Optional cart reminder{% else %}تذكير اختياري بالسلة{% endif %}</strong><small>{% if LANGUAGE_CODE == 'en' %}One WhatsApp reminder only, with your consent.{% else %}تذكير واحد فقط عبر واتساب بعد موافقتك.{% endif %}</small></div><span class="cart-followup-chevron">⌄</span></summary>
+        <div class="cart-followup-body">
+          <p>{% if LANGUAGE_CODE == 'en' %}If you leave before checkout, you can optionally allow one WhatsApp reminder. Cart items remain unreserved until checkout.{% else %}إذا خرجت قبل إتمام الطلب يمكنك السماح بتذكير واحد عبر واتساب. وتبقى القطع غير محجوزة حتى بدء إتمام الطلب.{% endif %}</p>
+          {% if cart.whatsapp_opt_in_at %}
+            <div class="consent-saved"><svg class="ui-icon"><use href="#icon-shield"></use></svg><span>{% if LANGUAGE_CODE == 'en' %}WhatsApp reminder consent saved for this cart.{% else %}تم حفظ موافقتك على تذكير واتساب لهذه السلة.{% endif %}</span></div>
+            <form method="post" action="{% url 'orders:cart_follow_up_cancel' %}" class="mt-3">{% csrf_token %}<button class="management-secondary-btn w-100" type="submit">{% if LANGUAGE_CODE == 'en' %}Remove consent{% else %}إلغاء الموافقة{% endif %}</button></form>
+          {% else %}
+            <form method="post" action="{% url 'orders:cart_follow_up' %}" class="cart-consent-form">{% csrf_token %}
+              <div class="cart-consent-field"><label for="{{ follow_up_form.phone.id_for_label }}">{{ follow_up_form.phone.label }}</label>{{ follow_up_form.phone }}{% if follow_up_form.phone.errors %}<div class="text-danger small">{{ follow_up_form.phone.errors }}</div>{% endif %}</div>
+              <label class="cart-consent-check" for="{{ follow_up_form.whatsapp_opt_in.id_for_label }}">{{ follow_up_form.whatsapp_opt_in }}<span>{{ follow_up_form.whatsapp_opt_in.label }}</span></label>
+              {% if follow_up_form.whatsapp_opt_in.errors %}<div class="text-danger small">{{ follow_up_form.whatsapp_opt_in.errors }}</div>{% endif %}
+              <button class="management-secondary-btn w-100" type="submit">{% if LANGUAGE_CODE == 'en' %}Save consent{% else %}حفظ الموافقة{% endif %}</button>
+            </form>
+          {% endif %}
+        </div>
+      </details>
+    </aside>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

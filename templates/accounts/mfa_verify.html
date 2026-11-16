@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container auth-wrap">
+  <div class="card-lux">
+    {% if LANGUAGE_CODE == 'en' %}
+      <h1>Two-factor verification</h1>
+      <p>Enter the 6-digit code shown in your authenticator app.</p>
+      <form method="post">{% csrf_token %}{{ form.as_p }}<button class="btn btn-gold w-100" type="submit">Verify and continue</button></form>
+    {% else %}
+      <h1>التحقق بخطوتين</h1>
+      <p>أدخل الرمز المكون من 6 أرقام الظاهر في تطبيق المصادقة.</p>
+      <form method="post">{% csrf_token %}{{ form.as_p }}<button class="btn btn-gold w-100" type="submit">تحقق ومتابعة</button></form>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

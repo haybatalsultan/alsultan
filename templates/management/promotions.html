@@ -1,0 +1,184 @@
+{% extends 'base.html' %}
+{% block title %}{% if LANGUAGE_CODE == 'en' %}Promotions & Discounts{% else %}العروض والخصومات{% endif %} — Haybat Al Sultan{% endblock %}
+{% block content %}
+<section class="management-page promotions-page">
+  <div class="container management-shell py-4 py-lg-5">
+    {% include 'management/_page_header.html' with page_title=page_title page_description=page_description %}
+
+    <section class="promotion-overview-grid" aria-label="{% if LANGUAGE_CODE == 'en' %}Promotion overview{% else %}ملخص العروض{% endif %}">
+      <article class="promotion-overview-card">
+        <span class="promotion-overview-icon"><svg class="ui-icon"><use href="#icon-gift"></use></svg></span>
+        <div>
+          <small>{% if LANGUAGE_CODE == 'en' %}Total Promotions{% else %}إجمالي العروض{% endif %}</small>
+          <strong>{{ promotion_stats.total|default:0 }}</strong>
+        </div>
+      </article>
+      <article class="promotion-overview-card success">
+        <span class="promotion-overview-icon"><svg class="ui-icon"><use href="#icon-price"></use></svg></span>
+        <div>
+          <small>{% if LANGUAGE_CODE == 'en' %}Active Now{% else %}نشطة الآن{% endif %}</small>
+          <strong>{{ promotion_stats.active|default:0 }}</strong>
+        </div>
+      </article>
+      <article class="promotion-overview-card">
+        <span class="promotion-overview-icon"><svg class="ui-icon"><use href="#icon-clock"></use></svg></span>
+        <div>
+          <small>{% if LANGUAGE_CODE == 'en' %}Scheduled{% else %}مجدولة{% endif %}</small>
+          <strong>{{ promotion_stats.scheduled|default:0 }}</strong>
+        </div>
+      </article>
+      <article class="promotion-overview-card muted">
+        <span class="promotion-overview-icon"><svg class="ui-icon"><use href="#icon-history"></use></svg></span>
+        <div>
+          <small>{% if LANGUAGE_CODE == 'en' %}Expired{% else %}منتهية{% endif %}</small>
+          <strong>{{ promotion_stats.expired|default:0 }}</strong>
+        </div>
+      </article>
+    </section>
+
+    <div class="management-page-toolbar promotion-toolbar">
+      <div class="toolbar-copy">
+        <strong>{% if LANGUAGE_CODE == 'en' %}Promotion Management{% else %}إدارة العروض{% endif %}</strong>
+        <span>{% if LANGUAGE_CODE == 'en' %}Create, review and control discount campaigns from one place.{% else %}أنشئ العروض وراجعها وتحكم في حالتها من مكان واحد.{% endif %}</span>
+      </div>
+      <a class="management-primary-btn promotion-create-btn" href="{% url 'core:management_promotion_create' %}">
+        <span class="button-icon" aria-hidden="true">+</span>
+        {% if LANGUAGE_CODE == 'en' %}Create Promotion{% else %}إنشاء عرض جديد{% endif %}
+      </a>
+    </div>
+
+    <form method="get" class="management-search-bar promotion-search-bar" role="search">
+      <div class="management-search-field">
+        <svg class="ui-icon" aria-hidden="true"><use href="#icon-search"></use></svg>
+        <label class="visually-hidden" for="promotion-search">{% if LANGUAGE_CODE == 'en' %}Search promotions{% else %}البحث في العروض{% endif %}</label>
+        <input
+          id="promotion-search"
+          name="q"
+          value="{{ q }}"
+          placeholder="{% if LANGUAGE_CODE == 'en' %}Search by promotion name{% else %}ابحث باسم العرض{% endif %}"
+          autocomplete="off"
+        >
+      </div>
+      <button class="management-secondary-btn" type="submit">{% if LANGUAGE_CODE == 'en' %}Search{% else %}بحث{% endif %}</button>
+      {% if q %}
+      <a class="management-text-link" href="{% url 'core:management_promotions' %}">{% if LANGUAGE_CODE == 'en' %}Clear{% else %}مسح البحث{% endif %}</a>
+      {% endif %}
+    </form>
+
+    {% if promotions %}
+    <div class="promotion-admin-grid">
+      {% for promo in promotions %}
+      <article class="management-content-card promotion-admin-card">
+        <div class="promotion-card-head">
+          <div class="promotion-card-title">
+            <div class="promotion-card-badges">
+              <span class="status-chip">{{ promo.get_scope_display }}</span>
+              {% if promo.is_active and promo.starts_at <= now and promo.ends_at >= now %}
+                <span class="status-chip success">{% if LANGUAGE_CODE == 'en' %}Active Now{% else %}نشط الآن{% endif %}</span>
+              {% elif promo.is_active and promo.starts_at > now %}
+                <span class="status-chip scheduled">{% if LANGUAGE_CODE == 'en' %}Scheduled{% else %}مجدول{% endif %}</span>
+              {% elif promo.ends_at < now %}
+                <span class="status-chip muted">{% if LANGUAGE_CODE == 'en' %}Expired{% else %}منتهي{% endif %}</span>
+              {% else %}
+                <span class="status-chip muted">{% if LANGUAGE_CODE == 'en' %}Paused{% else %}متوقف{% endif %}</span>
+              {% endif %}
+            </div>
+            <h2>{% if LANGUAGE_CODE == 'en' %}{{ promo.name_en|default:promo.name_ar }}{% else %}{{ promo.name_ar|default:promo.name_en }}{% endif %}</h2>
+            {% if promo.name_en and promo.name_ar %}
+            <small>{% if LANGUAGE_CODE == 'en' %}{{ promo.name_ar }}{% else %}{{ promo.name_en }}{% endif %}</small>
+            {% endif %}
+          </div>
+          <div class="promotion-value">
+            <span>{% if LANGUAGE_CODE == 'en' %}Offer{% else %}العرض{% endif %}</span>
+            <strong dir="ltr">
+              {% if promo.discount_type == 'PERCENT' %}
+                {{ promo.discount_value|floatformat:0 }}%
+              {% elif promo.discount_type == 'FIXED' %}
+                AED {{ promo.discount_value|floatformat:2 }}
+              {% else %}
+                {% if LANGUAGE_CODE == 'en' %}Gift{% else %}هدية{% endif %}
+              {% endif %}
+            </strong>
+          </div>
+        </div>
+
+        <div class="promotion-details-grid">
+          <div class="promotion-detail-item">
+            <span class="promotion-detail-icon"><svg class="ui-icon"><use href="#icon-clock"></use></svg></span>
+            <div>
+              <small>{% if LANGUAGE_CODE == 'en' %}Period{% else %}الفترة{% endif %}</small>
+              <strong>{{ promo.starts_at|date:"Y-m-d H:i" }}</strong>
+              <span>{{ promo.ends_at|date:"Y-m-d H:i" }}</span>
+            </div>
+          </div>
+          <div class="promotion-detail-item">
+            <span class="promotion-detail-icon"><svg class="ui-icon"><use href="#icon-package"></use></svg></span>
+            <div>
+              <small>{% if LANGUAGE_CODE == 'en' %}Scope{% else %}نطاق التطبيق{% endif %}</small>
+              <strong>{{ promo.get_scope_display }}</strong>
+              <span>
+                {% if promo.scope == 'PRODUCTS' %}
+                  {% if LANGUAGE_CODE == 'en' %}{{ promo.products.count }} selected products{% else %}{{ promo.products.count }} منتجات محددة{% endif %}
+                {% elif promo.scope == 'CATEGORIES' %}
+                  {% if LANGUAGE_CODE == 'en' %}{{ promo.categories.count }} selected categories{% else %}{{ promo.categories.count }} تصنيفات محددة{% endif %}
+                {% else %}
+                  {% if LANGUAGE_CODE == 'en' %}Entire catalog{% else %}جميع المنتجات{% endif %}
+                {% endif %}
+              </span>
+            </div>
+          </div>
+          <div class="promotion-detail-item">
+            <span class="promotion-detail-icon"><svg class="ui-icon"><use href="#icon-gift"></use></svg></span>
+            <div>
+              <small>{% if LANGUAGE_CODE == 'en' %}Gift{% else %}الهدية{% endif %}</small>
+              {% if promo.has_gift %}
+                <strong>{% if LANGUAGE_CODE == 'en' %}{{ promo.gift_name_en|default:promo.gift_name_ar }}{% else %}{{ promo.gift_name_ar|default:promo.gift_name_en }}{% endif %}</strong>
+                <span>{% if LANGUAGE_CODE == 'en' %}Quantity{% else %}الكمية{% endif %}: {{ promo.gift_quantity }}</span>
+              {% else %}
+                <strong>{% if LANGUAGE_CODE == 'en' %}No gift{% else %}بدون هدية{% endif %}</strong>
+                <span>{% if LANGUAGE_CODE == 'en' %}Discount only{% else %}خصم فقط{% endif %}</span>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+
+        <div class="promotion-card-footer">
+          <div class="promotion-priority">
+            <span>{% if LANGUAGE_CODE == 'en' %}Priority{% else %}الأولوية{% endif %}</span>
+            <strong>{{ promo.priority }}</strong>
+          </div>
+          <div class="management-form-actions promotion-card-actions">
+            <a class="management-secondary-btn" href="{% url 'core:management_promotion_edit' promo.public_id %}">
+              <svg class="ui-icon"><use href="#icon-edit"></use></svg>
+              {% if LANGUAGE_CODE == 'en' %}Edit{% else %}تعديل{% endif %}
+            </a>
+            <form method="post" action="{% url 'core:management_promotion_toggle' promo.public_id %}">
+              {% csrf_token %}
+              <button class="management-secondary-btn{% if promo.is_active %} promotion-pause-btn{% endif %}" type="submit">
+                {% if promo.is_active %}
+                  {% if LANGUAGE_CODE == 'en' %}Pause{% else %}إيقاف{% endif %}
+                {% else %}
+                  {% if LANGUAGE_CODE == 'en' %}Activate{% else %}تفعيل{% endif %}
+                {% endif %}
+              </button>
+            </form>
+          </div>
+        </div>
+      </article>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="management-content-card management-empty-state promotion-empty-state">
+      <svg class="empty-icon"><use href="#icon-gift"></use></svg>
+      <strong>{% if q %}{% if LANGUAGE_CODE == 'en' %}No promotions match your search{% else %}لا توجد عروض مطابقة للبحث{% endif %}{% else %}{% if LANGUAGE_CODE == 'en' %}No promotions yet{% else %}لا توجد عروض حتى الآن{% endif %}{% endif %}</strong>
+      <p>{% if LANGUAGE_CODE == 'en' %}Create your first promotion to start managing discounts and gifts.{% else %}أنشئ أول عرض لبدء إدارة الخصومات والهدايا بطريقة منظمة.{% endif %}</p>
+      {% if not q %}
+      <a class="management-primary-btn" href="{% url 'core:management_promotion_create' %}">{% if LANGUAGE_CODE == 'en' %}Create Promotion{% else %}إنشاء عرض{% endif %}</a>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    {% include 'management/_pagination.html' %}
+  </div>
+</section>
+{% endblock %}

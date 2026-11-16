@@ -1,0 +1,7 @@
+{% if page_obj and page_obj.paginator.num_pages > 1 %}
+<nav class="store-pagination" aria-label="{% if LANGUAGE_CODE == 'en' %}Pagination{% else %}ترقيم الصفحات{% endif %}">
+  {% if page_obj.has_previous %}<a href="?{% if pagination_query %}{{ pagination_query }}&{% endif %}page={{ page_obj.previous_page_number }}">{% if LANGUAGE_CODE == 'en' %}Previous{% else %}السابق{% endif %}</a>{% endif %}
+  <div>{% for number in page_obj.display_range %}{% if number == page_obj.paginator.ELLIPSIS %}<span class="ellipsis">…</span>{% elif number == page_obj.number %}<span class="active">{{ number }}</span>{% else %}<a href="?{% if pagination_query %}{{ pagination_query }}&{% endif %}page={{ number }}">{{ number }}</a>{% endif %}{% endfor %}</div>
+  {% if page_obj.has_next %}<a href="?{% if pagination_query %}{{ pagination_query }}&{% endif %}page={{ page_obj.next_page_number }}">{% if LANGUAGE_CODE == 'en' %}Next{% else %}التالي{% endif %}</a>{% endif %}
+</nav>
+{% endif %}

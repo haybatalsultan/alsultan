@@ -1,0 +1,23 @@
+{
+  "version": "v20.1",
+  "base": "v20",
+  "fix": "Exact HS item-code search FieldError regression",
+  "root_cause": "search_products() returns a queryset using select_related(category, material); calling only(public_id) on that queryset deferred a traversed relation and Django raised FieldError.",
+  "fix_details": [
+    "Exact HS-code lookup now uses Product.objects with storefront status filtering.",
+    "values_list(public_id, flat=True) avoids loading unnecessary fields.",
+    "No user-controlled field names, raw SQL, or broadened visibility were introduced.",
+    "Exact lookup still redirects only AVAILABLE storefront products.",
+    "Added regression coverage for non-available product codes."
+  ],
+  "checks": {
+    "compileall": "PASS",
+    "ast": "PASS",
+    "static_security": "PASS",
+    "static_security_output": "Static security pattern + project invariant scan: PASS",
+    "test_methods_present": 175
+  },
+  "full_django_suite_here": false,
+  "reason": "Django is not installed in the artifact runtime; run the full suite locally.",
+  "ast_errors": []
+}

@@ -1,0 +1,94 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}{% if LANGUAGE_CODE == 'en' %}{{ product.name_en }}{% else %}{{ product.name_ar }}{% endif %} — HaybatAlsultan{% endblock %}
+{% block content %}
+<div class="container product-detail-page py-4 py-lg-5">
+  <nav class="product-breadcrumb" aria-label="{% if LANGUAGE_CODE == 'en' %}Breadcrumb{% else %}مسار التنقل{% endif %}">
+    <a href="{% url 'core:home' %}">{% if LANGUAGE_CODE == 'en' %}Home{% else %}الرئيسية{% endif %}</a><span>‹</span>
+    <a href="{% url 'catalog:list' %}">{% if LANGUAGE_CODE == 'en' %}Products{% else %}المسابيح{% endif %}</a><span>‹</span>
+    <span>{% if LANGUAGE_CODE == 'en' %}{{ product.name_en }}{% else %}{{ product.name_ar }}{% endif %}</span>
+  </nav>
+
+  <div class="row g-4 g-xl-5 product-detail-hero align-items-start">
+    <div class="col-lg-6 product-gallery-column">
+      {% with primary=product.images.first %}
+        {% if primary %}
+          <section class="premium-gallery" id="premium-product-gallery" aria-label="{% if LANGUAGE_CODE == 'en' %}Product gallery{% else %}معرض صور المنتج{% endif %}">
+            {% if user.is_authenticated %}<form method="post" action="{% url 'catalog:wishlist_toggle' product.public_id %}" class="premium-wishlist-form" data-wishlist-toggle>{% csrf_token %}<button type="submit" class="premium-wishlist-heart{% if is_wishlisted %} is-wishlisted{% endif %}" data-wishlist-button aria-pressed="{% if is_wishlisted %}true{% else %}false{% endif %}" aria-label="{% if is_wishlisted %}{% if LANGUAGE_CODE == 'en' %}Remove from wishlist{% else %}إزالة من المفضلة{% endif %}{% else %}{% if LANGUAGE_CODE == 'en' %}Add to wishlist{% else %}إضافة إلى المفضلة{% endif %}{% endif %}" title="{% if is_wishlisted %}{% if LANGUAGE_CODE == 'en' %}Remove from wishlist{% else %}إزالة من المفضلة{% endif %}{% else %}{% if LANGUAGE_CODE == 'en' %}Add to wishlist{% else %}إضافة إلى المفضلة{% endif %}{% endif %}"><svg class="ui-icon" aria-hidden="true"><use href="#icon-heart"></use></svg><span class="visually-hidden" data-wishlist-label>{% if is_wishlisted %}{% if LANGUAGE_CODE == 'en' %}Remove from Wishlist{% else %}إزالة من المفضلة{% endif %}{% else %}{% if LANGUAGE_CODE == 'en' %}Add to Wishlist{% else %}إضافة إلى المفضلة{% endif %}{% endif %}</span></button></form>{% endif %}
+            <button type="button" class="premium-gallery-stage" data-gallery-open="0" aria-label="{% if LANGUAGE_CODE == 'en' %}Open image viewer{% else %}فتح عارض الصورة{% endif %}">
+              <img class="detail-image premium-gallery-main" src="{{ primary.detail_url }}" data-zoom-src="{{ primary.zoom_url }}" alt="{% if LANGUAGE_CODE == 'en' %}{{ primary.alt_text_en|default:product.name_en }}{% else %}{{ primary.alt_text_ar|default:product.name_ar }}{% endif %}">
+              <span class="premium-gallery-hint"><svg class="ui-icon"><use href="#icon-search"></use></svg><span>{% if LANGUAGE_CODE == 'en' %}Zoom{% else %}تكبير{% endif %}</span></span>
+            </button>
+            {% if product.images.count > 1 %}<div class="premium-gallery-thumbs">{% for image in product.images.all %}<button type="button" class="premium-gallery-thumb{% if forloop.first %} is-active{% endif %}" data-gallery-index="{{ forloop.counter0 }}" data-detail-src="{{ image.detail_url }}" data-zoom-src="{{ image.zoom_url }}" data-alt="{% if LANGUAGE_CODE == 'en' %}{{ image.alt_text_en|default:product.name_en }}{% else %}{{ image.alt_text_ar|default:product.name_ar }}{% endif %}"><img src="{{ image.thumbnail_url }}" loading="lazy" alt=""></button>{% endfor %}</div>{% endif %}
+            <div class="premium-lightbox" id="premium-lightbox" hidden role="dialog" aria-modal="true" aria-label="{% if LANGUAGE_CODE == 'en' %}Product image viewer{% else %}عارض صور المنتج{% endif %}"><div class="premium-lightbox-backdrop" data-gallery-close></div><div class="premium-lightbox-shell"><button type="button" class="premium-lightbox-close" data-gallery-close aria-label="{% if LANGUAGE_CODE == 'en' %}Close{% else %}إغلاق{% endif %}">×</button><button type="button" class="premium-lightbox-nav premium-lightbox-prev" data-gallery-prev aria-label="{% if LANGUAGE_CODE == 'en' %}Previous image{% else %}الصورة السابقة{% endif %}">‹</button><div class="premium-lightbox-viewport" data-gallery-viewport><img class="premium-lightbox-image" alt=""></div><button type="button" class="premium-lightbox-nav premium-lightbox-next" data-gallery-next aria-label="{% if LANGUAGE_CODE == 'en' %}Next image{% else %}الصورة التالية{% endif %}">›</button><div class="premium-lightbox-tools"><button type="button" data-gallery-zoom-out aria-label="{% if LANGUAGE_CODE == 'en' %}Zoom out{% else %}تصغير{% endif %}">−</button><span data-gallery-counter></span><button type="button" data-gallery-zoom-in aria-label="{% if LANGUAGE_CODE == 'en' %}Zoom in{% else %}تكبير{% endif %}">+</button></div></div></div>
+          </section>
+        {% else %}<div class="detail-image placeholder-img">HS</div>{% endif %}
+      {% endwith %}
+    </div>
+
+    <div class="col-lg-6 product-summary-column">
+      <div class="product-summary-card">
+        <span class="product-item-code">{% if LANGUAGE_CODE == 'en' %}Item Code{% else %}رقم القطعة{% endif %}: <bdi dir="ltr">{{ product.sku }}</bdi></span>
+        <form id="product-viewers-form" class="product-viewers-form" method="post" action="{% url 'catalog:viewers' product.public_id %}" data-viewers-url="{% url 'catalog:viewers' product.public_id %}" hidden>{% csrf_token %}</form>
+        <div id="product-live-viewers" class="product-live-viewers" aria-live="polite" data-language="{{ LANGUAGE_CODE }}" hidden></div>
+        <h1 class="product-detail-title">{% if LANGUAGE_CODE == 'en' %}{{ product.name_en }}{% else %}{{ product.name_ar }}{% endif %}</h1>
+
+        <div class="product-detail-badges">
+          {% if product.verification_status != 'NONE' %}<span class="product-detail-badge is-verified"><svg class="ui-icon"><use href="#icon-shield"></use></svg>{% if product.verification_status == 'CERTIFIED' %}{% if LANGUAGE_CODE == 'en' %}Certified{% else %}موثق بشهادة{% endif %}{% else %}{% if LANGUAGE_CODE == 'en' %}Inspected{% else %}تم فحص المنتج{% endif %}{% endif %}</span>{% endif %}
+          {% if product.free_quantity == 1 %}<span class="product-detail-badge"><svg class="ui-icon"><use href="#icon-rare"></use></svg>{% if LANGUAGE_CODE == 'en' %}Unique piece{% else %}قطعة فريدة{% endif %}</span>{% endif %}
+          {% if product.material %}<span class="product-detail-badge"><svg class="ui-icon"><use href="#icon-diamond"></use></svg>{% if LANGUAGE_CODE == 'en' %}{{ product.material.name_en }}{% else %}{{ product.material.name_ar }}{% endif %}</span>{% endif %}
+        </div>
+
+        <div class="detail-price product-detail-price">{% if offer.has_discount %}<del>AED {{ offer.base_price }}</del><strong>AED {{ offer.final_price }}</strong>{% else %}<strong>AED {{ offer.final_price }}</strong>{% endif %}</div>
+        <p class="product-detail-description">{% if LANGUAGE_CODE == 'en' %}{{ product.description_en }}{% else %}{{ product.description_ar }}{% endif %}</p>
+
+        <section class="product-quick-specs" aria-label="{% if LANGUAGE_CODE == 'en' %}Key specifications{% else %}أهم مواصفات القطعة{% endif %}">
+          <div><span>{% if LANGUAGE_CODE == 'en' %}Material{% else %}الخامة{% endif %}</span><strong>{% if LANGUAGE_CODE == 'en' %}{{ product.material.name_en|default:'—' }}{% else %}{{ product.material.name_ar|default:'—' }}{% endif %}</strong></div>
+          <div><span>{% if LANGUAGE_CODE == 'en' %}Origin{% else %}المنشأ{% endif %}</span><strong>{{ product.origin|default:'—' }}</strong></div>
+          <div><span>{% if LANGUAGE_CODE == 'en' %}Color{% else %}اللون{% endif %}</span><strong>{{ product.color|default:'—' }}</strong></div>
+        </section>
+
+        {% if offer.has_gift %}<div class="product-gift-note"><svg class="ui-icon"><use href="#icon-gift"></use></svg><div><strong>{% if LANGUAGE_CODE == 'en' %}Gift included with this offer{% else %}هدية مرفقة مع هذا العرض{% endif %}</strong><span>{% if LANGUAGE_CODE == 'en' %}{{ offer.gift_en|default:offer.gift_ar }}{% else %}{{ offer.gift_ar|default:offer.gift_en }}{% endif %}{% if offer.gift_quantity > 1 %} × {{ offer.gift_quantity }}{% endif %}</span></div></div>{% endif %}
+
+        <div class="product-purchase-panel">
+          {% if purchasable %}
+            <div class="product-stock-status"><span></span><div><strong>{% if LANGUAGE_CODE == 'en' %}Available{% else %}متوفر{% endif %}</strong><small>{% if product.free_quantity == 1 %}{% if LANGUAGE_CODE == 'en' %}One piece available{% else %}قطعة واحدة متاحة{% endif %}{% else %}{% if LANGUAGE_CODE == 'en' %}{{ product.free_quantity }} pieces available{% else %}{{ product.free_quantity }} قطع متاحة{% endif %}{% endif %}</small></div></div>
+            <form method="post" action="{% url 'orders:cart_add' product.public_id %}" class="product-detail-cart-form" data-add-to-cart data-free-quantity="{{ product.free_quantity }}">{% csrf_token %}{% if product.free_quantity > 1 %}<label class="product-detail-qty"><span>{% if LANGUAGE_CODE == 'en' %}Quantity{% else %}الكمية{% endif %}</span><input class="form-control qty" type="number" name="quantity" min="1" max="{{ product.free_quantity }}" value="1" inputmode="numeric"></label>{% else %}<input type="hidden" name="quantity" value="1">{% endif %}<button class="btn btn-gold product-detail-add" data-add-button><svg class="ui-icon"><use href="#icon-cart"></use></svg><span data-add-label>{% if LANGUAGE_CODE == 'en' %}Add to Cart{% else %}أضف إلى السلة{% endif %}</span></button></form>
+          {% elif sold_out %}
+            <div class="product-unavailable-notice product-sold-notice" aria-live="polite"><strong>{% if LANGUAGE_CODE == 'en' %}Sold — quantity exhausted{% else %}تم بيع القطعة — نفدت الكمية{% endif %}</strong><span>{% if LANGUAGE_CODE == 'en' %}This page remains available as a reference for the original piece.{% else %}تبقى هذه الصفحة مرجعًا للقطعة الأصلية، لكنها لم تعد متاحة للشراء.{% endif %}</span></div>
+          {% elif temporarily_reserved %}
+            <div class="product-unavailable-notice product-reserved-notice" aria-live="polite"><strong>{% if LANGUAGE_CODE == 'en' %}Temporarily reserved{% else %}محجوزة مؤقتًا{% endif %}</strong><span>{% if LANGUAGE_CODE == 'en' %}Another customer currently has this piece reserved during checkout. It may become available again if the reservation expires.{% else %}هذه القطعة محجوزة مؤقتًا أثناء إتمام طلب عميل آخر، وقد تعود للعرض إذا انتهت المهلة دون إتمام الشراء.{% endif %}</span></div>
+          {% else %}<div class="product-unavailable-notice" aria-live="polite">{% if LANGUAGE_CODE == 'en' %}This item is currently unavailable.{% else %}عذرًا، هذه القطعة غير متاحة حاليًا.{% endif %}</div>{% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <section class="product-assurance-strip" aria-label="{% if LANGUAGE_CODE == 'en' %}Haybat Alsultan assurance{% else %}ضمان هيبة السلطان{% endif %}">
+    <div><svg class="ui-icon"><use href="#icon-shield"></use></svg><span><strong>{% if LANGUAGE_CODE == 'en' %}Haybat Alsultan assurance{% else %}ضمان هيبة السلطان{% endif %}</strong><small>{% if LANGUAGE_CODE == 'en' %}Inspected and documented{% else %}فحص وتوثيق القطعة{% endif %}</small></span></div>
+    <div><svg class="ui-icon"><use href="#icon-camera"></use></svg><span><strong>{% if LANGUAGE_CODE == 'en' %}Actual item photos{% else %}صور القطعة الفعلية{% endif %}</strong><small>{% if LANGUAGE_CODE == 'en' %}Detailed product photography{% else %}تصوير تفصيلي للقطعة{% endif %}</small></span></div>
+    <div><svg class="ui-icon"><use href="#icon-package"></use></svg><span><strong>{% if LANGUAGE_CODE == 'en' %}Unique item code{% else %}رقم قطعة فريد{% endif %}</strong><small><bdi dir="ltr">{{ product.sku }}</bdi></small></span></div>
+  </section>
+
+  <section class="product-specification-section">
+    <div class="product-section-heading"><span></span><h2>{% if LANGUAGE_CODE == 'en' %}Item details{% else %}تفاصيل القطعة{% endif %}</h2></div>
+    <div class="product-spec-grid">
+      <div><span>{% if LANGUAGE_CODE == 'en' %}Material{% else %}الخامة{% endif %}</span><strong>{% if LANGUAGE_CODE == 'en' %}{{ product.material.name_en|default:'—' }}{% else %}{{ product.material.name_ar|default:'—' }}{% endif %}</strong></div>
+      <div><span>{% if LANGUAGE_CODE == 'en' %}Origin{% else %}المنشأ{% endif %}</span><strong>{{ product.origin|default:'—' }}</strong></div>
+      <div><span>{% if LANGUAGE_CODE == 'en' %}Color{% else %}اللون{% endif %}</span><strong>{{ product.color|default:'—' }}</strong></div>
+      <div><span>{% if LANGUAGE_CODE == 'en' %}Bead count{% else %}عدد الحبات{% endif %}</span><strong>{% if product.bead_count %}{{ product.bead_count }}{% else %}—{% endif %}</strong></div>
+      <div><span>{% if LANGUAGE_CODE == 'en' %}Weight{% else %}الوزن{% endif %}</span><strong>{% if product.weight_g %}{{ product.weight_g }} {% if LANGUAGE_CODE == 'en' %}g{% else %}جم{% endif %}{% else %}—{% endif %}</strong></div>
+      <div><span>{% if LANGUAGE_CODE == 'en' %}Bead size{% else %}مقاس الحبة{% endif %}</span><strong>{% if product.bead_size_mm %}{{ product.bead_size_mm }} {% if LANGUAGE_CODE == 'en' %}mm{% else %}مم{% endif %}{% else %}—{% endif %}</strong></div>
+      <div><span>{% if LANGUAGE_CODE == 'en' %}Shape{% else %}الشكل{% endif %}</span><strong>{{ product.shape|default:'—' }}</strong></div>
+      <div><span>{% if LANGUAGE_CODE == 'en' %}Tassel{% else %}الكركوشة{% endif %}</span><strong>{{ product.tassel_type|default:'—' }}</strong></div>
+      <div><span>{% if LANGUAGE_CODE == 'en' %}Condition{% else %}الحالة{% endif %}</span><strong>{{ product.condition|default:'—' }}</strong></div>
+    </div>
+  </section>
+
+  <section class="product-info-accordions">
+    <details><summary>{% if LANGUAGE_CODE == 'en' %}Item description{% else %}وصف القطعة{% endif %}<span>+</span></summary><div>{% if LANGUAGE_CODE == 'en' %}{{ product.description_en }}{% else %}{{ product.description_ar }}{% endif %}</div></details>
+    <details><summary>{% if LANGUAGE_CODE == 'en' %}Full specifications{% else %}المواصفات الكاملة{% endif %}<span>+</span></summary><div>{% if LANGUAGE_CODE == 'en' %}All available specifications for this item are shown in the item details above.{% else %}جميع المواصفات المسجلة لهذه القطعة موضحة في قسم تفاصيل القطعة أعلاه.{% endif %}</div></details>
+  </section>
+</div>
+{% endblock %}
+{% block scripts %}<script src="{% static 'js/product-gallery.js' %}" defer></script>{% endblock %}

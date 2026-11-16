@@ -1,0 +1,12 @@
+{
+  "python_compileall": "PASS",
+  "ast_parse": "PASS",
+  "static_security_scan": "PASS",
+  "security_hits": {},
+  "test_methods_discovered": 76,
+  "checks": {
+    "direct_orm_sku_ignored": true,
+    "legacy_owner_create_test_fixed": true,
+    "posted_sku_asserted_ignored": true
+  }
+}

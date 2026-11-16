@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}{% if LANGUAGE_CODE == 'en' %}Google Sign-In Error{% else %}تعذر تسجيل الدخول عبر Google{% endif %} — HaybatAlsultan{% endblock %}
+{% block content %}
+<section class="system-state-shell" aria-labelledby="state-title"><div class="container"><div class="system-state-card">
+  <div class="system-state-icon is-error" aria-hidden="true">!</div>
+  <p class="system-state-eyebrow">{% if LANGUAGE_CODE == 'en' %}Haybat Al Sultan account{% else %}حساب هيبة السلطان{% endif %}</p>
+  <h1 id="state-title">{% if LANGUAGE_CODE == 'en' %}Google sign-in could not be completed{% else %}تعذر إكمال تسجيل الدخول عبر Google{% endif %}</h1>
+  <p>{% if LANGUAGE_CODE == 'en' %}We could not complete the secure sign-in. Please try again. If your email is already linked to an account, sign in to that account first.{% else %}تعذر إكمال تسجيل الدخول الآمن. حاول مرة أخرى. وإذا كان بريدك مرتبطًا مسبقًا بحساب، فسجّل الدخول إلى ذلك الحساب أولًا.{% endif %}</p>
+  <div class="system-state-actions"><a class="btn btn-gold" href="{% url 'accounts:login' %}">{% if LANGUAGE_CODE == 'en' %}Try again{% else %}المحاولة مرة أخرى{% endif %}</a><a class="btn btn-outline-gold" href="{% url 'core:home' %}">{% if LANGUAGE_CODE == 'en' %}Go to home{% else %}الرئيسية{% endif %}</a></div>
+</div></div></section>
+{% endblock %}

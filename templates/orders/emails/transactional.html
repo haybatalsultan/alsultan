@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>{{ title }}</title>
+</head>
+<body style="margin:0;padding:0;background:#f5f1e8;color:#241d16;font-family:Arial,'Tahoma',sans-serif;direction:rtl;text-align:right;">
+  <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;">{{ intro }}</div>
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f5f1e8;padding:28px 12px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:640px;background:#ffffff;border:1px solid #e8decd;border-radius:20px;overflow:hidden;box-shadow:0 8px 30px rgba(48,36,22,.08);">
+          <tr>
+            <td style="background:#1d1813;padding:24px 32px;text-align:center;border-bottom:3px solid #b68a42;">
+              {% if brand_logo_url %}<img src="{{ brand_logo_url }}" width="180" alt="{{ brand_ar }}" style="max-width:180px;height:auto;margin:0 auto 10px;display:block;">{% endif %}
+              <div style="color:#d8b875;font-size:22px;font-weight:700;letter-spacing:.3px;">{{ brand_ar }}</div>
+              <div style="color:#b9ab99;font-size:11px;letter-spacing:2px;text-transform:uppercase;margin-top:5px;">{{ brand_en }}</div>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:34px 34px 12px;">
+              {% if eyebrow %}<div style="color:#9a6b23;font-size:12px;font-weight:700;margin-bottom:10px;">{{ eyebrow }}</div>{% endif %}
+              <h1 style="margin:0 0 14px;font-size:26px;line-height:1.45;color:#251e17;">{{ title }}</h1>
+              <p style="margin:0;color:#675c50;font-size:15px;line-height:1.9;">{{ intro }}</p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:18px 34px;">
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#fbf8f2;border:1px solid #eee4d5;border-radius:14px;">
+                {% for label, value in details %}
+                  {% if value %}
+                  <tr>
+                    <td style="padding:12px 16px;color:#857667;font-size:13px;border-bottom:1px solid #eee4d5;width:38%;">{{ label }}</td>
+                    <td style="padding:12px 16px;color:#2a2119;font-size:14px;font-weight:700;border-bottom:1px solid #eee4d5;text-align:left;direction:ltr;">{{ value }}</td>
+                  </tr>
+                  {% endif %}
+                {% endfor %}
+              </table>
+            </td>
+          </tr>
+          {% if action_url %}
+          <tr>
+            <td style="padding:10px 34px 24px;text-align:center;">
+              <a href="{{ action_url }}" target="_blank" rel="noopener noreferrer" style="display:inline-block;background:#aa7a2c;color:#ffffff;text-decoration:none;font-size:14px;font-weight:700;padding:13px 24px;border-radius:10px;">{{ action_label }}</a>
+            </td>
+          </tr>
+          {% endif %}
+          {% if notice %}
+          <tr>
+            <td style="padding:0 34px 24px;">
+              <div style="background:#f8f3e8;border-right:3px solid #b68a42;border-radius:8px;padding:13px 15px;color:#6c5c49;font-size:12px;line-height:1.8;">{{ notice }}</div>
+            </td>
+          </tr>
+          {% endif %}
+          <tr>
+            <td style="background:#faf7f1;border-top:1px solid #eee4d5;padding:20px 30px;text-align:center;color:#87786a;font-size:11px;line-height:1.8;">
+              <div style="font-weight:700;color:#44382d;margin-bottom:4px;">{{ brand_ar }} — {{ brand_en }}</div>
+              <div>للدعم والاستفسارات: <a href="mailto:{{ support_email }}" style="color:#9a6b23;text-decoration:none;">{{ support_email }}</a></div>
+              <div style="margin-top:6px;color:#a4978b;">هذه رسالة آلية مرتبطة بطلبك. لا ترسل بيانات بطاقتك أو كلمات المرور عبر البريد الإلكتروني.</div>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>

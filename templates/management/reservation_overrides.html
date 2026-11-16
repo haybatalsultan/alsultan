@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}{% if LANGUAGE_CODE == 'en' %}Reservation Requests{% else %}طلبات واستثناءات الحجز{% endif %} — Haybat Al Sultan{% endblock %}
+{% block content %}
+<section class="management-page reservation-management-page">
+  <div class="container management-shell py-4 py-lg-5">
+    <div class="management-page-heading">
+      <div>
+        <a class="management-back" href="{% url 'core:management_dashboard' %}">‹ {% if LANGUAGE_CODE == 'en' %}Management portal{% else %}العودة إلى بوابة الإدارة{% endif %}</a>
+        <h1>{% if LANGUAGE_CODE == 'en' %}Reservation Requests & Overrides{% else %}طلبات واستثناءات الحجز{% endif %}</h1>
+        <p>{% if LANGUAGE_CODE == 'en' %}Review genuine high-value purchase requests without weakening anti-hoarding controls.{% else %}مراجعة طلبات الشراء الكبيرة دون إضعاف حماية المتجر من حجز المخزون المتعمد.{% endif %}</p>
+      </div>
+      <div class="reservation-security-chip"><svg class="ui-icon"><use href="#icon-shield"></use></svg><span>{% if LANGUAGE_CODE == 'en' %}Owner + MFA only{% else %}المالك + MFA فقط{% endif %}</span></div>
+    </div>
+
+    <section class="management-content-card reservation-request-section">
+      <div class="content-card-title"><svg class="ui-icon"><use href="#icon-clock"></use></svg><h2>{% if LANGUAGE_CODE == 'en' %}Pending customer requests{% else %}طلبات العملاء بانتظار المراجعة{% endif %}</h2></div>
+      <p class="reservation-section-copy">{% if LANGUAGE_CODE == 'en' %}Approval grants the verified account a temporary checkout limit for 15 minutes. The maximum configured cap is {{ max_override_cap }} items.{% else %}الموافقة تمنح الحساب المسجل حدًا مؤقتًا لإتمام الطلب لمدة 15 دقيقة. الحد الأعلى المسموح حاليًا {{ max_override_cap }} قطع.{% endif %}</p>
+      <div class="reservation-request-list">
+        {% for r in pending_requests %}
+        <article class="reservation-request-card">
+          <div class="reservation-request-identity">
+            <span class="reservation-request-avatar"><svg class="ui-icon"><use href="#icon-user"></use></svg></span>
+            <div><strong>{{ r.user.get_full_name|default:r.user.username }}</strong><small dir="ltr">{{ r.user.email|default:r.user.username }}</small></div>
+          </div>
+          <div class="reservation-request-metrics">
+            <div><span>{% if LANGUAGE_CODE == 'en' %}Requested{% else %}العدد المطلوب{% endif %}</span><strong>{{ r.requested_items }}</strong></div>
+            <div><span>{% if LANGUAGE_CODE == 'en' %}Requested at{% else %}وقت الطلب{% endif %}</span><strong>{{ r.created_at|date:"H:i" }}</strong></div>
+          </div>
+          <form method="post" class="reservation-request-actions">
+            {% csrf_token %}<input type="hidden" name="request_id" value="{{ r.pk }}">
+            <button class="management-primary-btn" name="request_action" value="approve" type="submit">{% if LANGUAGE_CODE == 'en' %}Approve for 15 minutes{% else %}موافقة لمدة 15 دقيقة{% endif %}</button>
+            <button class="management-secondary-btn" name="request_action" value="reject" type="submit">{% if LANGUAGE_CODE == 'en' %}Reject{% else %}رفض{% endif %}</button>
+          </form>
+        </article>
+        {% empty %}
+        <div class="reservation-empty-state"><svg class="ui-icon"><use href="#icon-shield"></use></svg><strong>{% if LANGUAGE_CODE == 'en' %}No pending requests{% else %}لا توجد طلبات معلقة حاليًا{% endif %}</strong><span>{% if LANGUAGE_CODE == 'en' %}New customer requests will appear here automatically.{% else %}أي طلب جديد من العميل سيظهر هنا تلقائيًا.{% endif %}</span></div>
+        {% endfor %}
+      </div>
+    </section>
+
+    <div class="management-two-column mt-3">
+      <section class="management-content-card">
+        <div class="content-card-title"><svg class="ui-icon"><use href="#icon-user"></use></svg><h2>{% if LANGUAGE_CODE == 'en' %}Grant manually{% else %}منح استثناء يدوي{% endif %}</h2></div>
+        <p class="reservation-section-copy">{% if LANGUAGE_CODE == 'en' %}Use only for a verified registered customer. The override expires automatically after 15 minutes.{% else %}يستخدم فقط لعميل مسجل تم التحقق منه، وينتهي الاستثناء تلقائيًا بعد 15 دقيقة.{% endif %}</p>
+        <form method="post" class="management-form">{% csrf_token %}{{ form.as_p }}<button class="management-primary-btn" type="submit">{% if LANGUAGE_CODE == 'en' %}Grant 15-minute override{% else %}منح لمدة 15 دقيقة{% endif %}</button></form>
+      </section>
+      <section class="management-content-card">
+        <div class="content-card-title"><svg class="ui-icon"><use href="#icon-history"></use></svg><h2>{% if LANGUAGE_CODE == 'en' %}Active overrides{% else %}الاستثناءات النشطة{% endif %}</h2></div>
+        <div class="reservation-active-list">
+          {% for o in active_overrides %}<div class="reservation-active-row"><div><strong>{{ o.user.username }}</strong><small>{% if LANGUAGE_CODE == 'en' %}Temporary checkout access{% else %}صلاحية مؤقتة لإتمام الطلب{% endif %}</small></div><div><strong>{{ o.max_items }} {% if LANGUAGE_CODE == 'en' %}items{% else %}قطع{% endif %}</strong><small>{% if LANGUAGE_CODE == 'en' %}expires{% else %}ينتهي{% endif %} {{ o.expires_at|date:"H:i" }}</small></div></div>
+          {% empty %}<div class="reservation-empty-state compact"><strong>{% if LANGUAGE_CODE == 'en' %}No active overrides{% else %}لا توجد استثناءات نشطة{% endif %}</strong></div>{% endfor %}
+        </div>
+      </section>
+    </div>
+  </div>
+</section>
+{% endblock %}

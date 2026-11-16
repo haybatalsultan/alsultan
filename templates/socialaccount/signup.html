@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}{% if LANGUAGE_CODE == 'en' %}Complete Google Registration{% else %}إكمال التسجيل عبر Google{% endif %} — HaybatAlsultan{% endblock %}
+
+{% block content %}
+<section class="google-onboarding-shell">
+  <div class="container">
+    <div class="google-onboarding-card" data-phone-country-scope>
+      <header class="google-onboarding-header">
+        <div class="google-onboarding-icon" aria-hidden="true">G</div>
+        <div class="google-onboarding-copy">
+          <span class="google-onboarding-eyebrow">
+            {% if LANGUAGE_CODE == 'en' %}Google verified account{% else %}حساب موثّق عبر Google{% endif %}
+          </span>
+          <h1>{% if LANGUAGE_CODE == 'en' %}Complete your account{% else %}أكمل بيانات حسابك{% endif %}</h1>
+          <p>
+            {% if LANGUAGE_CODE == 'en' %}
+              Your Google identity has been verified. Add your country and mobile number to complete your HaybatAlsultan customer account.
+            {% else %}
+              تم التحقق من هويتك عبر Google. أضف الدولة ورقم الهاتف لإكمال حساب العميل في HaybatAlsultan.
+            {% endif %}
+          </p>
+        </div>
+      </header>
+
+      <div class="google-onboarding-trust">
+        <svg class="ui-icon" aria-hidden="true"><use href="#icon-shield"></use></svg>
+        <span>
+          {% if LANGUAGE_CODE == 'en' %}
+            Your Google password is never shared with HaybatAlsultan.
+          {% else %}
+            كلمة مرور Google لا تتم مشاركتها مع HaybatAlsultan.
+          {% endif %}
+        </span>
+      </div>
+
+      <form method="post" action="{% url 'socialaccount_signup' %}" class="google-onboarding-form" novalidate>
+        {% csrf_token %}
+
+        {% for field in form %}
+          {% if field.name == 'country' %}
+            <div class="google-field">
+              {{ field.label_tag }}
+              {{ field }}
+              {% if field.errors %}<div class="google-field-error">{{ field.errors }}</div>{% endif %}
+            </div>
+
+          {% elif field.name == 'phone_local' %}
+            <div class="google-field">
+              {{ field.label_tag }}
+              <div class="phone-country-input google-phone-row">
+                <span class="dial-code-chip" data-dial-code>+971</span>
+                {{ field }}
+              </div>
+              <small class="google-field-hint">
+                {% if LANGUAGE_CODE == 'en' %}
+                  Enter the mobile number without the international calling code.
+                {% else %}
+                  أدخل رقم الهاتف بدون كود الاتصال الدولي.
+                {% endif %}
+              </small>
+              {% if field.errors %}<div class="google-field-error">{{ field.errors }}</div>{% endif %}
+            </div>
+
+          {% elif field.name == 'policy_acceptance' %}
+            <div class="google-policy-box">
+              <label class="google-policy-row" for="{{ field.id_for_label }}">
+                <span class="google-policy-check">{{ field }}</span>
+                <span class="google-policy-copy">
+                  {% if LANGUAGE_CODE == 'en' %}
+                    I agree to the
+                    <a href="{% url 'core:info' 'terms' %}" target="_blank" rel="noopener">Terms & Conditions</a>
+                    and
+                    <a href="{% url 'core:info' 'privacy' %}" target="_blank" rel="noopener">Privacy Policy</a>.
+                  {% else %}
+                    أوافق على
+                    <a href="{% url 'core:info' 'terms' %}" target="_blank" rel="noopener">الشروط والأحكام</a>
+                    و
+                    <a href="{% url 'core:info' 'privacy' %}" target="_blank" rel="noopener">سياسة الخصوصية</a>.
+                  {% endif %}
+                </span>
+              </label>
+              {% if field.errors %}<div class="google-field-error">{{ field.errors }}</div>{% endif %}
+            </div>
+
+          {% else %}
+            {% if field.is_hidden %}
+              {{ field }}
+            {% else %}
+              <div class="google-field{% if field.field.disabled %} google-field-verified{% endif %}">
+                <div class="google-label-row">
+                  {{ field.label_tag }}
+                  {% if field.field.disabled %}
+                    <span class="google-verified-badge">
+                      <svg class="ui-icon" aria-hidden="true"><use href="#icon-check"></use></svg>
+                      {% if LANGUAGE_CODE == 'en' %}Verified by Google{% else %}موثّق من Google{% endif %}
+                    </span>
+                  {% endif %}
+                </div>
+                {{ field }}
+                {% if field.help_text %}<div class="google-field-hint">{{ field.help_text }}</div>{% endif %}
+                {% if field.errors %}<div class="google-field-error">{{ field.errors }}</div>{% endif %}
+              </div>
+            {% endif %}
+          {% endif %}
+        {% endfor %}
+
+        {% if form.non_field_errors %}
+          <div class="google-form-errors">{{ form.non_field_errors }}</div>
+        {% endif %}
+
+        <button type="submit" class="btn btn-gold google-complete-btn">
+          {% if LANGUAGE_CODE == 'en' %}Complete Account{% else %}إكمال إنشاء الحساب{% endif %}
+        </button>
+      </form>
+
+      <footer class="google-onboarding-footer">
+        <svg class="ui-icon" aria-hidden="true"><use href="#icon-lock"></use></svg>
+        <span>
+          {% if LANGUAGE_CODE == 'en' %}
+            Google sign-in is available to customer accounts only. Owner and supervisor accounts continue to use the protected HaybatAlsultan sign-in flow.
+          {% else %}
+            تسجيل Google مخصص لحسابات العملاء فقط. حسابات المالك والمشرف تستمر باستخدام تسجيل الدخول المحمي الخاص بـHaybatAlsultan.
+          {% endif %}
+        </span>
+      </footer>
+    </div>
+  </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script src="{% static 'js/address-location.js' %}" defer></script>
+{% endblock %}

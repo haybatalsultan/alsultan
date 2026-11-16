@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}{% if LANGUAGE_CODE == 'en' %}Continue with Google{% else %}المتابعة باستخدام Google{% endif %} — HaybatAlsultan{% endblock %}
+{% block content %}
+<section class="system-state-shell" aria-labelledby="state-title">
+  <div class="container">
+    <div class="system-state-card">
+      <div class="system-state-icon is-google" aria-hidden="true">G</div>
+      <p class="system-state-eyebrow">{% if LANGUAGE_CODE == 'en' %}Secure sign in{% else %}تسجيل دخول آمن{% endif %}</p>
+      <h1 id="state-title">{% if LANGUAGE_CODE == 'en' %}Continue with Google{% else %}المتابعة باستخدام Google{% endif %}</h1>
+      <p>{% if LANGUAGE_CODE == 'en' %}You will be redirected to Google to verify your identity, then returned securely to Haybat Al Sultan.{% else %}سيتم تحويلك إلى Google للتحقق من هويتك، ثم إعادتك بشكل آمن إلى متجر هيبة السلطان.{% endif %}</p>
+      <form method="post" class="system-state-form">
+        {% csrf_token %}
+        <button class="btn btn-gold" type="submit">{% if LANGUAGE_CODE == 'en' %}Continue securely{% else %}متابعة بشكل آمن{% endif %}</button>
+        <a class="btn btn-outline-gold" href="{% url 'accounts:login' %}">{% if LANGUAGE_CODE == 'en' %}Cancel{% else %}إلغاء{% endif %}</a>
+      </form>
+    </div>
+  </div>
+</section>
+{% endblock %}

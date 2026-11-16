@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}{% if LANGUAGE_CODE == 'en' %}Haybat Al Sultan | Premium Misbah & Collectibles{% else %}هيبة السلطان | مسابيح ومقتنيات فاخرة{% endif %}{% endblock %}
+{% block content %}
+<section class="luxury-hero" id="home-hero" aria-label="{% if LANGUAGE_CODE == 'en' %}Featured collections{% else %}المجموعات المميزة{% endif %}">
+  <div class="hero-image" aria-hidden="true"></div><span class="visually-hidden">{% if LANGUAGE_CODE == 'en' %}Natural amber Misbah{% else %}مسباح من الكهرمان الطبيعي{% endif %}</span>
+  <div class="container hero-content-wrap">
+    <div class="hero-copy">
+      <div class="hero-slide active"><h1>{% if LANGUAGE_CODE == 'en' %}The Prestige of Authenticity. The Beauty of Amber.{% else %}هيبة الأصل... جمال الكهرمان{% endif %}</h1><p>{% if LANGUAGE_CODE == 'en' %}Exceptional Misbah, natural stones and rare pieces selected for discerning collectors.{% else %}مسابيح وأحجار طبيعية ونوادر مختارة بعناية لعشاق التميز{% endif %}</p></div>
+      <div class="hero-slide" hidden><h1>{% if LANGUAGE_CODE == 'en' %}Crafted for Collectors{% else %}مختارة لهواة الاقتناء{% endif %}</h1><p>{% if LANGUAGE_CODE == 'en' %}Distinctive pieces where material, craftsmanship and heritage come together.{% else %}قطع مميزة تجمع بين الخامة والحرفية وأصالة التراث{% endif %}</p></div>
+      <div class="hero-slide" hidden><h1>{% if LANGUAGE_CODE == 'en' %}Rare Pieces. Timeless Presence.{% else %}نوادر بحضور لا يزول{% endif %}</h1><p>{% if LANGUAGE_CODE == 'en' %}Discover carefully selected collectibles with character and provenance.{% else %}اكتشف مقتنيات مختارة بعناية بطابع مميز وقيمة أصيلة{% endif %}</p></div>
+      <div class="hero-slide" hidden><h1>{% if LANGUAGE_CODE == 'en' %}A Gift with Prestige{% else %}هدية تليق بالهيبة{% endif %}</h1><p>{% if LANGUAGE_CODE == 'en' %}Premium selections presented with refined gifting details.{% else %}اختيارات فاخرة بتفاصيل تقديم أنيقة تليق بالمناسبة{% endif %}</p></div>
+      <a class="hero-shop-button" href="{% url 'catalog:list' %}">{% if LANGUAGE_CODE == 'en' %}Shop the Collection{% else %}تسوق المجموعة{% endif %}<svg class="ui-icon" aria-hidden="true"><use href="#icon-cart"></use></svg></a>
+    </div>
+  </div>
+  <button class="hero-arrow hero-prev" type="button" aria-label="{% if LANGUAGE_CODE == 'en' %}Previous slide{% else %}الشريحة السابقة{% endif %}">‹</button>
+  <button class="hero-arrow hero-next" type="button" aria-label="{% if LANGUAGE_CODE == 'en' %}Next slide{% else %}الشريحة التالية{% endif %}">›</button>
+  <div class="hero-dots" aria-label="{% if LANGUAGE_CODE == 'en' %}Hero slides{% else %}شرائح الواجهة{% endif %}"><button class="active" type="button" aria-label="1"></button><button type="button" aria-label="2"></button><button type="button" aria-label="3"></button><button type="button" aria-label="4"></button></div>
+</section>
+
+<section class="benefits-strip"><div class="container benefits-grid">
+  <article class="benefit-item"><span class="benefit-icon"><svg class="ui-icon"><use href="#icon-truck"></use></svg></span><div><strong>{% if LANGUAGE_CODE == 'en' %}Fast Delivery{% else %}توصيل سريع{% endif %}</strong><small>{% if LANGUAGE_CODE == 'en' %}Across the UAE{% else %}داخل الإمارات{% endif %}</small></div></article>
+  <article class="benefit-item"><span class="benefit-icon"><svg class="ui-icon"><use href="#icon-gift"></use></svg></span><div><strong>{% if LANGUAGE_CODE == 'en' %}Premium Packaging{% else %}تغليف فاخر{% endif %}</strong><small>{% if LANGUAGE_CODE == 'en' %}Ready for gifting{% else %}جاهز للإهداء{% endif %}</small></div></article>
+  <article class="benefit-item"><span class="benefit-icon"><svg class="ui-icon"><use href="#icon-diamond"></use></svg></span><div><strong>{% if LANGUAGE_CODE == 'en' %}Authenticity First{% else %}الأصالة أولاً{% endif %}</strong><small>{% if LANGUAGE_CODE == 'en' %}Carefully selected pieces{% else %}قطع مختارة بعناية{% endif %}</small></div></article>
+  <article class="benefit-item"><span class="benefit-icon"><svg class="ui-icon"><use href="#icon-service"></use></svg></span><div><strong>{% if LANGUAGE_CODE == 'en' %}Personal Service{% else %}خدمة مميزة{% endif %}</strong><small>{% if LANGUAGE_CODE == 'en' %}We are here to assist{% else %}نحن هنا لخدمتكم{% endif %}</small></div></article>
+</div></section>
+
+<section class="featured-categories container">
+  <div class="ornament-title"><span></span><i>◇</i><h2>{% if LANGUAGE_CODE == 'en' %}Featured Categories{% else %}الأقسام المميزة{% endif %}</h2><i>◇</i><span></span></div>
+  <div class="category-grid">
+    <article class="category-card"><img src="{% static 'branding/category-misbah.jpg' %}" alt="{% if LANGUAGE_CODE == 'en' %}Premium Misbah{% else %}مسابيح فاخرة{% endif %}" loading="lazy"><div class="category-body"><h3>{% if LANGUAGE_CODE == 'en' %}Misbah{% else %}المسابيح{% endif %}</h3><p>{% if LANGUAGE_CODE == 'en' %}A premium selection of distinctive Misbah{% else %}تشكيلة فاخرة من المسابيح المميزة{% endif %}</p><a href="{% url 'catalog:list' %}?category=misbah">{% if LANGUAGE_CODE == 'en' %}Explore{% else %}استكشف{% endif %}</a></div></article>
+    <article class="category-card"><img src="{% static 'branding/category-gemstones.jpg' %}" alt="{% if LANGUAGE_CODE == 'en' %}Natural gemstones{% else %}أحجار كريمة طبيعية{% endif %}" loading="lazy"><div class="category-body"><h3>{% if LANGUAGE_CODE == 'en' %}Gemstones{% else %}الأحجار الكريمة{% endif %}</h3><p>{% if LANGUAGE_CODE == 'en' %}Natural stones selected with care{% else %}أحجار طبيعية مختارة بعناية{% endif %}</p><a href="{% url 'core:coming_soon' 'gemstones' %}">{% if LANGUAGE_CODE == 'en' %}Explore{% else %}استكشف{% endif %}</a></div></article>
+    <article class="category-card"><img src="{% static 'branding/category-rare.jpg' %}" alt="{% if LANGUAGE_CODE == 'en' %}Rare collectibles{% else %}قطع نادرة{% endif %}" loading="lazy"><div class="category-body"><h3>{% if LANGUAGE_CODE == 'en' %}Rare Collectibles{% else %}النوادر{% endif %}</h3><p>{% if LANGUAGE_CODE == 'en' %}Distinctive pieces for serious collectors{% else %}قطع نادرة لهواة الاقتناء{% endif %}</p><a href="{% url 'core:coming_soon' 'rare-collectibles' %}">{% if LANGUAGE_CODE == 'en' %}Explore{% else %}استكشف{% endif %}</a></div></article>
+    <article class="category-card"><img src="{% static 'branding/category-gifts.jpg' %}" alt="{% if LANGUAGE_CODE == 'en' %}Premium gifts{% else %}هدايا فاخرة{% endif %}" loading="lazy"><div class="category-body"><h3>{% if LANGUAGE_CODE == 'en' %}Gifts{% else %}الهدايا{% endif %}</h3><p>{% if LANGUAGE_CODE == 'en' %}Refined gifts with distinctive details{% else %}هدايا فاخرة بلمسات مميزة{% endif %}</p><a href="{% url 'core:coming_soon' 'gifts' %}">{% if LANGUAGE_CODE == 'en' %}Explore{% else %}استكشف{% endif %}</a></div></article>
+  </div>
+</section>
+
+{% if products %}<section class="container featured-products-section"><div class="section-title"><h2>{% if LANGUAGE_CODE == 'en' %}Featured Selections{% else %}مختارات مميزة{% endif %}</h2><a href="{% url 'catalog:list' %}">{% if LANGUAGE_CODE == 'en' %}View All{% else %}عرض الكل{% endif %}</a></div><div class="row g-4">{% for product in products %}{% include 'catalog/_card.html' %}{% endfor %}</div></section>{% endif %}
+{% endblock %}

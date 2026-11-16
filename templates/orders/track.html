@@ -1,0 +1,101 @@
+{% extends 'base.html' %}
+{% block title %}{% if LANGUAGE_CODE == 'en' %}Track Order{% else %}تتبع الطلب{% endif %} — {% if LANGUAGE_CODE == 'en' %}Haybat Al Sultan{% else %}هيبة السلطان{% endif %}{% endblock %}
+{% block content %}
+<section class="order-track-page">
+  <div class="container order-track-shell py-4 py-lg-5">
+    <header class="order-track-hero">
+      <p class="eyebrow">{% if LANGUAGE_CODE == 'en' %}Order Tracking{% else %}تتبع الطلب{% endif %}</p>
+      <h1>{% if LANGUAGE_CODE == 'en' %}Where is my order?{% else %}وين وصل طلبك؟{% endif %}</h1>
+      <p>{% if LANGUAGE_CODE == 'en' %}Enter the order reference and the same mobile number used at checkout. We use both values to protect your order information.{% else %}أدخل رقم الطلب ونفس رقم الهاتف المستخدم عند إتمام الطلب. نستخدم البيانين معًا لحماية معلومات طلبك.{% endif %}</p>
+    </header>
+
+    <div class="order-track-layout{% if not order %} is-search-only{% endif %}">
+      <section class="order-track-search-card">
+        <div class="order-track-card-title">
+          <svg class="ui-icon" aria-hidden="true"><use href="#icon-search"></use></svg>
+          <div><strong>{% if LANGUAGE_CODE == 'en' %}Find your order{% else %}ابحث عن طلبك{% endif %}</strong><small>{% if LANGUAGE_CODE == 'en' %}Your details are verified securely.{% else %}يتم التحقق من بياناتك بشكل آمن.{% endif %}</small></div>
+        </div>
+        <form method="post" class="order-track-form" novalidate>
+          {% csrf_token %}
+          <div>
+            <label for="{{ form.reference.id_for_label }}">{{ form.reference.label }}</label>
+            {{ form.reference }}
+            {% for error in form.reference.errors %}<small class="order-track-error">{{ error }}</small>{% endfor %}
+          </div>
+          <div>
+            <label for="{{ form.phone.id_for_label }}">{{ form.phone.label }}</label>
+            {{ form.phone }}
+            {% for error in form.phone.errors %}<small class="order-track-error">{{ error }}</small>{% endfor %}
+          </div>
+          <button class="btn btn-gold" type="submit">{% if LANGUAGE_CODE == 'en' %}Track order{% else %}تتبع الطلب{% endif %}</button>
+        </form>
+        {% if request.user.is_authenticated %}
+          <a class="order-track-my-orders" href="{% url 'orders:my_orders' %}">{% if LANGUAGE_CODE == 'en' %}View my orders{% else %}عرض طلباتي المسجلة{% endif %}</a>
+        {% endif %}
+        <div class="order-track-security-note">
+          <svg class="ui-icon" aria-hidden="true"><use href="#icon-lock"></use></svg>
+          <span>{% if LANGUAGE_CODE == 'en' %}For your privacy, order details are shown only when both values match.{% else %}لحماية خصوصيتك، لا تظهر تفاصيل الطلب إلا عند تطابق رقم الطلب ورقم الهاتف معًا.{% endif %}</span>
+        </div>
+        {% if attempted and not order %}
+          <div class="order-track-not-found" aria-live="polite">{% if LANGUAGE_CODE == 'en' %}We could not verify an order with the provided details. Check both values and try again.{% else %}تعذر التحقق من الطلب بالبيانات المدخلة. تأكد من رقم الطلب والهاتف ثم حاول مرة أخرى.{% endif %}</div>
+        {% endif %}
+      </section>
+
+      {% if order %}
+      <section class="order-track-result" aria-live="polite">
+        <div class="order-track-result-head">
+          <div><span>{% if LANGUAGE_CODE == 'en' %}Order{% else %}الطلب{% endif %}</span><strong dir="ltr">{{ order.reference }}</strong><small>{{ order.updated_at|date:"Y-m-d H:i" }}</small></div>
+          <div class="order-track-status-badges">
+            <span class="order-track-badge{% if order.payment_status == 'PAID' %} is-success{% endif %}">{% if LANGUAGE_CODE == 'en' %}{{ order.get_payment_status_display }}{% else %}{{ payment_label_ar }}{% endif %}</span>
+            <span class="order-track-badge is-order">{% if LANGUAGE_CODE == 'en' %}{{ order.get_status_display }}{% else %}{{ status_label_ar }}{% endif %}</span>
+          </div>
+        </div>
+
+        {% if tracking_terminal_state %}
+          <div class="order-track-terminal-state">{% if LANGUAGE_CODE == 'en' %}This order is {{ order.get_status_display|lower }}. Contact Haybat Al Sultan if you need assistance.{% else %}حالة هذا الطلب: {{ status_label_ar }}. يمكنك التواصل مع هيبة السلطان إذا احتجت مساعدة.{% endif %}</div>
+        {% else %}
+          <div class="order-track-progress" aria-label="{% if LANGUAGE_CODE == 'en' %}Delivery progress{% else %}مراحل التوصيل{% endif %}">
+            {% for step in tracking_steps %}
+              <div class="order-track-step{% if step.complete %} is-complete{% endif %}{% if step.current %} is-current{% endif %}">
+                <span class="order-track-step-dot" aria-hidden="true"></span>
+                <small>{% if LANGUAGE_CODE == 'en' %}{{ step.label_en }}{% else %}{{ step.label_ar }}{% endif %}</small>
+              </div>
+            {% endfor %}
+          </div>
+        {% endif %}
+
+        {% if order.shipping_carrier or order.tracking_number or order.tracking_url %}
+        <div class="order-track-shipment-card">
+          <div class="order-track-card-title">
+            <svg class="ui-icon" aria-hidden="true"><use href="#icon-truck"></use></svg>
+            <div><strong>{% if LANGUAGE_CODE == 'en' %}Shipment details{% else %}بيانات التوصيل{% endif %}</strong><small>{% if LANGUAGE_CODE == 'en' %}Latest information supplied by the store.{% else %}آخر بيانات التوصيل المسجلة من إدارة المتجر.{% endif %}</small></div>
+          </div>
+          <dl>
+            {% if order.shipping_carrier %}<div><dt>{% if LANGUAGE_CODE == 'en' %}Carrier{% else %}شركة التوصيل{% endif %}</dt><dd>{{ order.shipping_carrier }}</dd></div>{% endif %}
+            {% if order.tracking_number %}<div><dt>{% if LANGUAGE_CODE == 'en' %}Tracking number{% else %}رقم التتبع{% endif %}</dt><dd dir="ltr">{{ order.tracking_number }}</dd></div>{% endif %}
+          </dl>
+          {% if order.tracking_url %}<a class="btn btn-outline-dark order-track-external" href="{{ order.tracking_url }}" target="_blank" rel="noopener noreferrer nofollow">{% if LANGUAGE_CODE == 'en' %}Track with carrier{% else %}تتبع الشحنة لدى شركة التوصيل{% endif %}</a>{% endif %}
+        </div>
+        {% endif %}
+
+        <div class="order-track-products">
+          <h2>{% if LANGUAGE_CODE == 'en' %}Order items{% else %}قطع الطلب{% endif %}</h2>
+          {% for item in order.items.all %}
+          <article class="tracking-proof-item">
+            {% if item.image_url_snapshot %}<img src="{{ item.image_url_snapshot }}" alt="" loading="lazy" referrerpolicy="no-referrer">{% else %}<div class="order-track-image-placeholder">HS</div>{% endif %}
+            <div><strong>{% if LANGUAGE_CODE == 'en' %}{{ item.name_en }}{% else %}{{ item.name_ar }}{% endif %}</strong><small dir="ltr">{{ item.product_reference }} · {{ item.sku }}</small><small>{% if LANGUAGE_CODE == 'en' %}Quantity{% else %}الكمية{% endif %}: {{ item.quantity }}</small></div>
+          </article>
+          {% endfor %}
+          <div class="order-track-total"><span>{% if LANGUAGE_CODE == 'en' %}Order total{% else %}إجمالي الطلب{% endif %}</span><strong dir="ltr">AED {{ order.grand_total|floatformat:2 }}</strong></div>
+        </div>
+
+        <details class="order-track-history">
+          <summary>{% if LANGUAGE_CODE == 'en' %}View order history{% else %}عرض سجل مراحل الطلب{% endif %}</summary>
+          <div class="order-timeline compact">{% for event in order.timeline.all %}<div class="timeline-event"><span></span><div><strong>{% if LANGUAGE_CODE == 'en' %}{{ event.label_en }}{% else %}{{ event.label_ar }}{% endif %}</strong><small>{{ event.created_at|date:"Y-m-d H:i" }}</small></div></div>{% empty %}<p>—</p>{% endfor %}</div>
+        </details>
+      </section>
+      {% endif %}
+    </div>
+  </div>
+</section>
+{% endblock %}

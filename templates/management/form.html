@@ -1,0 +1,157 @@
+{% extends 'base.html' %}
+{% block title %}{{ title }} — Haybat Al Sultan{% if form.confirm_high_discount %}
+<script>
+(function(){
+  const form=document.querySelector(".management-form"); if(!form)return;
+  const selling=form.querySelector('[name="selling_price"]');
+  const discount=form.querySelector('[name="discount_price"]');
+  const confirm=form.querySelector('[name="confirm_high_discount"]');
+  const confirmWrap=form.querySelector("[data-high-discount-confirm]");
+  const box=form.querySelector("[data-high-discount-warning]");
+  function update(){
+    const s=Number(selling?.value), d=Number(discount?.value);
+    const valid=Number.isFinite(s)&&s>0&&Number.isFinite(d)&&d>=0&&d<s;
+    const pct=valid?((s-d)/s*100):0;
+    const high=valid&&pct>15;
+    if(box) box.hidden=!high;
+    if(confirmWrap) confirmWrap.hidden=!high;
+    if(high&&box){
+      box.querySelector("[data-original-price]").textContent=s.toLocaleString(undefined,{minimumFractionDigits:2})+" AED";
+      box.querySelector("[data-discount-price]").textContent=d.toLocaleString(undefined,{minimumFractionDigits:2})+" AED";
+      box.querySelector("[data-discount-percent]").textContent=pct.toFixed(2)+"%";
+    } else if(confirm){confirm.checked=false;}
+  }
+  selling?.addEventListener("input",update);
+  discount?.addEventListener("input",update);
+  update();
+})();
+</script>
+{% endif %}
+{% endblock %}
+{% block content %}
+<section class="management-page">
+  <div class="container management-shell management-form-shell py-4 py-lg-5">
+    {% include 'management/_page_header.html' with page_title=title page_description=page_description %}
+
+    <div class="management-content-card management-form-card">
+      <form method="post" enctype="multipart/form-data" class="management-form" novalidate>
+        {% csrf_token %}
+
+        {% if current_image_url %}
+          <div class="master-data-current-image">
+            <img src="{{ current_image_url }}" alt="">
+            <div>
+              <strong>{% if LANGUAGE_CODE == 'en' %}Current image{% else %}الصورة الحالية{% endif %}</strong>
+              <small>{% if LANGUAGE_CODE == 'en' %}Uploading a new image will replace it automatically.{% else %}رفع صورة جديدة سيستبدل الصورة الحالية تلقائيًا.{% endif %}</small>
+            </div>
+          </div>
+        {% endif %}
+
+        {% if form.confirm_high_discount %}
+          <div class="price-safety-note">
+            <strong>{% if LANGUAGE_CODE == 'en' %}Pricing protection{% else %}حماية التسعير{% endif %}</strong>
+            <span>{% if LANGUAGE_CODE == 'en' %}Discounts above 15% require explicit owner confirmation before saving.{% else %}إذا تجاوز الخصم 15% سيطلب النظام تأكيدًا إضافيًا من المالك قبل الحفظ.{% endif %}</span>
+          </div>
+        {% endif %}
+
+        {% for field in form %}
+          {% if field.name == 'confirm_high_discount' %}
+            <div class="high-discount-warning" data-high-discount-warning hidden role="alert">
+              <strong>{% if LANGUAGE_CODE == 'en' %}⚠ High discount: above 15%{% else %}⚠ تنبيه: نسبة الخصم تتجاوز 15%{% endif %}</strong>
+              <div><span>{% if LANGUAGE_CODE == 'en' %}Selling price{% else %}سعر البيع{% endif %}</span><b data-original-price>—</b></div>
+              <div><span>{% if LANGUAGE_CODE == 'en' %}Discount price{% else %}السعر بعد الخصم{% endif %}</span><b data-discount-price>—</b></div>
+              <div><span>{% if LANGUAGE_CODE == 'en' %}Discount{% else %}نسبة الخصم{% endif %}</span><b data-discount-percent>—</b></div>
+              <small>{% if LANGUAGE_CODE == 'en' %}Review carefully. Server validation requires confirmation before saving.{% else %}راجع السعر بعناية. لن يسمح السيرفر بالحفظ حتى تؤكد أن الخصم مقصود.{% endif %}</small>
+            </div>
+            <div class="management-field high-discount-confirm" data-high-discount-confirm>
+              <label for="{{ field.id_for_label }}">{{ field }} {{ field.label }}</label>
+              {% if field.errors %}<div class="management-field-errors">{{ field.errors }}</div>{% endif %}
+            </div>
+          {% elif field.name == 'is_active' or field.name == 'remove_image' %}
+            <div class="management-switch-field{% if field.name == 'remove_image' %} management-switch-danger{% endif %}">
+              <div class="management-switch-copy">
+                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                <small>
+                  {% if field.name == 'is_active' %}
+                    {% if LANGUAGE_CODE == 'en' %}
+                      Enable this record so it can be selected when managing products.
+                    {% else %}
+                      فعّل هذا الخيار لإتاحة السجل للاستخدام عند إدارة المنتجات.
+                    {% endif %}
+                  {% else %}
+                    {% if LANGUAGE_CODE == 'en' %}
+                      Remove the currently stored Cloudinary image after saving.
+                    {% else %}
+                      احذف الصورة الحالية المخزنة في Cloudinary بعد الحفظ.
+                    {% endif %}
+                  {% endif %}
+                </small>
+              </div>
+
+              <label class="management-switch" for="{{ field.id_for_label }}">
+                {{ field }}
+                <span class="management-switch-track" aria-hidden="true">
+                  <span class="management-switch-thumb"></span>
+                </span>
+                <span class="visually-hidden">{{ field.label }}</span>
+              </label>
+
+              {% if field.errors %}
+                <div class="management-field-errors">{{ field.errors }}</div>
+              {% endif %}
+            </div>
+          {% elif field.name == 'image' %}
+            <div class="management-field master-data-image-upload">
+              {{ field.label_tag }}
+              {{ field }}
+              {% if field.help_text %}<div class="management-helptext">{{ field.help_text }}</div>{% endif %}
+              {% if field.errors %}<div class="management-field-errors">{{ field.errors }}</div>{% endif %}
+            </div>
+          {% else %}
+            <div class="management-field">
+              {{ field.label_tag }}
+              {{ field }}
+              {% if field.help_text %}
+                <div class="management-helptext">{{ field.help_text }}</div>
+              {% endif %}
+              {% if field.errors %}
+                <div class="management-field-errors">{{ field.errors }}</div>
+              {% endif %}
+            </div>
+          {% endif %}
+        {% endfor %}
+
+        {% if form.non_field_errors %}
+          <div class="management-form-errors">
+            {{ form.non_field_errors }}
+          </div>
+        {% endif %}
+
+        <div class="management-form-actions management-form-actions-polished">
+          <button class="management-primary-btn" type="submit">
+            {% if LANGUAGE_CODE == 'en' %}Save changes{% else %}حفظ التغييرات{% endif %}
+          </button>
+
+          <a
+            class="management-secondary-btn"
+            href="{% if cancel_url_name %}{% url cancel_url_name %}{% else %}{% url 'core:management_dashboard' %}{% endif %}"
+          >
+            {% if LANGUAGE_CODE == 'en' %}Cancel and return{% else %}إلغاء والعودة{% endif %}
+          </a>
+        </div>
+      </form>
+    </div>
+    {% if form.confirm_high_discount and product %}
+      <div class="pricing-secondary-actions mt-3">
+        <a class="management-secondary-btn" href="{% url 'core:management_product_pricing_history' product.public_id %}">عرض سجل ومصدر الخصم</a>
+        {% if product.discount_price %}
+        <form method="post" action="{% url 'core:management_clear_direct_discount' product.public_id %}" onsubmit="return confirm('هل تريد إلغاء الخصم المباشر لهذه القطعة؟');">
+          {% csrf_token %}<input type="hidden" name="reason" value="Owner cleared direct discount from pricing screen">
+          <button class="management-secondary-btn" type="submit">إلغاء الخصم المباشر</button>
+        </form>
+        {% endif %}
+      </div>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,272 @@
+{% extends 'base.html' %}
+{% load order_labels %}
+{% block content %}
+<section class="management-dashboard">
+  <div class="container management-shell py-4 py-lg-5">
+    <header class="management-welcome">
+      <div class="management-welcome-copy">
+        <span class="management-eyebrow">{% if LANGUAGE_CODE == 'en' %}Haybat Al Sultan Management Portal{% else %}بوابة إدارة هيبة السلطان{% endif %}</span>
+        <h1>
+          {% if LANGUAGE_CODE == 'en' %}Welcome, {% else %}هلا، {% endif %}
+          <strong>{{ user.get_full_name|default:user.username }}</strong>
+        </h1>
+        <div class="management-identity">
+          <span class="role-pill role-{{ user.role|lower }}">
+            {% if user.role == 'OWNER' %}{% if LANGUAGE_CODE == 'en' %}Owner{% else %}المالك{% endif %}{% else %}{% if LANGUAGE_CODE == 'en' %}Supervisor{% else %}مشرف{% endif %}{% endif %}
+          </span>
+          <span class="management-username" dir="ltr">@{{ user.username }}</span>
+          <span class="identity-dot" aria-hidden="true">•</span>
+          <span>{% if LANGUAGE_CODE == 'en' %}Secure management session{% else %}جلسة إدارة آمنة{% endif %}</span>
+        </div>
+      </div>
+      <div class="management-welcome-actions">
+        <a class="management-action secondary" href="{% url 'accounts:profile' %}"><svg class="ui-icon"><use href="#icon-user"></use></svg>
+          {% if LANGUAGE_CODE == 'en' %}My Account{% else %}حسابي{% endif %}
+        </a>
+        {% if user.role == 'OWNER' or user.role == 'SUPERVISOR' %}
+          <a class="management-action secondary" href="{% url 'accounts:mfa_setup' %}"><svg class="ui-icon"><use href="#icon-shield"></use></svg>
+            {% if LANGUAGE_CODE == 'en' %}MFA Security{% else %}أمان MFA{% endif %}
+          </a>
+        {% endif %}
+        <form method="post" action="{% url 'accounts:logout' %}" class="management-logout-form">
+          {% csrf_token %}
+          <button class="management-action danger-soft" type="submit"><svg class="ui-icon"><use href="#icon-logout"></use></svg>
+            {% if LANGUAGE_CODE == 'en' %}Sign Out{% else %}تسجيل الخروج{% endif %}
+          </button>
+        </form>
+      </div>
+    </header>
+
+    <div class="management-section-heading">
+      <div>
+        <h2>{% if LANGUAGE_CODE == 'en' %}Overview{% else %}نظرة عامة{% endif %}</h2>
+        <p>{% if LANGUAGE_CODE == 'en' %}A concise view of the store's current operational status.{% else %}ملخص سريع لحالة المتجر والعمليات الحالية.{% endif %}</p>
+      </div>
+    </div>
+
+    <div class="management-metrics{% if is_owner %} owner-metrics{% endif %}">
+      <article class="management-metric-card">
+        <div class="metric-icon" aria-hidden="true"><svg class="ui-icon"><use href="#icon-orders"></use></svg></div>
+        <div><span>{% if LANGUAGE_CODE == 'en' %}Orders{% else %}الطلبات{% endif %}</span><strong>{{ orders }}</strong><small>{% if LANGUAGE_CODE == 'en' %}All store orders{% else %}إجمالي طلبات المتجر{% endif %}</small></div>
+      </article>
+      <article class="management-metric-card{% if awaiting_payment %} attention{% endif %}">
+        <div class="metric-icon" aria-hidden="true"><svg class="ui-icon"><use href="#icon-clock"></use></svg></div>
+        <div><span>{% if LANGUAGE_CODE == 'en' %}Awaiting Payment{% else %}بانتظار الدفع{% endif %}</span><strong>{{ awaiting_payment }}</strong><small>{% if LANGUAGE_CODE == 'en' %}Unpaid or pending{% else %}غير مدفوع أو قيد الدفع{% endif %}</small></div>
+      </article>
+      <article class="management-metric-card">
+        <div class="metric-icon" aria-hidden="true"><svg class="ui-icon"><use href="#icon-shield"></use></svg></div>
+        <div><span>{% if LANGUAGE_CODE == 'en' %}Paid & Confirmed{% else %}مدفوع ومؤكد{% endif %}</span><strong>{{ paid_confirmed }}</strong><small>{% if LANGUAGE_CODE == 'en' %}Ready for fulfilment{% else %}جاهز لبدء التجهيز{% endif %}</small></div>
+      </article>
+      <article class="management-metric-card">
+        <div class="metric-icon" aria-hidden="true"><svg class="ui-icon"><use href="#icon-package"></use></svg></div>
+        <div><span>{% if LANGUAGE_CODE == 'en' %}Preparing{% else %}قيد التجهيز{% endif %}</span><strong>{{ preparing }}</strong><small>{% if LANGUAGE_CODE == 'en' %}Being prepared now{% else %}طلبات تحت التجهيز{% endif %}</small></div>
+      </article>
+      <article class="management-metric-card">
+        <div class="metric-icon" aria-hidden="true"><svg class="ui-icon"><use href="#icon-truck"></use></svg></div>
+        <div><span>{% if LANGUAGE_CODE == 'en' %}Ready for Delivery{% else %}جاهز للتوصيل{% endif %}</span><strong>{{ ready_delivery }}</strong><small>{% if LANGUAGE_CODE == 'en' %}Awaiting carrier handoff{% else %}بانتظار تسليم شركة التوصيل{% endif %}</small></div>
+      </article>
+      <article class="management-metric-card">
+        <div class="metric-icon" aria-hidden="true"><svg class="ui-icon"><use href="#icon-truck"></use></svg></div>
+        <div><span>{% if LANGUAGE_CODE == 'en' %}Out for Delivery{% else %}خرج للتوصيل{% endif %}</span><strong>{{ out_for_delivery }}</strong><small>{% if LANGUAGE_CODE == 'en' %}On the way to customers{% else %}في الطريق إلى العملاء{% endif %}</small></div>
+      </article>
+      <article class="management-metric-card">
+        <div class="metric-icon" aria-hidden="true"><svg class="ui-icon"><use href="#icon-shield"></use></svg></div>
+        <div><span>{% if LANGUAGE_CODE == 'en' %}Delivered{% else %}تم التسليم{% endif %}</span><strong>{{ delivered }}</strong><small>{% if LANGUAGE_CODE == 'en' %}Completed deliveries{% else %}طلبات مكتملة التسليم{% endif %}</small></div>
+      </article>
+      {% if can_view_products %}
+      <article class="management-metric-card">
+        <div class="metric-icon" aria-hidden="true"><svg class="ui-icon"><use href="#icon-package"></use></svg></div>
+        <div><span>{% if LANGUAGE_CODE == 'en' %}Available Products{% else %}متاح للبيع{% endif %}</span><strong>{{ available_products }}</strong><small>{% if LANGUAGE_CODE == 'en' %}Free stock available{% else %}منتجات لديها كمية حرة{% endif %}</small></div>
+      </article>
+      <article class="management-metric-card{% if sold_out_products %} attention{% endif %}">
+        <div class="metric-icon" aria-hidden="true"><svg class="ui-icon"><use href="#icon-alert"></use></svg></div>
+        <div><span>{% if LANGUAGE_CODE == 'en' %}Sold Out{% else %}نفد المخزون{% endif %}</span><strong>{{ sold_out_products }}</strong><small>{% if LANGUAGE_CODE == 'en' %}No free stock{% else %}لا توجد كمية متاحة{% endif %}</small></div>
+      </article>
+      <article class="management-metric-card{% if low_stock %} attention{% endif %}">
+        <div class="metric-icon" aria-hidden="true"><svg class="ui-icon"><use href="#icon-alert"></use></svg></div>
+        <div><span>{% if LANGUAGE_CODE == 'en' %}Low Stock{% else %}مخزون منخفض{% endif %}</span><strong>{{ low_stock }}</strong><small>{% if LANGUAGE_CODE == 'en' %}One free unit remaining{% else %}متبقي قطعة حرة واحدة{% endif %}</small></div>
+      </article>
+      {% endif %}
+      {% if is_owner %}
+      <article class="management-metric-card revenue-card">
+        <div class="metric-icon" aria-hidden="true"><svg class="ui-icon"><use href="#icon-wallet"></use></svg></div>
+        <div><span>{% if LANGUAGE_CODE == 'en' %}Paid Revenue{% else %}الإيراد المدفوع{% endif %}</span><strong dir="ltr">AED {{ revenue|floatformat:2 }}</strong><small>{% if LANGUAGE_CODE == 'en' %}Paid orders only{% else %}الطلبات المدفوعة فقط{% endif %}</small></div>
+      </article>
+      <article class="management-metric-card revenue-card">
+        <div class="metric-icon" aria-hidden="true"><svg class="ui-icon"><use href="#icon-wallet"></use></svg></div>
+        <div><span>{% if LANGUAGE_CODE == 'en' %}Today Revenue{% else %}إيراد اليوم{% endif %}</span><strong dir="ltr">AED {{ today_revenue|floatformat:2 }}</strong><small>{% if LANGUAGE_CODE == 'en' %}Paid today{% else %}المدفوع اليوم{% endif %}</small></div>
+      </article>
+      {% endif %}
+    </div>
+
+    <div class="management-section-heading management-tools-heading">
+      <div>
+        <h2>{% if LANGUAGE_CODE == 'en' %}Management Tools{% else %}أدوات الإدارة{% endif %}</h2>
+        <p>{% if LANGUAGE_CODE == 'en' %}Only tools permitted for your current role are displayed.{% else %}تظهر لك فقط الأدوات المتاحة حسب صلاحيات حسابك الحالي.{% endif %}</p>
+      </div>
+    </div>
+
+    <nav class="management-tool-grid" aria-label="{% if LANGUAGE_CODE == 'en' %}Management tools{% else %}أدوات الإدارة{% endif %}">
+      {% if can_view_products %}
+      <a class="management-tool-card" href="{% url 'core:management_products' %}">
+        <span class="tool-symbol" aria-hidden="true"><svg class="ui-icon"><use href="#icon-package"></use></svg></span>
+        <span class="tool-copy"><strong>{% if LANGUAGE_CODE == 'en' %}Products{% else %}المنتجات{% endif %}</strong><small>{% if LANGUAGE_CODE == 'en' %}Catalog, images and inventory{% else %}إدارة المنتجات والصور والمخزون{% endif %}</small></span>
+        <span class="tool-arrow" aria-hidden="true">‹</span>
+      </a>
+      {% endif %}
+      {% if can_manage_master_data %}
+      <a class="management-tool-card" href="{% url 'core:management_master_data' %}">
+        <span class="tool-symbol" aria-hidden="true"><svg class="ui-icon"><use href="#icon-database"></use></svg></span>
+        <span class="tool-copy"><strong>{% if LANGUAGE_CODE == 'en' %}Master Data{% else %}البيانات الرئيسية{% endif %}</strong><small>{% if LANGUAGE_CODE == 'en' %}Categories and materials{% else %}إدارة التصنيفات والخامات{% endif %}</small></span>
+        <span class="tool-arrow" aria-hidden="true">‹</span>
+      </a>
+      {% endif %}
+      {% if can_view_orders %}
+      <a class="management-tool-card" href="{% url 'core:management_orders' %}">
+        <span class="tool-symbol" aria-hidden="true"><svg class="ui-icon"><use href="#icon-orders"></use></svg></span>
+        <span class="tool-copy"><strong>{% if LANGUAGE_CODE == 'en' %}Orders{% else %}الطلبات{% endif %}</strong><small>{% if LANGUAGE_CODE == 'en' %}Review and manage order status{% else %}متابعة الطلبات وتحديث حالتها{% endif %}</small></span>
+        <span class="tool-arrow" aria-hidden="true">‹</span>
+      </a>
+      {% endif %}
+      {% if can_manage_delivery %}
+      <a class="management-tool-card" href="{% url 'core:management_orders' %}?stage=delivery">
+        <span class="tool-symbol" aria-hidden="true"><svg class="ui-icon"><use href="#icon-truck"></use></svg></span>
+        <span class="tool-copy"><strong>{% if LANGUAGE_CODE == 'en' %}Delivery & Shipping{% else %}التوصيل والشحن{% endif %}</strong><small>{% if LANGUAGE_CODE == 'en' %}Paid orders moving through fulfilment{% else %}الطلبات المدفوعة في مراحل التجهيز والتوصيل{% endif %}</small></span>
+        <span class="tool-arrow" aria-hidden="true">‹</span>
+      </a>
+      {% endif %}
+      {% if can_view_customers %}
+      <a class="management-tool-card" href="{% url 'core:management_customers' %}">
+        <span class="tool-symbol" aria-hidden="true"><svg class="ui-icon"><use href="#icon-users"></use></svg></span>
+        <span class="tool-copy"><strong>{% if LANGUAGE_CODE == 'en' %}Customers{% else %}العملاء{% endif %}</strong><small>{% if LANGUAGE_CODE == 'en' %}Customer profiles and contact details{% else %}بيانات العملاء والمعلومات المسموح بها{% endif %}</small></span>
+        <span class="tool-arrow" aria-hidden="true">‹</span>
+      </a>
+      {% endif %}
+      {% if can_view_ambassadors %}
+      <a class="management-tool-card{% if is_owner %} owner-tool{% endif %}" href="{% url 'core:management_ambassadors' %}">
+        <span class="tool-symbol" aria-hidden="true"><svg class="ui-icon"><use href="#icon-users"></use></svg></span>
+        <span class="tool-copy"><strong>{% if LANGUAGE_CODE == 'en' %}Haybat Alsultan Ambassadors{% else %}سفراء هيبة السلطان{% endif %}</strong><small>{% if LANGUAGE_CODE == 'en' %}Referral activity, points and participation status{% else %}الإحالات والنقاط وحالة مشاركة السفراء{% endif %}</small></span>
+        {% if is_owner %}<span class="owner-only-label">OWNER</span>{% endif %}
+        <span class="tool-arrow" aria-hidden="true">‹</span>
+      </a>
+      {% endif %}
+      {% if is_owner %}
+      <a class="management-tool-card owner-tool quick-sale-tool" href="{% url 'core:management_quick_sale' %}">
+        <span class="tool-symbol" aria-hidden="true"><svg class="ui-icon"><use href="#icon-cart"></use></svg></span>
+        <span class="tool-copy"><strong>{% if LANGUAGE_CODE == 'en' %}Quick Sale{% else %}بيع مباشر{% endif %}</strong><small>{% if LANGUAGE_CODE == 'en' %}Record a secure in-person sale from available stock{% else %}تسجيل بيع مباشر آمن من القطع المتوفرة{% endif %}</small></span>
+        <span class="owner-only-label">OWNER</span><span class="tool-arrow" aria-hidden="true">‹</span>
+      </a>
+      <a class="management-tool-card owner-tool" href="{% url 'core:management_receivables' %}">
+        <span class="tool-symbol"><svg class="ui-icon"><use href="#icon-clock"></use></svg></span>
+        <span class="tool-copy"><strong>{% if LANGUAGE_CODE == 'en' %}Receivables{% else %}الدفعات المستحقة{% endif %}</strong><small>{% if LANGUAGE_CODE == 'en' %}Deferred direct-sale payments and reminders{% else %}متابعة المبيعات المؤجلة والتنبيهات{% endif %}</small></span>
+        {% if receivables_alert_count %}<span class="management-request-count">{{ receivables_alert_count }}</span>{% endif %}<span class="owner-only-label">OWNER</span><span class="tool-arrow">‹</span>
+      </a>
+      <a class="management-tool-card owner-tool" href="{% url 'core:management_payment_settings' %}">
+        <span class="tool-symbol" aria-hidden="true"><svg class="ui-icon"><use href="#icon-wallet"></use></svg></span>
+        <span class="tool-copy"><strong>{% if LANGUAGE_CODE == 'en' %}Payment Methods{% else %}طرق الدفع{% endif %}</strong><small>{% if LANGUAGE_CODE == 'en' %}Enable Stripe, manual WhatsApp payment, or both{% else %}تفعيل Stripe أو الدفع بالتواصل أو الطريقتين معًا{% endif %}</small></span>
+        <span class="owner-only-label">OWNER</span>
+        <span class="tool-arrow" aria-hidden="true">‹</span>
+      </a>
+      <a class="management-tool-card owner-tool invoice-settings-tool" href="{% url 'core:management_invoice_settings' %}">
+        <span class="tool-symbol" aria-hidden="true"><svg class="ui-icon"><use href="#icon-edit"></use></svg></span>
+        <span class="tool-copy"><strong>{% if LANGUAGE_CODE == 'en' %}Invoice Settings{% else %}إعدادات الفاتورة{% endif %}</strong><small>{% if LANGUAGE_CODE == 'en' %}Logo, stamp and invoice identity{% else %}الشعار والختم وهوية الفاتورة{% endif %}</small></span>
+        <span class="owner-only-label">OWNER</span>
+        <span class="tool-arrow" aria-hidden="true">‹</span>
+      </a>
+      <a class="management-tool-card owner-tool bead-settings-tool" href="{% url 'core:management_bead_adjustment_settings' %}">
+        <span class="tool-symbol" aria-hidden="true"><svg class="ui-icon"><use href="#icon-edit"></use></svg></span>
+        <span class="tool-copy"><strong>خدمة ضبط الخرز</strong><small>تفعيل أو إيقاف خدمة تقليل عدد الخرز المجانية لجميع المسابيح المؤهلة</small></span>
+        <span class="owner-only-label">OWNER</span><span class="tool-arrow" aria-hidden="true">‹</span>
+      </a>
+      <a class="management-tool-card owner-tool" href="{% url 'core:management_checkout_field_settings' %}">
+        <span class="tool-symbol" aria-hidden="true"><svg class="ui-icon"><use href="#icon-edit"></use></svg></span>
+        <span class="tool-copy"><strong>{% if LANGUAGE_CODE == 'en' %}Checkout Fields{% else %}حقول إتمام الطلب{% endif %}</strong><small>{% if LANGUAGE_CODE == 'en' %}Choose visible and required customer fields securely{% else %}تحديد الحقول الظاهرة والإجبارية للعملاء بشكل آمن{% endif %}</small></span>
+        <span class="owner-only-label">OWNER</span>
+        <span class="tool-arrow" aria-hidden="true">‹</span>
+      </a>
+      <a class="management-tool-card owner-tool" href="{% url 'core:management_reservation_overrides' %}">
+        <span class="tool-symbol" aria-hidden="true"><svg class="ui-icon"><use href="#icon-clock"></use></svg></span>
+        <span class="tool-copy"><strong>{% if LANGUAGE_CODE == 'en' %}Reservation Exceptions{% else %}استثناءات الحجز{% endif %}</strong><small>{% if LANGUAGE_CODE == 'en' %}Temporarily increase the 3-item checkout limit for a verified customer{% else %}رفع حد 3 قطع مؤقتًا لعميل مسجل لمدة 15 دقيقة{% endif %}</small></span>
+        {% if pending_reservation_requests %}<span class="management-request-count">{{ pending_reservation_requests }}</span>{% endif %}<span class="owner-only-label">OWNER</span><span class="tool-arrow" aria-hidden="true">‹</span>
+      </a>
+      <a class="management-tool-card owner-tool" href="{% url 'core:management_notification_settings' %}">
+        <span class="tool-symbol" aria-hidden="true"><svg class="ui-icon"><use href="#icon-email"></use></svg></span>
+        <span class="tool-copy"><strong>{% if LANGUAGE_CODE == 'en' %}Order Notifications{% else %}تنبيهات الطلبات{% endif %}</strong><small>{% if LANGUAGE_CODE == 'en' %}Email alerts for orders, payments and delivery{% else %}تنبيهات البريد للطلبات والدفع والتوصيل{% endif %}</small></span>
+        <span class="owner-only-label">OWNER</span>
+        <span class="tool-arrow" aria-hidden="true">‹</span>
+      </a>
+      <a class="management-tool-card owner-tool smart-accountant-tool" href="{% url 'core:management_smart_accountant' %}">
+        <span class="tool-symbol" aria-hidden="true"><svg class="ui-icon"><use href="#icon-wallet"></use></svg></span>
+        <span class="tool-copy"><strong>{% if LANGUAGE_CODE == 'en' %}Smart Accountant{% else %}المحاسب الذكي{% endif %}</strong><small>{% if LANGUAGE_CODE == 'en' %}Profit, costs, inventory value and rule-based insights{% else %}الأرباح والتكاليف وقيمة المخزون والتنبيهات الذكية{% endif %}</small></span>
+        <span class="owner-only-label">OWNER</span>
+        <span class="tool-arrow" aria-hidden="true">‹</span>
+      </a>
+      <a class="management-tool-card owner-tool" href="{% url 'core:management_promotions' %}">
+        <span class="tool-symbol" aria-hidden="true"><svg class="ui-icon"><use href="#icon-gift"></use></svg></span>
+        <span class="tool-copy"><strong>{% if LANGUAGE_CODE == 'en' %}Promotions & Gifts{% else %}العروض والخصومات والهدايا{% endif %}</strong><small>{% if LANGUAGE_CODE == 'en' %}{{ active_promotions }} active · secure server-side pricing{% else %}{{ active_promotions }} نشط · تسعير محسوب من السيرفر{% endif %}</small></span>
+        <span class="tool-arrow" aria-hidden="true">‹</span>
+      </a>
+      {% endif %}
+      {% if can_view_abandoned_carts %}
+      <a class="management-tool-card" href="{% url 'core:management_abandoned_carts' %}">
+        <span class="tool-symbol" aria-hidden="true"><svg class="ui-icon"><use href="#icon-cart"></use></svg></span>
+        <span class="tool-copy"><strong>{% if LANGUAGE_CODE == 'en' %}Incomplete Carts{% else %}السلات غير المكتملة{% endif %}</strong><small>{% if LANGUAGE_CODE == 'en' %}Review incomplete carts and WhatsApp consent status{% else %}متابعة السلات التي لم يكتمل طلبها مع احترام موافقة العميل{% endif %}</small></span>
+        <span class="tool-arrow" aria-hidden="true">‹</span>
+      </a>
+      {% endif %}
+      {% if is_owner %}
+      <a class="management-tool-card owner-tool" href="{% url 'core:management_supervisors' %}">
+        <span class="tool-symbol" aria-hidden="true"><svg class="ui-icon"><use href="#icon-shield"></use></svg></span>
+        <span class="tool-copy"><strong>{% if LANGUAGE_CODE == 'en' %}Supervisors & Permissions{% else %}المشرفون والصلاحيات{% endif %}</strong><small>{% if LANGUAGE_CODE == 'en' %}Create supervisors and assign granular access{% else %}إنشاء المشرفين ومنح الصلاحيات الدقيقة{% endif %}</small></span>
+        <span class="owner-only-label">OWNER</span>
+        <span class="tool-arrow" aria-hidden="true">‹</span>
+      </a>
+      <a class="management-tool-card owner-tool" href="{% url 'core:management_audit' %}">
+        <span class="tool-symbol" aria-hidden="true"><svg class="ui-icon"><use href="#icon-history"></use></svg></span>
+        <span class="tool-copy"><strong>{% if LANGUAGE_CODE == 'en' %}Audit Log{% else %}سجل التدقيق{% endif %}</strong><small>{% if LANGUAGE_CODE == 'en' %}Review sensitive management activity{% else %}مراجعة العمليات والتغييرات الحساسة{% endif %}</small></span>
+        <span class="owner-only-label">OWNER</span>
+        <span class="tool-arrow" aria-hidden="true">‹</span>
+      </a>
+      {% endif %}
+    </nav>
+
+    <section class="recent-orders-card">
+      <div class="recent-orders-header">
+        <div>
+          <h2>{% if LANGUAGE_CODE == 'en' %}Recent Orders{% else %}آخر الطلبات{% endif %}</h2>
+          <p>{% if LANGUAGE_CODE == 'en' %}Latest store orders for quick follow-up.{% else %}أحدث طلبات المتجر للمتابعة السريعة.{% endif %}</p>
+        </div>
+        {% if can_view_orders %}<a href="{% url 'core:management_orders' %}">{% if LANGUAGE_CODE == 'en' %}View all{% else %}عرض الكل{% endif %}</a>{% endif %}
+      </div>
+      {% if recent_orders %}
+      <div class="table-responsive management-table-wrap">
+        <table class="table management-table align-middle mb-0">
+          <thead><tr>
+            <th>{% if LANGUAGE_CODE == 'en' %}Reference{% else %}المرجع{% endif %}</th>
+            <th>{% if LANGUAGE_CODE == 'en' %}Customer{% else %}العميل{% endif %}</th>
+            <th>{% if LANGUAGE_CODE == 'en' %}Total{% else %}الإجمالي{% endif %}</th>
+            <th>{% if LANGUAGE_CODE == 'en' %}Order{% else %}الطلب{% endif %}</th>
+            <th>{% if LANGUAGE_CODE == 'en' %}Payment{% else %}الدفع{% endif %}</th>
+            <th>{% if LANGUAGE_CODE == 'en' %}Date{% else %}التاريخ{% endif %}</th>
+          </tr></thead>
+          <tbody>{% for o in recent_orders %}<tr>
+            <td><a class="order-reference" href="{% url 'core:management_order' o.public_id %}">{{ o.reference }}</a></td>
+            <td>{{ o.customer_name }}</td>
+            <td dir="ltr">AED {{ o.grand_total|floatformat:2 }}</td>
+            <td><span class="status-chip">{{ o.status|order_status_label }}</span></td>
+            <td><span class="status-chip">{{ o.payment_status|payment_status_label }}</span></td>
+            <td>{{ o.created_at|date:"Y-m-d H:i" }}</td>
+          </tr>{% endfor %}</tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="management-empty-state">
+        <svg class="empty-icon" aria-hidden="true"><use href="#icon-orders"></use></svg>
+        <strong>{% if LANGUAGE_CODE == 'en' %}No orders yet{% else %}لا توجد طلبات حتى الآن{% endif %}</strong>
+        <p>{% if LANGUAGE_CODE == 'en' %}New customer orders will appear here automatically.{% else %}ستظهر طلبات العملاء الجديدة هنا تلقائيًا عند إنشائها.{% endif %}</p>
+      </div>
+      {% endif %}
+    </section>
+  </div>
+</section>
+{% endblock %}

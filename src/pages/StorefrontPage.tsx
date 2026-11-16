@@ -1,0 +1,632 @@
+import React, { useState, useEffect } from 'react';
+import {
+  Gem,
+  Award,
+  Clock,
+  ShoppingCart,
+  MessageCircle,
+  Sparkles,
+  Truck,
+  Gift,
+  Headphones,
+  ChevronLeft,
+  ChevronRight,
+  ShieldCheck,
+  Search,
+  Lock,
+  ArrowRight,
+  CheckCircle2,
+  ExternalLink,
+  SlidersHorizontal,
+  ArrowUpDown,
+  RotateCcw,
+  Coins,
+  X,
+  Filter
+} from 'lucide-react';
+import { api } from '../lib/api';
+import { Product } from '../types';
+
+interface StorefrontPageProps {
+  onOpenCheckout: (product: Product) => void;
+  onOpenCustomerAuth: () => void;
+  onOpenCustomerOrders: () => void;
+  onViewProduct?: (product: Product) => void;
+  customerUser?: any;
+  cartItem?: Product | null;
+  setCartItem?: (p: Product | null) => void;
+}
+
+export const StorefrontPage: React.FC<StorefrontPageProps> = ({
+  onOpenCheckout,
+  onOpenCustomerAuth,
+  onOpenCustomerOrders,
+  onViewProduct,
+  customerUser,
+  cartItem: externalCartItem,
+  setCartItem: setExternalCartItem
+}) => {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [internalCartItem, setInternalCartItem] = useState<Product | null>(null);
+  const cartItem = externalCartItem !== undefined ? externalCartItem : internalCartItem;
+  const setCartItem = setExternalCartItem || setInternalCartItem;
+
+  const [reservationRemaining, setReservationRemaining] = useState<number>(0);
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // Price Range & Sorting Filters
+  const [minPrice, setMinPrice] = useState<string>('');
+  const [maxPrice, setMaxPrice] = useState<string>('');
+  const [selectedPreset, setSelectedPreset] = useState<string>('all');
+  const [sortBy, setSortBy] = useState<'featured' | 'price_asc' | 'price_desc'>('featured');
+
+  const pricePresets = [
+    { id: 'all', label: 'كافة الأسعار', min: '', max: '' },
+    { id: 'under_3000', label: 'أقل من 3,000 د.إ', min: '', max: '3000' },
+    { id: '3000_6000', label: '3,000 - 6,000 د.إ', min: '3000', max: '6000' },
+    { id: '6000_12000', label: '6,000 - 12,000 د.إ', min: '6000', max: '12000' },
+    { id: 'above_12000', label: 'أكثر من 12,000 د.إ (نوادر ملكية)', min: '12000', max: '' },
+  ];
+
+  const handleSelectPreset = (preset: typeof pricePresets[0]) => {
+    setSelectedPreset(preset.id);
+    setMinPrice(preset.min);
+    setMaxPrice(preset.max);
+  };
+
+  const handleCustomMinChange = (val: string) => {
+    setMinPrice(val);
+    setSelectedPreset('custom');
+  };
+
+  const handleCustomMaxChange = (val: string) => {
+    setMaxPrice(val);
+    setSelectedPreset('custom');
+  };
+
+  const handleResetFilters = () => {
+    setSearchQuery('');
+    setMinPrice('');
+    setMaxPrice('');
+    setSelectedPreset('all');
+    setSortBy('featured');
+  };
+
+  const hasActiveFilter = Boolean(
+    searchQuery.trim() || minPrice !== '' || maxPrice !== '' || sortBy !== 'featured'
+  );
+
+  useEffect(() => {
+    loadStore();
+  }, []);
+
+  // Reservation countdown timer
+  useEffect(() => {
+    let interval: any = null;
+    if (cartItem && reservationRemaining > 0) {
+      interval = setInterval(() => {
+        setReservationRemaining((prev) => {
+          if (prev <= 1) {
+            setCartItem(null);
+            alert('انتهت مهلة حجز المسبحة وتمت إعادتها للمخزون العام حمايةً للحصرية ومنعاً للاحتكار.');
+            loadStore();
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [cartItem, reservationRemaining, setCartItem]);
+
+  const loadStore = async () => {
+    setLoading(true);
+    try {
+      const prods = await api.getProducts({ status: 'AVAILABLE' });
+      setProducts(prods);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleReserve = async (product: Product) => {
+    try {
+      await api.reserveProduct(product.id, 'client_cart_session', 15);
+      setCartItem(product);
+      setReservationRemaining(15 * 60); // 15 minutes in seconds
+      alert(`🔒 تم حجز المسبحة (${product.name_ar}) باسمك لمدة 15 دقيقة حصرياً! لن يتمكن أي عميل أو معرض آخر من شرائها.`);
+      await loadStore();
+    } catch (err: any) {
+      alert(err.response?.data?.error || 'تعذر حجز المسبحة');
+    }
+  };
+
+  const handleWhatsAppOrder = (product: Product) => {
+    const text = encodeURIComponent(
+      `السلام عليكم ورحمة الله وبركاته،\nأود اقتناء هذه القطعة الفريدة من هيبة السلطان:\n\n• الاسم: ${product.name_ar}\n• الرمز المرجعي: ${product.product_reference}\n• الـ SKU: ${product.sku}\n• السعر: ${product.selling_price} AED\n\nيرجى تأكيد التوافر وإجراءات الاستلام/التوصيل.`
+    );
+    window.open(`https://wa.me/971504084006?text=${text}`, '_blank');
+  };
+
+  const filteredProducts = products.filter((p) => {
+    // 1. Keyword search (Name, SKU, Reference, Shape, Origin)
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      const match =
+        p.name_ar.toLowerCase().includes(q) ||
+        p.sku.toLowerCase().includes(q) ||
+        p.product_reference.toLowerCase().includes(q) ||
+        (p.shape && p.shape.toLowerCase().includes(q)) ||
+        (p.origin && p.origin.toLowerCase().includes(q));
+      if (!match) return false;
+    }
+
+    // 2. Price Range Filter: Min & Max
+    const price = Number(p.selling_price) || 0;
+    if (minPrice !== '' && !isNaN(Number(minPrice))) {
+      if (price < Number(minPrice)) return false;
+    }
+    if (maxPrice !== '' && !isNaN(Number(maxPrice))) {
+      if (price > Number(maxPrice)) return false;
+    }
+
+    return true;
+  }).sort((a, b) => {
+    if (sortBy === 'price_asc') return a.selling_price - b.selling_price;
+    if (sortBy === 'price_desc') return b.selling_price - a.selling_price;
+    return b.id - a.id;
+  });
+
+  return (
+    <div className="min-h-full bg-[#FAF7F2] text-[#26221C] flex flex-col justify-between selection:bg-[#C9972B]/20">
+      {/* Active Reservation Banner (if reserved) */}
+      {cartItem && (
+        <div className="sticky top-[105px] z-30 bg-[#26221C] text-white px-4 py-3 shadow-xl flex flex-wrap items-center justify-between gap-3 font-bold text-xs sm:text-sm border-b border-[#C9972B]">
+          <div className="flex items-center gap-2">
+            <Clock className="w-5 h-5 text-[#E2B84B] animate-spin" />
+            <span>
+              لديك مسبحة محجوزة حصرياً باسمك ({cartItem.name_ar}) - متبقي على انتهاء الحجز:{' '}
+              <span className="text-[#E2B84B] font-mono font-black">
+                {Math.floor(reservationRemaining / 60)}:
+                {String(reservationRemaining % 60).padStart(2, '0')}
+              </span>{' '}
+              دقيقة
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => onOpenCheckout(cartItem)}
+              className="px-4 py-1.5 bg-[#C9972B] hover:bg-[#B8851E] text-white rounded-xl text-xs font-black transition shadow flex items-center gap-1.5"
+            >
+              <ShoppingCart className="w-3.5 h-3.5" />
+              <span>إتمام الاقتناء أونلاين</span>
+            </button>
+            <button
+              onClick={() => handleWhatsAppOrder(cartItem)}
+              className="px-3.5 py-1.5 bg-[#25D366] hover:bg-[#1EBE5D] text-white rounded-xl text-xs font-bold transition shadow flex items-center gap-1"
+            >
+              <MessageCircle className="w-3.5 h-3.5" />
+              <span>واتساب</span>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* 1. Panoramic Hero Section (Exact Match to User Attached Screenshot) */}
+      <section id="hero" className="relative w-full bg-[#EFE8DC] overflow-hidden border-b border-[#EBE3D5]">
+        {/* Main Banner Image Container */}
+        <div className="relative w-full min-h-[380px] sm:min-h-[460px] md:min-h-[520px] flex items-center justify-center">
+          <img
+            src="/branding/hero-amber.jpg"
+            alt="هيبة الأصل... جمال الكهرمان"
+            className="absolute inset-0 w-full h-full object-cover object-center"
+          />
+
+          {/* Subtle Gradient Overlay for Content Readability */}
+          <div className="absolute inset-0 bg-gradient-to-r from-black/25 via-transparent to-black/25 pointer-events-none" />
+
+          {/* Carousel Arrow Controls */}
+          <button
+            type="button"
+            className="absolute left-4 sm:left-8 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/80 hover:bg-white text-[#26221C] shadow-lg flex items-center justify-center transition backdrop-blur z-20 cursor-pointer"
+            onClick={() => {}}
+            aria-label="Previous slide"
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+
+          <button
+            type="button"
+            className="absolute right-4 sm:right-8 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/80 hover:bg-white text-[#26221C] shadow-lg flex items-center justify-center transition backdrop-blur z-20 cursor-pointer"
+            onClick={() => {}}
+            aria-label="Next slide"
+          >
+            <ChevronRight className="w-5 h-5" />
+          </button>
+
+          {/* Central Call to Action Content Box */}
+          <div className="relative z-10 text-center px-4 max-w-2xl mx-auto space-y-4">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-[#26221C] drop-shadow-sm tracking-tight leading-tight">
+              هيبة الأصل... جمال الكهرمان
+            </h1>
+            <p className="text-sm sm:text-base md:text-lg font-medium text-[#3D352E] max-w-lg mx-auto leading-relaxed drop-shadow-sm">
+              مسابيح وأحجار طبيعية ونوادر مختارة بعناية لعشاق التميز
+            </p>
+            <div className="pt-2">
+              <button
+                onClick={() => {
+                  const el = document.getElementById('products-section');
+                  if (el) el.scrollIntoView({ behavior: 'smooth' });
+                }}
+                className="inline-flex items-center gap-2.5 px-7 py-3 rounded-full bg-[#C9972B] hover:bg-[#B8851E] text-white font-bold text-sm sm:text-base shadow-[0_6px_20px_rgba(201,151,43,0.35)] hover:shadow-xl transition-all transform hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
+              >
+                <ShoppingCart className="w-4 h-4" />
+                <span>تسوق المجموعة</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Carousel Pagination Dots */}
+          <div className="absolute bottom-4 inset-x-0 flex items-center justify-center gap-2 z-20">
+            <span className="w-2.5 h-2.5 rounded-full bg-white shadow-sm ring-2 ring-[#C9972B]"></span>
+            <span className="w-2.5 h-2.5 rounded-full bg-white/70 hover:bg-white transition cursor-pointer"></span>
+            <span className="w-2.5 h-2.5 rounded-full bg-white/70 hover:bg-white transition cursor-pointer"></span>
+            <span className="w-2.5 h-2.5 rounded-full bg-white/70 hover:bg-white transition cursor-pointer"></span>
+          </div>
+        </div>
+
+        {/* 2. 4-Column Benefit Strip (Exact Match to User Attached Screenshot) */}
+        <div className="bg-white border-t border-[#EBE3D5] shadow-xs">
+          <div className="max-w-7xl mx-auto grid grid-cols-2 md:grid-cols-4 divide-y md:divide-y-0 md:divide-x md:divide-x-reverse divide-[#EBE3D5]">
+            {/* 1. توصيل سريع */}
+            <div className="p-4 sm:p-5 flex items-center justify-center gap-3.5 text-right">
+              <div className="w-10 h-10 rounded-full bg-[#FAF4E8] flex items-center justify-center text-[#C9972B] shrink-0 border border-[#EADBCE]">
+                <Truck className="w-5 h-5" />
+              </div>
+              <div>
+                <h4 className="text-sm font-bold text-[#26221C]">توصيل سريع</h4>
+                <p className="text-xs text-[#746A5D]">داخل الإمارات وخارجها</p>
+              </div>
+            </div>
+
+            {/* 2. تغليف فاخر */}
+            <div className="p-4 sm:p-5 flex items-center justify-center gap-3.5 text-right">
+              <div className="w-10 h-10 rounded-full bg-[#FAF4E8] flex items-center justify-center text-[#C9972B] shrink-0 border border-[#EADBCE]">
+                <Gift className="w-5 h-5" />
+              </div>
+              <div>
+                <h4 className="text-sm font-bold text-[#26221C]">تغليف فاخر</h4>
+                <p className="text-xs text-[#746A5D]">جاهز للإهداء والتقديم</p>
+              </div>
+            </div>
+
+            {/* 3. الأصالة أولاً */}
+            <div className="p-4 sm:p-5 flex items-center justify-center gap-3.5 text-right">
+              <div className="w-10 h-10 rounded-full bg-[#FAF4E8] flex items-center justify-center text-[#C9972B] shrink-0 border border-[#EADBCE]">
+                <Gem className="w-5 h-5" />
+              </div>
+              <div>
+                <h4 className="text-sm font-bold text-[#26221C]">الأصالة أولاً</h4>
+                <p className="text-xs text-[#746A5D]">قطع مختارة بعناية وفحص</p>
+              </div>
+            </div>
+
+            {/* 4. خدمة مميزة */}
+            <div className="p-4 sm:p-5 flex items-center justify-center gap-3.5 text-right">
+              <div className="w-10 h-10 rounded-full bg-[#FAF4E8] flex items-center justify-center text-[#C9972B] shrink-0 border border-[#EADBCE]">
+                <Headphones className="w-5 h-5" />
+              </div>
+              <div>
+                <h4 className="text-sm font-bold text-[#26221C]">خدمة مميزة</h4>
+                <p className="text-xs text-[#746A5D]">نحن هنا لخدمتكم واستشارتكم</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* 3. Showcase Grid of Luxury Rosaries */}
+      <section id="products-section" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 flex-1 w-full space-y-6">
+        {/* Section Heading Bar */}
+        <div id="products" className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#EBE3D5]">
+          <div>
+            <h2 className="text-xl sm:text-2xl font-black text-[#26221C] flex items-center gap-2">
+              <Gem className="w-6 h-6 text-[#C9972B]" />
+              <span>المعروضات الفاخرة المتاحة للاقتناء</span>
+            </h2>
+            <p className="text-xs sm:text-sm text-[#746A5D] mt-1">
+              كل مسبحة قطعة حصرية وحيدة لا تتكرر، محصنة ضد الازدواج ومعتمدة بفحص مخبري
+            </p>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <span className="text-xs font-bold text-[#9A6817] bg-[#FAF4E8] border border-[#EADBCE] px-3.5 py-1.5 rounded-full shrink-0 shadow-xs">
+              {filteredProducts.length} قطعة متوفرة
+            </span>
+          </div>
+        </div>
+
+        {/* 4. Luxury Search & Price Range Filter Control Panel */}
+        <div className="bg-white border border-[#EBE3D5] rounded-3xl p-5 shadow-xs space-y-4">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+            {/* Search Input */}
+            <div className="relative flex-1 max-w-md">
+              <input
+                type="text"
+                placeholder="بحث باسم المسبحة، الخامة، أو كود SKU..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full py-2.5 pr-10 pl-4 text-xs rounded-2xl bg-[#FAF7F2] border border-[#DDD3C1] text-[#26221C] placeholder-[#9E9485] focus:outline-none focus:border-[#C9972B] focus:bg-white transition"
+              />
+              <Search className="w-4 h-4 text-[#9E9485] absolute right-3.5 top-3" />
+            </div>
+
+            {/* Price Range: Min & Max Inputs + Sorting */}
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-xs">
+              {/* Min Price */}
+              <div className="flex items-center gap-1.5 bg-[#FAF7F2] border border-[#DDD3C1] px-3 py-1.5 rounded-2xl focus-within:border-[#C9972B] focus-within:bg-white transition shadow-2xs">
+                <span className="text-[#8C8275] font-bold">من:</span>
+                <input
+                  type="number"
+                  min="0"
+                  step="100"
+                  placeholder="0"
+                  value={minPrice}
+                  onChange={(e) => handleCustomMinChange(e.target.value)}
+                  className="w-20 text-xs font-bold text-[#26221C] bg-transparent focus:outline-none"
+                />
+                <span className="text-[10px] text-[#9A6817] font-semibold">د.إ</span>
+              </div>
+
+              {/* Max Price */}
+              <div className="flex items-center gap-1.5 bg-[#FAF7F2] border border-[#DDD3C1] px-3 py-1.5 rounded-2xl focus-within:border-[#C9972B] focus-within:bg-white transition shadow-2xs">
+                <span className="text-[#8C8275] font-bold">إلى:</span>
+                <input
+                  type="number"
+                  min="0"
+                  step="100"
+                  placeholder="أقصى سعر"
+                  value={maxPrice}
+                  onChange={(e) => handleCustomMaxChange(e.target.value)}
+                  className="w-24 text-xs font-bold text-[#26221C] bg-transparent focus:outline-none"
+                />
+                <span className="text-[10px] text-[#9A6817] font-semibold">د.إ</span>
+              </div>
+
+              {/* Sorting Order */}
+              <div className="flex items-center gap-1.5 bg-[#FAF7F2] border border-[#DDD3C1] px-3 py-1.5 rounded-2xl shadow-2xs">
+                <ArrowUpDown className="w-3.5 h-3.5 text-[#C9972B]" />
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value as any)}
+                  className="bg-transparent text-xs font-bold text-[#26221C] focus:outline-none cursor-pointer"
+                >
+                  <option value="featured">المميز والأحدث</option>
+                  <option value="price_asc">السعر: من الأقل للأعلى</option>
+                  <option value="price_desc">السعر: من الأعلى للأقل</option>
+                </select>
+              </div>
+
+              {/* Reset Button */}
+              {hasActiveFilter && (
+                <button
+                  onClick={handleResetFilters}
+                  className="flex items-center gap-1 px-3 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-2xl text-xs font-bold transition cursor-pointer shadow-2xs"
+                  title="إلغاء وتفريغ الفلاتر"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  <span>إعادة ضبط</span>
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Quick Price Range Presets */}
+          <div className="flex flex-wrap items-center gap-2 pt-3 border-t border-[#F2ECE1]">
+            <span className="text-xs text-[#8C8275] font-bold flex items-center gap-1 shrink-0">
+              <Coins className="w-3.5 h-3.5 text-[#C9972B]" />
+              <span>نطاقات سريعة:</span>
+            </span>
+
+            <div className="flex flex-wrap items-center gap-1.5">
+              {pricePresets.map((preset) => {
+                const isSelected = selectedPreset === preset.id;
+                return (
+                  <button
+                    key={preset.id}
+                    onClick={() => handleSelectPreset(preset)}
+                    className={`text-xs px-3 py-1 rounded-full font-bold transition cursor-pointer border ${
+                      isSelected
+                        ? 'bg-[#26221C] text-[#E2B84B] border-[#26221C] shadow-xs'
+                        : 'bg-[#FAF7F2] hover:bg-[#F3E7CE] text-[#4B4338] border-[#E8DEC8]'
+                    }`}
+                  >
+                    {preset.label}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Active Range Indicator Pill */}
+            {(minPrice || maxPrice) && (
+              <span className="mr-auto text-[11px] font-bold text-[#9A6817] bg-[#FAF4E8] border border-[#EADBCE] px-3 py-1 rounded-full flex items-center gap-1">
+                <span>النطاق النشط:</span>
+                <span className="font-mono">
+                  {minPrice ? `${Number(minPrice).toLocaleString()} د.إ` : '0 د.إ'} - {maxPrice ? `${Number(maxPrice).toLocaleString()} د.إ` : 'بلا حد'}
+                </span>
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Product Cards */}
+        {loading ? (
+          <div className="py-24 text-center">
+            <div className="inline-block w-8 h-8 border-3 border-[#C9972B] border-t-transparent rounded-full animate-spin mb-3"></div>
+            <p className="text-xs text-[#746A5D] font-medium">جارِ تحميل التحف النادرة والمعروضات...</p>
+          </div>
+        ) : filteredProducts.length === 0 ? (
+          <div className="text-center py-20 bg-white rounded-3xl border border-[#EBE3D5] p-8 shadow-xs space-y-4">
+            <Gem className="w-12 h-12 text-[#C9972B]/60 mx-auto" />
+            <h3 className="text-base font-bold text-[#26221C]">لا توجد قطع مطابقة لمعايير البحث ونطاق السعر المحدد</h3>
+            <p className="text-xs text-[#746A5D] max-w-md mx-auto">
+              {minPrice || maxPrice
+                ? `لم نجد أي مسبحة في النطاق السعري (${minPrice ? `من ${Number(minPrice).toLocaleString()} د.إ` : ''} ${maxPrice ? `إلى ${Number(maxPrice).toLocaleString()} د.إ` : ''}) حالياً.`
+                : 'كافة المعروضات في هذه الفئة قد تم اقتناؤها أو حجزها. تواصل معنا لمعرفة موعد الطرح القادم.'}
+            </p>
+            {hasActiveFilter && (
+              <button
+                onClick={handleResetFilters}
+                className="px-5 py-2.5 bg-[#26221C] hover:bg-[#3D352E] text-[#E2B84B] rounded-xl text-xs font-bold transition shadow-xs cursor-pointer inline-flex items-center gap-1.5"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                <span>عرض كافة الأسعار والمعروضات</span>
+              </button>
+            )}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
+            {filteredProducts.map((p) => (
+              <div
+                key={p.id}
+                className="bg-white border border-[#EBE3D5] rounded-3xl overflow-hidden flex flex-col justify-between hover:shadow-[0_10px_30px_rgba(201,151,43,0.15)] hover:border-[#C9972B] transition-all duration-300 group"
+              >
+                <div>
+                  {/* Image Container with Badges */}
+                  <div
+                    onClick={() => onViewProduct && onViewProduct(p)}
+                    className="relative aspect-square overflow-hidden bg-[#FBF8F2] cursor-pointer"
+                    title="انقر لعرض تفاصيل وقصة المسبحة ومواصفاتها الفنية"
+                  >
+                    <img
+                      src={p.image_url || '/branding/hero-amber.jpg'}
+                      alt={p.name_ar}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                    />
+
+                    {/* SKU Pill */}
+                    <div className="absolute top-3 right-3 bg-white/95 backdrop-blur px-3 py-1 rounded-full text-[11px] font-bold text-[#9A6817] border border-[#E8DEC8] shadow-xs">
+                      {p.sku}
+                    </div>
+
+                    {/* Certification Badge */}
+                    {p.verification_status === 'CERTIFIED' && (
+                      <div className="absolute bottom-3 right-3 bg-emerald-600/95 backdrop-blur px-2.5 py-1 rounded-lg text-[10px] font-bold text-white flex items-center gap-1 shadow-xs">
+                        <Award className="w-3.5 h-3.5" />
+                        <span>شهادة فحص معتمدة</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Card Details */}
+                  <div className="p-5 space-y-3">
+                    <h3
+                      onClick={() => onViewProduct && onViewProduct(p)}
+                      className="font-extrabold text-base text-[#26221C] group-hover:text-[#9A6817] transition line-clamp-1 cursor-pointer"
+                      title="انقر لعرض تفاصيل وقصة المسبحة"
+                    >
+                      {p.name_ar}
+                    </h3>
+
+                    {/* Rosary Specs Grid */}
+                    <div className="grid grid-cols-3 gap-2 text-center text-xs bg-[#FAF7F2] p-2.5 rounded-xl border border-[#EEE4D4] text-[#4B4338]">
+                      <div>
+                        <span className="block text-[10px] text-[#8C8275]">الخرز</span>
+                        <span className="font-bold text-[#26221C]">{p.bead_count}</span>
+                      </div>
+                      <div className="border-r border-l border-[#E2D8C6]">
+                        <span className="block text-[10px] text-[#8C8275]">القياس</span>
+                        <span className="font-bold text-[#26221C]">{p.bead_size_mm}mm</span>
+                      </div>
+                      <div>
+                        <span className="block text-[10px] text-[#8C8275]">الوزن</span>
+                        <span className="font-bold text-[#26221C]">{p.weight_g}g</span>
+                      </div>
+                    </div>
+
+                    {/* Attributes */}
+                    <div className="text-xs text-[#746A5D] space-y-1 pt-1">
+                      <p><span className="text-[#9E9485]">القصة:</span> <span className="font-medium text-[#3D352E]">{p.shape || 'برميلي'}</span></p>
+                      <p><span className="text-[#9E9485]">الكركوشة:</span> <span className="font-medium text-[#3D352E]">{p.tassel_type || 'فضة عيار 925'}</span></p>
+                      <p><span className="text-[#9E9485]">المنشأ:</span> <span className="font-medium text-[#3D352E]">{p.origin || 'ألمانيا / البلطيق'}</span></p>
+                    </div>
+
+                    {/* View Details Link */}
+                    {onViewProduct && (
+                      <button
+                        onClick={() => onViewProduct(p)}
+                        className="w-full pt-1 text-xs font-bold text-[#9A6817] hover:text-[#C9972B] flex items-center justify-center gap-1 transition cursor-pointer"
+                      >
+                        <span>عرض القصة والمواصفات الكاملة</span>
+                        <ChevronLeft className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Card Pricing & Action Buttons */}
+                <div className="p-5 pt-0 border-t border-[#F5EFE6] mt-3">
+                  <div className="flex items-baseline justify-between mb-3 pt-3">
+                    <span className="text-xs text-[#746A5D]">قيمة الاقتناء:</span>
+                    <span className="text-xl font-black text-[#9A6817]">
+                      {p.selling_price.toLocaleString()} <span className="text-xs font-bold text-[#746A5D]">AED</span>
+                    </span>
+                  </div>
+
+                  {/* Primary Checkout Button */}
+                  <button
+                    onClick={() => onOpenCheckout(p)}
+                    className="w-full py-2.5 mb-2 bg-[#C9972B] hover:bg-[#B8851E] text-white text-xs font-black rounded-xl transition flex items-center justify-center gap-2 shadow-xs cursor-pointer"
+                  >
+                    <ShoppingCart className="w-3.5 h-3.5" />
+                    <span>اقتناء فوري أونلاين</span>
+                  </button>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      onClick={() => handleReserve(p)}
+                      className="py-2 bg-[#FAF4E8] hover:bg-[#F3E7CE] text-[#9A6817] border border-[#E4D5B8] text-[11px] font-bold rounded-xl transition flex items-center justify-center gap-1 cursor-pointer"
+                      title="حجز مؤقت يمنع أي شخص آخر من شرائه لمدة 15 دقيقة"
+                    >
+                      <Clock className="w-3 h-3" />
+                      <span>حجز 15 دقيقة</span>
+                    </button>
+                    <button
+                      onClick={() => handleWhatsAppOrder(p)}
+                      className="py-2 bg-[#25D366] hover:bg-[#1EBE5D] text-white text-[11px] font-bold rounded-xl transition flex items-center justify-center gap-1 cursor-pointer"
+                    >
+                      <MessageCircle className="w-3 h-3" />
+                      <span>واتساب</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+
+      {/* 4. Luxury Footer */}
+      <footer className="mt-12 bg-white border-t border-[#EBE3D5] py-8 text-center text-xs text-[#746A5D]">
+        <div className="max-w-7xl mx-auto px-4 space-y-3">
+          <div className="flex items-center justify-center gap-2 text-[#9A6817] font-black text-sm">
+            <span>هيبة السلطان للمسابيح الفاخرة</span>
+            <span>•</span>
+            <span className="text-[11px] font-mono tracking-wider">HAYBAT ALSULTAN</span>
+          </div>
+          <p className="text-[#8C8275]">
+            أبوظبي، الإمارات العربية المتحدة | خدمة العملاء: +971 50 408 4006
+          </p>
+
+          <div className="pt-3 border-t border-[#F2ECE1] text-[11px] text-[#A89E90]">
+            <span>جميع الحقوق محفوظة © {new Date().getFullYear()} — نظام حماية الحصرية وإدارة المسابيح الملكية</span>
+          </div>
+        </div>
+      </footer>
+    </div>
+  );
+};

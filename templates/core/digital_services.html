@@ -1,0 +1,117 @@
+{% extends 'base.html' %}
+{% block title %}{% if LANGUAGE_CODE == 'en' %}Digital Services | Haybat Al Sultan{% else %}خدماتنا الأخرى | هيبة السلطان{% endif %}{% endblock %}
+{% block content %}
+<section class="digital-services-page">
+  <div class="digital-services-hero">
+    <div class="container digital-services-hero-inner">
+      <div class="digital-services-kicker">
+        <svg class="ui-icon" aria-hidden="true"><use href="#icon-service"></use></svg>
+        <span>{% if LANGUAGE_CODE == 'en' %}Digital Services{% else %}خدماتنا الأخرى{% endif %}</span>
+      </div>
+      <h1>{% if LANGUAGE_CODE == 'en' %}A digital presence worthy of your brand{% else %}نصمم لك حضورك الرقمي بما يليق بعلامتك التجارية{% endif %}</h1>
+      <p>
+        {% if LANGUAGE_CODE == 'en' %}
+          Our experience building Haybat Al Sultan is now available to businesses seeking a refined, secure and scalable e-commerce presence.
+        {% else %}
+          خبرتنا في بناء هيبة السلطان أصبحت متاحة لعلامتك أيضًا، من خلال حلول مدروسة تجمع بين التصميم الراقي، الأمان، الأداء وسهولة الإدارة.
+        {% endif %}
+      </p>
+      <div class="digital-services-actions">
+        <a class="digital-services-primary-cta"
+           href="{{ consultation_whatsapp_url }}"
+           target="_blank"
+           rel="noopener noreferrer">
+          <svg class="ui-icon" aria-hidden="true"><use href="#icon-whatsapp"></use></svg>
+          {% if LANGUAGE_CODE == 'en' %}Request a Consultation{% else %}اطلب استشارة عبر واتساب{% endif %}
+        </a>
+        <a class="digital-services-secondary-cta" href="#services">
+          {% if LANGUAGE_CODE == 'en' %}Explore Services{% else %}استعرض الخدمات{% endif %}
+        </a>
+      </div>
+      <div class="consultation-source-note">
+        <svg class="ui-icon" aria-hidden="true"><use href="#icon-shield"></use></svg>
+        <span>
+          {% if LANGUAGE_CODE == 'en' %}
+            Your WhatsApp message will automatically identify that the enquiry came from our Digital Services page.
+          {% else %}
+            عند فتح واتساب يتم تجهيز رسالة توضح تلقائيًا أن طلب الاستشارة جاء من صفحة خدماتنا الأخرى.
+          {% endif %}
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <div class="container digital-services-content" id="services">
+    <div class="digital-services-heading">
+      <span>{% if LANGUAGE_CODE == 'en' %}What we can build with you{% else %}كيف يمكننا دعم مشروعك{% endif %}</span>
+      <h2>{% if LANGUAGE_CODE == 'en' %}From idea to a polished e-commerce experience{% else %}من الفكرة إلى متجر إلكتروني احترافي ومتكامل{% endif %}</h2>
+      <p>
+        {% if LANGUAGE_CODE == 'en' %}
+          We focus on practical solutions shaped around the business, not a one-size-fits-all template.
+        {% else %}
+          نركز على حلول عملية تناسب طبيعة النشاط والهوية، بعيدًا عن القوالب العامة التي لا تعكس شخصية العلامة التجارية.
+        {% endif %}
+      </p>
+    </div>
+
+    <div class="digital-services-grid">
+      <article class="digital-service-card">
+        <span class="digital-service-icon"><svg class="ui-icon"><use href="#icon-cart"></use></svg></span>
+        <h3>{% if LANGUAGE_CODE == 'en' %}E-commerce Design & Development{% else %}تصميم وتطوير المتاجر الإلكترونية{% endif %}</h3>
+        <p>{% if LANGUAGE_CODE == 'en' %}Custom storefronts designed around your brand, products and operating workflow.{% else %}متاجر مخصصة تُبنى حول هوية علامتك ومنتجاتك وآلية عملك، مع تجربة سلسة للعميل والإدارة.{% endif %}</p>
+      </article>
+
+      <article class="digital-service-card">
+        <span class="digital-service-icon"><svg class="ui-icon"><use href="#icon-diamond"></use></svg></span>
+        <h3>{% if LANGUAGE_CODE == 'en' %}Premium User Experience{% else %}تجربة مستخدم وواجهة راقية{% endif %}</h3>
+        <p>{% if LANGUAGE_CODE == 'en' %}Responsive Arabic and English experiences crafted for desktop, tablet and mobile.{% else %}واجهات عربية وإنجليزية متجاوبة تُصمم بعناية للكمبيوتر والتابلت والهاتف دون التضحية بهوية العلامة.{% endif %}</p>
+      </article>
+
+      <article class="digital-service-card">
+        <span class="digital-service-icon"><svg class="ui-icon"><use href="#icon-shield"></use></svg></span>
+        <h3>{% if LANGUAGE_CODE == 'en' %}Security & Access Control{% else %}الأمان وإدارة الصلاحيات{% endif %}</h3>
+        <p>{% if LANGUAGE_CODE == 'en' %}Secure authentication, role-based access, MFA and server-side validation designed into the application.{% else %}تسجيل دخول آمن، صلاحيات حسب الأدوار، MFA والتحقق من العمليات الحساسة من جهة السيرفر ضمن تصميم المشروع من البداية.{% endif %}</p>
+      </article>
+
+      <article class="digital-service-card">
+        <span class="digital-service-icon"><svg class="ui-icon"><use href="#icon-whatsapp"></use></svg></span>
+        <h3>{% if LANGUAGE_CODE == 'en' %}WhatsApp & Business Integrations{% else %}ربط واتساب والخدمات الخارجية{% endif %}</h3>
+        <p>{% if LANGUAGE_CODE == 'en' %}Thoughtful integrations for customer communication, maps, media, delivery and business workflows.{% else %}تكاملات مدروسة للتواصل مع العملاء والخرائط وإدارة الصور والشحن والخدمات التي يحتاجها نشاطك.{% endif %}</p>
+      </article>
+
+      <article class="digital-service-card">
+        <span class="digital-service-icon"><svg class="ui-icon"><use href="#icon-globe"></use></svg></span>
+        <h3>{% if LANGUAGE_CODE == 'en' %}Performance & Scalability{% else %}الأداء وقابلية التوسع{% endif %}</h3>
+        <p>{% if LANGUAGE_CODE == 'en' %}Fast-loading architecture and media optimization prepared for growth and real customer traffic.{% else %}بنية تهتم بسرعة التحميل وتحسين الصور والموارد، مع الاستعداد للنمو وازدياد عدد العملاء مستقبلًا.{% endif %}</p>
+      </article>
+
+      <article class="digital-service-card">
+        <span class="digital-service-icon"><svg class="ui-icon"><use href="#icon-service"></use></svg></span>
+        <h3>{% if LANGUAGE_CODE == 'en' %}Launch & Continuous Improvement{% else %}التجهيز للإطلاق والتطوير المستمر{% endif %}</h3>
+        <p>{% if LANGUAGE_CODE == 'en' %}Pre-launch checks, production readiness and ongoing improvements based on business needs.{% else %}اختبارات ما قبل الإطلاق وتجهيز بيئة الإنتاج، ثم تطوير وتحسين المزايا حسب احتياج النشاط الفعلي.{% endif %}</p>
+      </article>
+    </div>
+
+    <section class="digital-services-trust">
+      <div>
+        <span>{% if LANGUAGE_CODE == 'en' %}Built with the same mindset{% else %}بنفس النهج الذي بنينا به هيبة السلطان{% endif %}</span>
+        <h2>{% if LANGUAGE_CODE == 'en' %}Design is only the beginning{% else %}التصميم بداية التجربة وليس نهايتها{% endif %}</h2>
+        <p>
+          {% if LANGUAGE_CODE == 'en' %}
+            A professional store should also be secure, manageable, responsive and ready to evolve as the business grows.
+          {% else %}
+            المتجر الاحترافي لا يعتمد على الشكل فقط؛ بل يحتاج أمانًا، سهولة إدارة، أداءً جيدًا وتجربة قابلة للتطوير مع نمو مشروعك.
+          {% endif %}
+        </p>
+      </div>
+      <a class="digital-services-primary-cta"
+         href="{{ consultation_whatsapp_url }}"
+         target="_blank"
+         rel="noopener noreferrer">
+        <svg class="ui-icon" aria-hidden="true"><use href="#icon-whatsapp"></use></svg>
+        {% if LANGUAGE_CODE == 'en' %}Start Your Consultation{% else %}ابدأ استشارتك الآن{% endif %}
+      </a>
+    </section>
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+{% block title %}{{ page_title }} — Haybat Al Sultan{% endblock %}
+{% block content %}
+<section class="management-page"><div class="container management-shell py-4 py-lg-5">
+  {% include 'management/_page_header.html' with page_title=page_title page_description=page_description %}
+  <div class="management-tool-grid master-data-grid">
+    <a class="management-tool-card" href="{% url 'core:management_categories' %}">
+      <span class="tool-symbol" aria-hidden="true"><svg class="ui-icon"><use href="#icon-category"></use></svg></span>
+      <span class="tool-copy"><strong>{% if LANGUAGE_CODE == 'en' %}Categories{% else %}التصنيفات{% endif %}</strong><small>{% if LANGUAGE_CODE == 'en' %}{{ active_category_count }} active of {{ category_count }} total{% else %}{{ active_category_count }} نشط من أصل {{ category_count }}{% endif %}</small></span>
+      <span class="tool-arrow" aria-hidden="true">‹</span>
+    </a>
+    <a class="management-tool-card" href="{% url 'core:management_materials' %}">
+      <span class="tool-symbol" aria-hidden="true"><svg class="ui-icon"><use href="#icon-material"></use></svg></span>
+      <span class="tool-copy"><strong>{% if LANGUAGE_CODE == 'en' %}Materials{% else %}الخامات{% endif %}</strong><small>{% if LANGUAGE_CODE == 'en' %}{{ active_material_count }} active of {{ material_count }} total{% else %}{{ active_material_count }} نشط من أصل {{ material_count }}{% endif %}</small></span>
+      <span class="tool-arrow" aria-hidden="true">‹</span>
+    </a>
+  </div>
+  <div class="management-security-note mt-3"><svg class="ui-icon"><use href="#icon-shield"></use></svg><div><strong>{% if LANGUAGE_CODE == 'en' %}Operational master data{% else %}بيانات تشغيلية رئيسية{% endif %}</strong><span>{% if LANGUAGE_CODE == 'en' %}Owners and supervisors can maintain these records. Archiving does not delete products or historical references.{% else %}يمكن للمالك والمشرف إدارة هذه البيانات. الأرشفة لا تحذف المنتجات ولا المراجع التاريخية المرتبطة بها.{% endif %}</span></div></div>
+</div></section>
+{% endblock %}

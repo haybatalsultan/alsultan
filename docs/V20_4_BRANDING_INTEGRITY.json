@@ -1,0 +1,37 @@
+{
+  "brand-symbol.png": {
+    "uploaded_sha256": "a5569fdaec364e36144edfac267c6d54b1aad85f4a58e8dbacf8a124d8c6de2e",
+    "project_sha256": "a5569fdaec364e36144edfac267c6d54b1aad85f4a58e8dbacf8a124d8c6de2e",
+    "unchanged": true
+  },
+  "category-gemstones.jpg": {
+    "uploaded_sha256": "16c48489046fc624c06119bef8bd8201a7540b146820b86151438b88699ed522",
+    "project_sha256": "16c48489046fc624c06119bef8bd8201a7540b146820b86151438b88699ed522",
+    "unchanged": true
+  },
+  "category-gifts.jpg": {
+    "uploaded_sha256": "1e5c35774c0c2283e3db4ea4e154c55936766c1d9a063e87b694edd4b797485c",
+    "project_sha256": "1e5c35774c0c2283e3db4ea4e154c55936766c1d9a063e87b694edd4b797485c",
+    "unchanged": true
+  },
+  "category-misbah.jpg": {
+    "uploaded_sha256": "b91290c17a44ae5abc1587bf9adab813ef51f3669e803d094bdb622218b0b2d6",
+    "project_sha256": "b91290c17a44ae5abc1587bf9adab813ef51f3669e803d094bdb622218b0b2d6",
+    "unchanged": true
+  },
+  "category-rare.jpg": {
+    "uploaded_sha256": "0a8391020de63407cd0a968fd6541e70f7c8d1f006d8bf86c01f55fb19964386",
+    "project_sha256": "0a8391020de63407cd0a968fd6541e70f7c8d1f006d8bf86c01f55fb19964386",
+    "unchanged": true
+  },
+  "hero-amber.jpg": {
+    "uploaded_sha256": "6675887c001da99f8cbcdf6931701267e102b6ad6ecda22d2b656367901b015f",
+    "project_sha256": "6675887c001da99f8cbcdf6931701267e102b6ad6ecda22d2b656367901b015f",
+    "unchanged": true
+  },
+  "logo-header.png": {
+    "uploaded_sha256": "978b92b2ac13c4296eb646e7f2dc9767e30931cf03bc0ba3a2414a1ee9a0f692",
+    "project_sha256": "978b92b2ac13c4296eb646e7f2dc9767e30931cf03bc0ba3a2414a1ee9a0f692",
+    "unchanged": true
+  }
+}

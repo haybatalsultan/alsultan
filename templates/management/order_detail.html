@@ -1,0 +1,254 @@
+{% extends 'base.html' %}
+{% load order_labels %}
+{% block title %}{{ order.reference }} — Haybat Al Sultan
+<script>
+(function(){
+  const form=document.querySelector("[data-payment-confirm-form]");
+  if(!form)return;
+  const check=form.querySelector("[data-payment-confirm-check]");
+  const button=form.querySelector("[data-payment-confirm-button]");
+  const sync=()=>{if(button)button.disabled=!check?.checked;};
+  check?.addEventListener("change",sync); sync();
+})();
+</script>
+{% endblock %}
+{% block content %}
+<section class="management-page management-order-workflow">
+  <div class="container management-shell py-4 py-lg-5">
+    {% include 'management/_page_header.html' with page_title=page_title page_description=page_description %}
+
+    <div class="order-admin-summary">
+      <div>
+        <span>{% if LANGUAGE_CODE == 'en' %}Payment{% else %}الدفع{% endif %}</span>
+        <strong class="order-admin-badge{% if order.payment_status == 'PAID' %} is-success{% elif order.payment_status == 'FAILED' or order.payment_status == 'REFUNDED' %} is-danger{% else %} is-warning{% endif %}">{{ order.payment_status|payment_status_label }}</strong>
+      </div>
+      <div>
+        <span>{% if LANGUAGE_CODE == 'en' %}Payment source{% else %}مصدر الدفع{% endif %}</span>
+        <strong>{{ payment_source_code|payment_method_label }}</strong>
+      </div>
+      <div>
+        <span>{% if LANGUAGE_CODE == 'en' %}Order status{% else %}حالة الطلب{% endif %}</span>
+        <strong class="order-admin-badge{% if order.status == 'DELIVERED' %} is-success{% elif order.status == 'CANCELLED' or order.status == 'RETURNED' %} is-danger{% else %} is-neutral{% endif %}">{{ order.status|order_status_label }}</strong>
+      </div>
+      <div>
+        <span>{% if LANGUAGE_CODE == 'en' %}Total{% else %}الإجمالي{% endif %}</span>
+        <strong dir="ltr">AED {{ order.grand_total|floatformat:2 }}</strong>
+      </div>
+    </div>
+
+    {% if order.payment_status == 'PAID' %}
+    <div class="order-invoice-actions no-print">
+      {% if invoice %}
+        <a class="management-secondary-btn" href="{% url 'core:management_invoice' invoice.public_id %}">{% if LANGUAGE_CODE == 'en' %}View invoice{% else %}عرض الفاتورة{% endif %}</a>
+        <a class="management-primary-btn" href="{% url 'core:management_invoice_pdf' invoice.public_id %}">PDF</a>
+      {% elif request.user.role == 'OWNER' and order.status != 'CANCELLED' and order.status != 'RETURNED' %}
+        <form method="post" action="{% url 'core:management_invoice_create' order.public_id %}">
+          {% csrf_token %}
+          <button class="management-primary-btn" type="submit">{% if LANGUAGE_CODE == 'en' %}Create invoice{% else %}إنشاء فاتورة{% endif %}</button>
+        </form>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    <div class="management-two-column order-admin-layout">
+      <section class="management-content-card">
+        <div class="content-card-title"><svg class="ui-icon"><use href="#icon-orders"></use></svg><h2>{% if LANGUAGE_CODE == 'en' %}Order details{% else %}تفاصيل الطلب{% endif %}</h2></div>
+        <dl class="management-detail-list">
+          <div><dt>{% if LANGUAGE_CODE == 'en' %}Reference{% else %}المرجع{% endif %}</dt><dd dir="ltr">{{ order.reference }}</dd></div>
+          <div><dt>{% if LANGUAGE_CODE == 'en' %}Customer{% else %}العميل{% endif %}</dt><dd>{{ order.customer_name }}</dd></div>
+          <div><dt>{% if LANGUAGE_CODE == 'en' %}Phone{% else %}الهاتف{% endif %}</dt><dd dir="ltr">{{ order.customer_phone }}</dd></div>
+          <div><dt>{% if LANGUAGE_CODE == 'en' %}Total{% else %}الإجمالي{% endif %}</dt><dd dir="ltr">AED {{ order.grand_total|floatformat:2 }}</dd></div>
+        </dl>
+        <div class="order-items-list">
+          {% for item in order.items.all %}
+          <div class="management-proof-item">
+            {% if item.image_url_snapshot %}<img src="{{ item.image_url_snapshot }}" alt="" loading="lazy" referrerpolicy="no-referrer">{% endif %}
+            <span>{{ item.quantity }} × {% if LANGUAGE_CODE == 'en' %}{{ item.name_en }}{% else %}{{ item.name_ar }}{% endif %}
+              <small class="table-subtext" dir="ltr">{{ item.product_reference }} · {{ item.sku }}</small>
+              <small class="table-subtext">{% if LANGUAGE_CODE == 'en' %}Verification at purchase{% else %}التوثيق وقت الشراء{% endif %}: {{ item.verification_status_snapshot|default:'—' }}</small>
+            </span>
+            <strong dir="ltr">AED {{ item.line_total|floatformat:2 }}</strong>
+          </div>
+          {% endfor %}
+        </div>
+      </section>
+
+      <aside class="management-stack">
+        <section class="management-content-card">
+          <div class="content-card-title"><svg class="ui-icon"><use href="#icon-wallet"></use></svg><h2>{% if LANGUAGE_CODE == 'en' %}Payment{% else %}الدفع{% endif %}</h2></div>
+          <div class="payment-readonly-panel">
+            <div><span>{% if LANGUAGE_CODE == 'en' %}Status{% else %}الحالة{% endif %}</span><strong>{{ order.payment_status|payment_status_label }}</strong></div>
+            <div><span>{% if LANGUAGE_CODE == 'en' %}Method{% else %}الطريقة{% endif %}</span><strong>{{ payment_source_code|payment_method_label }}</strong></div>
+            {% if order.payment_method == 'DEFERRED' %}
+            <div><span>{% if LANGUAGE_CODE == 'en' %}Due date{% else %}تاريخ الاستحقاق{% endif %}</span><strong dir="ltr">{{ order.payment_due_date|date:"Y-m-d" }}</strong></div>
+            <div><span>{% if LANGUAGE_CODE == 'en' %}Collected{% else %}المدفوع{% endif %}</span><strong dir="ltr">AED {{ deferred_paid|floatformat:2 }}</strong></div>
+            <div><span>{% if LANGUAGE_CODE == 'en' %}Outstanding{% else %}المتبقي{% endif %}</span><strong dir="ltr">AED {{ deferred_outstanding|floatformat:2 }}</strong></div>
+            {% endif %}
+            {% if latest_attempt %}<div><span>{% if LANGUAGE_CODE == 'en' %}Stripe attempt{% else %}محاولة Stripe{% endif %}</span><strong>{{ latest_attempt.get_status_display }}</strong></div>{% endif %}
+            {% if order.manual_paid_at %}<div><span>{% if LANGUAGE_CODE == 'en' %}Manual confirmation{% else %}تأكيد التحويل{% endif %}</span><strong>{{ order.manual_paid_at|date:"Y-m-d H:i" }}{% if order.manual_paid_by %} · @{{ order.manual_paid_by.username }}{% endif %}</strong></div>{% endif %}
+          </div>
+
+          {% if is_stripe_order %}
+            <div class="management-inline-note is-secure">
+              {% if LANGUAGE_CODE == 'en' %}Stripe payment state is provider-controlled and cannot be edited manually.{% else %}حالة دفع Stripe محمية وتُحدّث تلقائيًا من Stripe ولا يمكن تعديلها يدويًا.{% endif %}
+            </div>
+            {% if order.payment_status != 'PAID' and can_mark_paid %}
+            <form method="post" class="management-form compact-form">{% csrf_token %}
+              <button class="management-secondary-btn" name="action" value="reconcile_stripe" type="submit">{% if LANGUAGE_CODE == 'en' %}Verify with Stripe{% else %}التحقق من Stripe{% endif %}</button>
+            </form>
+            {% endif %}
+          {% elif order.payment_method == 'DEFERRED' and order.payment_status != 'PAID' %}
+            <div class="management-inline-note">
+              {% if LANGUAGE_CODE == 'en' %}This is a deferred receivable. Record each actual collection without overwriting earlier payments.{% else %}هذا بيع مؤجل. سجّل كل دفعة يتم استلامها فعليًا مع الاحتفاظ بسجل الدفعات السابقة.{% endif %}
+            </div>
+            {% if request.user.role == 'OWNER' %}
+            <a class="management-primary-btn order-record-payment-btn" href="{% url 'core:management_receivable_payment' order.public_id %}">{% if LANGUAGE_CODE == 'en' %}Record payment{% else %}تسجيل دفعة{% endif %}</a>
+            {% endif %}
+          {% elif order.payment_status != 'PAID' %}
+            <div class="management-inline-note">
+              {% if LANGUAGE_CODE == 'en' %}For manual/WhatsApp payment, confirm only after the funds have actually arrived.{% else %}للدفع اليدوي أو واتساب: لا تؤكد الدفع إلا بعد وصول المبلغ فعليًا والتحقق منه.{% endif %}
+            </div>
+            {% if can_mark_paid %}
+            <form method="post" class="management-form manual-payment-confirm" data-payment-confirm-form>{% csrf_token %}
+              <label class="manual-confirm-card">
+                <input type="checkbox" name="manual-confirm_received" required data-payment-confirm-check>
+                <span class="manual-confirm-box" aria-hidden="true">✓</span>
+                <span class="manual-confirm-copy"><strong>{% if LANGUAGE_CODE == 'en' %}Confirm receipt of funds{% else %}تأكيد استلام المبلغ{% endif %}</strong><small>{% if LANGUAGE_CODE == 'en' %}I verified that the funds were actually received. Do not confirm from a transfer screenshot alone.{% else %}أؤكد أنني تحققت من وصول المبلغ فعليًا. لا تؤكد اعتمادًا على صورة تحويل فقط.{% endif %}</small></span>
+              </label>
+              {% if payment_source_code == 'UNSET' %}<div class="management-inline-note is-warning">{% if LANGUAGE_CODE == 'en' %}Select a payment method before confirmation.{% else %}حدد طريقة الدفع أولًا قبل تأكيد الاستلام.{% endif %}</div>{% endif %}
+              <button class="management-primary-btn" name="action" value="manual_paid" type="submit" data-payment-confirm-button disabled>{% if LANGUAGE_CODE == 'en' %}Confirm payment received{% else %}تأكيد استلام الدفعة{% endif %}</button>
+            </form>
+            {% endif %}
+          {% else %}
+            <div class="management-inline-note is-success">{% if LANGUAGE_CODE == 'en' %}Payment is confirmed and locked from manual editing.{% else %}تم تأكيد الدفع، والحالة محمية من التعديل اليدوي.{% endif %}</div>
+          {% endif %}
+        </section>
+
+        <section class="management-content-card">
+          <div class="content-card-title"><svg class="ui-icon"><use href="#icon-clock"></use></svg><h2>{% if LANGUAGE_CODE == 'en' %}Reservation deadline{% else %}مهلة حجز الطلب{% endif %}</h2></div>
+          {% if reservation_deadline and order.payment_status != 'PAID' and order.status != 'CANCELLED' and order.status != 'RETURNED' %}
+          <div class="payment-readonly-panel">
+            <div><span>{% if LANGUAGE_CODE == 'en' %}Current deadline{% else %}وقت انتهاء الحجز الحالي{% endif %}</span><strong dir="ltr">{{ reservation_deadline|date:"Y-m-d H:i:s" }}</strong></div>
+          </div>
+          <div class="management-inline-note is-secure">{% if LANGUAGE_CODE == 'en' %}Customer actions, refreshes, WhatsApp selection, and payment-method switching never extend this deadline. Only an authorized management extension can change it.{% else %}تحديث الصفحة أو اختيار واتساب أو تبديل طريقة الدفع لا يمدد هذه المهلة. لا يمكن تغييرها إلا بتمديد إداري مصرح ومسجل.{% endif %}</div>
+          {% if can_extend_reservations %}
+          <form method="post" class="management-form">{% csrf_token %}
+            {{ reservation_extension_form.as_p }}
+            <button class="management-secondary-btn" type="submit" name="action" value="extend_reservation">{% if LANGUAGE_CODE == 'en' %}Extend reservation{% else %}تمديد الحجز{% endif %}</button>
+          </form>
+          {% endif %}
+          {% else %}
+          <div class="management-inline-note is-locked">{% if LANGUAGE_CODE == 'en' %}There is no active unpaid reservation to extend.{% else %}لا يوجد حجز نشط غير مدفوع يمكن تمديده.{% endif %}</div>
+          {% endif %}
+        </section>
+
+        <section class="management-content-card">
+          <div class="content-card-title"><svg class="ui-icon"><use href="#icon-history"></use></svg><h2>{% if LANGUAGE_CODE == 'en' %}Order workflow{% else %}مسار الطلب{% endif %}</h2></div>
+          {% if order.payment_status != 'PAID' %}<div class="management-inline-note is-locked">{% if LANGUAGE_CODE == 'en' %}Fulfilment is locked until payment is confirmed. Cancellation remains available when permitted.{% else %}مراحل التجهيز والتوصيل مقفلة حتى يتم تأكيد الدفع، مع بقاء الإلغاء متاحًا حسب الصلاحية.{% endif %}</div>{% endif %}
+          {% if status_actions %}
+          <form method="post" class="management-form">{% csrf_token %}
+            <label for="order-status">{% if LANGUAGE_CODE == 'en' %}Next stage{% else %}المرحلة التالية{% endif %}</label>
+            <select class="management-input" id="order-status" name="order-status">
+              <option value="{{ order.status }}" selected>{{ order.status|order_status_label }}</option>
+              {% for value, label in status_actions %}<option value="{{ value }}">{{ value|order_status_label }}</option>{% endfor %}
+            </select>
+            <button class="management-primary-btn" name="action" value="status">{% if LANGUAGE_CODE == 'en' %}Update workflow{% else %}تحديث مرحلة الطلب{% endif %}</button>
+          </form>
+          {% elif order.payment_status == 'PAID' %}<div class="management-inline-note is-success">{% if LANGUAGE_CODE == 'en' %}No further workflow action is available for this state.{% else %}لا توجد مرحلة تشغيلية أخرى متاحة لهذه الحالة.{% endif %}</div>{% endif %}
+        </section>
+
+        <section class="management-content-card">
+          <div class="content-card-title"><svg class="ui-icon"><use href="#icon-truck"></use></svg><h2>{% if LANGUAGE_CODE == 'en' %}Delivery{% else %}التوصيل{% endif %}</h2></div>
+          <div class="payment-readonly-panel order-delivery-method">
+            <div><span>{% if LANGUAGE_CODE == 'en' %}Delivery method{% else %}طريقة التسليم{% endif %}</span><strong>{% if order.delivery_method == 'HAND_TO_HAND' %}{% if LANGUAGE_CODE == 'en' %}Hand-to-hand{% else %}استلام يد بيد{% endif %}{% else %}{% if LANGUAGE_CODE == 'en' %}Shipping{% else %}توصيل{% endif %}{% endif %}</strong></div>
+            {% if order.hand_to_hand_at %}<div><span>{% if LANGUAGE_CODE == 'en' %}Handed over at{% else %}تاريخ التسليم{% endif %}</span><strong dir="ltr">{{ order.hand_to_hand_at|date:"Y-m-d H:i" }}</strong></div>{% endif %}
+            {% if order.hand_to_hand_by %}<div><span>{% if LANGUAGE_CODE == 'en' %}Recorded by{% else %}سجل بواسطة{% endif %}</span><strong>@{{ order.hand_to_hand_by.username }}</strong></div>{% endif %}
+          </div>
+          {% if can_hand_to_hand and not order.hand_to_hand_at %}
+          <form method="post" class="management-form hand-to-hand-form">{% csrf_token %}
+            {{ hand_to_hand_form.as_p }}
+            <button class="management-secondary-btn" name="action" value="hand_to_hand" type="submit">{% if LANGUAGE_CODE == 'en' %}Confirm hand-to-hand delivery{% else %}تأكيد الاستلام يدًا بيد{% endif %}</button>
+          </form>
+          {% endif %}
+          {% if order.delivery_method != 'HAND_TO_HAND' and order.payment_status == 'PAID' and order.status != 'CANCELLED' and order.status != 'RETURNED' %}
+            {% if can_manage_shipping %}
+            <form method="post" class="management-form">{% csrf_token %}{{ shipping_form.as_p }}<button class="management-primary-btn" name="action" value="shipping">{% if LANGUAGE_CODE == 'en' %}Save delivery details{% else %}حفظ بيانات التوصيل{% endif %}</button></form>
+            {% else %}
+            <div class="payment-readonly-panel"><div><span>{% if LANGUAGE_CODE == 'en' %}Carrier{% else %}شركة التوصيل{% endif %}</span><strong>{{ order.shipping_carrier|default:'—' }}</strong></div><div><span>{% if LANGUAGE_CODE == 'en' %}Tracking{% else %}رقم التتبع{% endif %}</span><strong dir="ltr">{{ order.tracking_number|default:'—' }}</strong></div></div>
+            {% endif %}
+          {% else %}
+          <div class="management-inline-note is-locked">{% if LANGUAGE_CODE == 'en' %}Delivery details become available after payment confirmation.{% else %}تظهر إدارة بيانات التوصيل بعد تأكيد الدفع.{% endif %}</div>
+          {% endif %}
+        </section>
+      </aside>
+    </div>
+
+    {% for item in order.items.all %}
+      {% if item.requested_bead_count_snapshot and item.original_bead_count_snapshot and item.requested_bead_count_snapshot < item.original_bead_count_snapshot %}
+      <section class="management-content-card bead-work-card mt-3">
+        <div><strong>خدمة ضبط الخرز</strong><span dir="ltr">{{ item.original_bead_count_snapshot }} ← {{ item.requested_bead_count_snapshot }}</span></div>
+        {% if item.bead_adjustment_completed_at %}
+          <span class="bead-complete-badge">✓ تم ضبط الخرز</span>
+        {% else %}
+          <span class="bead-pending-badge">يحتاج ضبط الخرز</span>
+          <form method="post">{% csrf_token %}<input type="hidden" name="action" value="complete_bead_adjustment"><input type="hidden" name="item_id" value="{{ item.id }}"><button class="management-primary-btn" type="submit">تأكيد اكتمال ضبط الخرز</button></form>
+        {% endif %}
+      </section>
+      {% endif %}
+    {% endfor %}
+    {% if can_view_timeline %}
+    <section class="management-content-card mt-3 order-tracking-card">
+      <div class="content-card-title"><svg class="ui-icon"><use href="#icon-history"></use></svg><h2>{% if LANGUAGE_CODE == 'en' %}Track order{% else %}تتبع الطلب{% endif %}</h2></div>
+
+      <div class="haybat-order-tracker" aria-label="{% if LANGUAGE_CODE == 'en' %}Order progress{% else %}مراحل الطلب{% endif %}">
+        {% for stage in tracking_stages %}
+        <div class="haybat-track-stage{% if stage.complete %} is-complete{% endif %}{% if stage.current %} is-current{% endif %}">
+          <div class="haybat-track-node">
+            <svg class="ui-icon"><use href="#{{ stage.icon }}"></use></svg>
+          </div>
+          <strong>{% if LANGUAGE_CODE == 'en' %}{{ stage.label_en }}{% else %}{{ stage.label_ar }}{% endif %}</strong>
+          {% if stage.key == 'payment' and order.payment_method == 'DEFERRED' and order.payment_status != 'PAID' %}
+            <small>{% if order.payment_status == 'PARTIALLY_PAID' %}{% if LANGUAGE_CODE == 'en' %}Partially paid{% else %}مدفوع جزئيًا{% endif %}{% else %}{% if LANGUAGE_CODE == 'en' %}Deferred{% else %}مؤجل{% endif %}{% endif %}</small>
+          {% elif stage.complete %}
+            <small>{% if LANGUAGE_CODE == 'en' %}Completed{% else %}مكتمل{% endif %}</small>
+          {% elif stage.current %}
+            <small>{% if LANGUAGE_CODE == 'en' %}Current stage{% else %}المرحلة الحالية{% endif %}</small>
+          {% else %}
+            <small>{% if LANGUAGE_CODE == 'en' %}Upcoming{% else %}قادم{% endif %}</small>
+          {% endif %}
+        </div>
+        {% endfor %}
+      </div>
+
+      <details class="order-activity-details">
+        <summary>{% if LANGUAGE_CODE == 'en' %}View detailed activity{% else %}عرض سجل الأحداث التفصيلي{% endif %}</summary>
+        <div class="order-activity-list">
+          {% for event in timeline %}
+          <article>
+            <span class="order-activity-dot"></span>
+            <div>
+              <strong>{% if LANGUAGE_CODE == 'en' %}{{ event.label_en }}{% else %}{{ event.label_ar }}{% endif %}</strong>
+              <small><span dir="ltr">{{ event.created_at|date:"d/m/Y · H:i" }}</span>{% if event.actor %} · {% if LANGUAGE_CODE == 'en' %}by{% else %}بواسطة{% endif %} {{ event.actor.username }}{% endif %}</small>
+              {% if event.from_value or event.to_value %}
+                {% if event.from_value != event.to_value %}
+                  {% if event.to_value == 'DELIVERED' %}<em>{% if LANGUAGE_CODE == 'en' %}Status: Delivered{% else %}حالة الطلب: تم التسليم{% endif %}</em>
+                  {% elif event.to_value == 'PAID' %}<em>{% if LANGUAGE_CODE == 'en' %}Payment: Paid{% else %}الدفع: مدفوع{% endif %}</em>
+                  {% elif event.to_value == 'PARTIALLY_PAID' %}<em>{% if LANGUAGE_CODE == 'en' %}Payment: Partially paid{% else %}الدفع: مدفوع جزئيًا{% endif %}</em>
+                  {% elif event.to_value == 'UNPAID' %}<em>{% if LANGUAGE_CODE == 'en' %}Payment: Unpaid{% else %}الدفع: غير مدفوع{% endif %}</em>
+                  {% endif %}
+                {% elif event.kind == 'PAYMENT_CHANGED' %}
+                  <em>{% if LANGUAGE_CODE == 'en' %}Payment method: {{ payment_source_code|payment_method_label }}{% else %}طريقة الدفع: {{ payment_source_code|payment_method_label }}{% endif %}</em>
+                {% endif %}
+              {% endif %}
+            </div>
+          </article>
+          {% empty %}
+          <p class="management-inline-note">{% if LANGUAGE_CODE == 'en' %}No detailed activity yet.{% else %}لا يوجد سجل أحداث تفصيلي بعد.{% endif %}</p>
+          {% endfor %}
+        </div>
+      </details>
+    </section>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

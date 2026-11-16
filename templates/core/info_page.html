@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+{% block title %}{{ page_title }} — {% if LANGUAGE_CODE == 'en' %}HaybatAlsultan{% else %}هيبة السلطان{% endif %}{% endblock %}
+{% block content %}
+<section class="container py-5 policy-page">
+  <div class="policy-shell">
+    <p class="eyebrow">{% if LANGUAGE_CODE == 'en' %}HaybatAlsultan Policies{% else %}سياسات HaybatAlsultan{% endif %}</p>
+    <h1>{{ page_title }}</h1>
+    <p class="policy-version">{% if LANGUAGE_CODE == 'en' %}Policy version 1.0 · Effective 14 August 2026{% else %}إصدار السياسة 1.0 · تاريخ السريان 14 أغسطس 2026{% endif %}</p>
+    {% for heading, paragraphs in sections %}
+      <section class="policy-section">
+        <h2>{{ heading }}</h2>
+        {% for paragraph in paragraphs %}<p>{{ paragraph }}</p>{% endfor %}
+      </section>
+    {% endfor %}
+    <div class="policy-note">
+      {% if LANGUAGE_CODE == 'en' %}
+        These policies are intended to operate consistently with mandatory rights under applicable UAE law. For assistance, contact <a href="mailto:{{ STORE_CONTACT_EMAIL }}">{{ STORE_CONTACT_EMAIL }}</a>.
+      {% else %}
+        تطبق هذه السياسات بما لا ينتقص من الحقوق الإلزامية المقررة بموجب القوانين السارية في دولة الإمارات العربية المتحدة. للمساعدة تواصل عبر <a href="mailto:{{ STORE_CONTACT_EMAIL }}">{{ STORE_CONTACT_EMAIL }}</a>.
+      {% endif %}
+    </div>
+  </div>
+</section>
+{% endblock %}

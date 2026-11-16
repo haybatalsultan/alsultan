@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container auth-wrap">
+  <div class="card-lux mfa-setup-card">
+    {% if LANGUAGE_CODE == 'en' %}
+      <h1>Secure your management account</h1>
+      {% if mandatory_management_setup %}<div class="alert alert-warning">Two-factor authentication is required for every management account before the Management Portal can be opened.</div>{% endif %}
+      {% if enabled %}
+        <div class="alert alert-success">Two-factor authentication is active on this account.</div>
+        <a class="btn btn-gold" href="{% url 'core:management_dashboard' %}">Management Portal</a>
+      {% else %}
+        <p>Scan this QR code with Microsoft Authenticator, Google Authenticator, or another TOTP-compatible app.</p>
+        <div class="mfa-qr-wrap" aria-label="Authenticator QR code">
+          <img class="mfa-qr" src="{{ qr_data_uri }}" alt="QR code for Haybat Al Sultan two-factor authentication">
+        </div>
+        <p class="small text-muted">The QR code is generated locally by Haybat Al Sultan. The setup secret is not sent to an external QR service.</p>
+        <details class="mt-3 mfa-secret-details">
+          <summary>Show setup key instead</summary>
+          <div class="alert alert-light mt-2"><strong>Setup key</strong><br><code class="text-break">{{ secret }}</code></div>
+          <p class="small text-muted mb-0">Keep this key private. Haybat Al Sultan support will never ask you for it.</p>
+        </details>
+        <form method="post" class="mt-3">{% csrf_token %}{{ form.as_p }}<button class="btn btn-gold w-100" type="submit">Activate two-factor authentication</button></form>
+        <form method="post" action="{% url 'accounts:mfa_cancel_setup' %}" class="mt-2">{% csrf_token %}<button class="btn btn-outline-secondary w-100" type="submit">Cancel and return to sign in</button></form>
+      {% endif %}
+    {% else %}
+      <h1>تأمين حساب الإدارة</h1>
+      {% if mandatory_management_setup %}<div class="alert alert-warning">التحقق بخطوتين إلزامي لجميع حسابات الإدارة، بما في ذلك المالك والمشرف، قبل السماح بالدخول إلى بوابة إدارة هيبة السلطان.</div>{% endif %}
+      {% if enabled %}
+        <div class="alert alert-success">التحقق بخطوتين مفعّل على هذا الحساب.</div>
+        <a class="btn btn-gold" href="{% url 'core:management_dashboard' %}">دخول لوحة الإدارة</a>
+      {% else %}
+        <p>امسح رمز QR بواسطة Microsoft Authenticator أو Google Authenticator أو أي تطبيق موثوق يدعم TOTP.</p>
+        <div class="mfa-qr-wrap" aria-label="رمز QR لتطبيق المصادقة">
+          <img class="mfa-qr" src="{{ qr_data_uri }}" alt="رمز QR لتفعيل التحقق بخطوتين في هيبة السلطان">
+        </div>
+        <p class="small text-muted">يتم إنشاء رمز QR داخل خادم هيبة السلطان، ولا يتم إرسال مفتاح الإعداد إلى خدمة QR خارجية.</p>
+        <details class="mt-3 mfa-secret-details">
+          <summary>إظهار مفتاح الإعداد بدلًا من QR</summary>
+          <div class="alert alert-light mt-2"><strong>مفتاح الإعداد</strong><br><code class="text-break">{{ secret }}</code></div>
+          <p class="small text-muted mb-0">احتفظ بهذا المفتاح بسرية تامة. لن يطلب منك فريق هيبة السلطان هذا المفتاح.</p>
+        </details>
+        <form method="post" class="mt-3">{% csrf_token %}{{ form.as_p }}<button class="btn btn-gold w-100" type="submit">تفعيل التحقق بخطوتين</button></form>
+        <form method="post" action="{% url 'accounts:mfa_cancel_setup' %}" class="mt-2">{% csrf_token %}<button class="btn btn-outline-secondary w-100" type="submit">إلغاء والعودة لتسجيل الدخول</button></form>
+      {% endif %}
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

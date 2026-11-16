@@ -1,0 +1,62 @@
+{
+  "review_scope": "source/configuration review + regression tests; not external penetration test",
+  "python_compileall": "PASS",
+  "ast_parse": "PASS",
+  "javascript_syntax": "PASS",
+  "render_yaml_syntax": "PASS",
+  "project_security_checker": "PASS",
+  "project_security_checker_output": "Static security pattern + project invariant scan: PASS",
+  "test_methods_discovered": 123,
+  "full_django_test_suite_executed_here": false,
+  "full_django_test_suite_reason": "Artifact runtime does not include Django; run the supplied command locally.",
+  "checks": {
+    "forwarded_headers_not_in_rate_limiter": true,
+    "authoritative_ip_uses_remote_addr_only": true,
+    "account_target_bucket": true,
+    "password_reset_email_bucket": true,
+    "mfa_user_flow_bucket": true,
+    "raw_identifiers_hmac_before_cache": true,
+    "production_requires_redis": true,
+    "production_fail_closed": true,
+    "render_peer_bucket_disabled": true,
+    "render_shared_key_value": true,
+    "smtp_development_fix_preserved": true
+  },
+  "artifact_hygiene": {
+    "env_file_packaged": false,
+    "sqlite_packaged": false,
+    "venv_packaged": false
+  },
+  "fixed_findings": [
+    {
+      "severity": "HIGH",
+      "finding": "Forwarded-header rotation could bypass IP-only rate limiting",
+      "status": "FIXED"
+    },
+    {
+      "severity": "HIGH",
+      "finding": "LocMem rate-limit counters were not shared across four Gunicorn workers",
+      "status": "FIXED"
+    },
+    {
+      "severity": "MEDIUM",
+      "finding": "Audit IP field could treat attacker-provided forwarded headers as authoritative",
+      "status": "FIXED"
+    }
+  ],
+  "remaining_hardening": [
+    {
+      "severity": "MEDIUM",
+      "item": "Supervisor MFA remains optional by current product policy."
+    },
+    {
+      "severity": "DEFENSE_IN_DEPTH",
+      "item": "TOTP shared secrets are stored in the application database without dedicated application-level encryption."
+    },
+    {
+      "severity": "OPERATIONAL",
+      "item": "External black-box/DAST penetration testing has not been performed."
+    }
+  ],
+  "ast_errors": []
+}

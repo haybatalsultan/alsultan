@@ -1,0 +1,27 @@
+{
+  "version": "v19.1",
+  "fix": "Product verification status simplification and database constraint repair",
+  "verification_statuses": [
+    "NONE",
+    "INSPECTED",
+    "CERTIFIED"
+  ],
+  "security": {
+    "owner_only_management": true,
+    "supervisor_forged_field_ignored_server_side": true,
+    "database_allowed_values_constraint": true,
+    "no_certificate_document_upload": true,
+    "no_external_certificate_url": true,
+    "existing_rate_limit_hardening_preserved": true
+  },
+  "checks_available_here": {
+    "compileall": "PASS",
+    "ast_parse": "PASS",
+    "security_static_check": "PASS",
+    "security_static_check_output": "Static security pattern + project invariant scan: PASS",
+    "test_methods_present": 136
+  },
+  "full_django_suite_executed_here": false,
+  "reason": "Django is not installed in the artifact build runtime; run tests in the project's .venv before deployment.",
+  "ast_errors": []
+}

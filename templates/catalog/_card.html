@@ -1,0 +1,45 @@
+<div class="col-6 col-lg-3">
+  <article class="product-card" data-product-card>
+    <a class="product-card-link" href="{% url 'catalog:detail' product.public_id %}">
+      {% with img=product.images.first %}
+        {% if img %}
+          <img class="product-card-image" loading="lazy" src="{{ img.card_url }}" alt="{% if LANGUAGE_CODE == 'en' %}{{ img.alt_text_en|default:product.name_en }}{% else %}{{ img.alt_text_ar|default:product.name_ar }}{% endif %}">
+        {% else %}
+          <div class="placeholder-img product-card-image" aria-hidden="true">HS</div>
+        {% endif %}
+      {% endwith %}
+      <div class="product-card-content">
+        <div class="product-card-badges">
+          {% if product.verification_status == 'CERTIFIED' %}<span class="product-badge certificate">{% if LANGUAGE_CODE == 'en' %}Certified{% else %}موثق بشهادة{% endif %}</span>
+          {% elif product.verification_status == 'INSPECTED' %}<span class="product-badge certificate">{% if LANGUAGE_CODE == 'en' %}Inspected{% else %}تم الفحص{% endif %}</span>{% endif %}
+          {% if product.offer_snapshot.has_gift %}<span class="product-badge gift">{% if LANGUAGE_CODE == 'en' %}Gift Included{% else %}هدية مرفقة{% endif %}</span>{% endif %}
+        </div>
+        <small>{% if LANGUAGE_CODE == 'en' %}{{ product.category.name_en }}{% else %}{{ product.category.name_ar }}{% endif %}</small>
+        <div class="product-item-code" dir="ltr">{{ product.sku }}</div>
+        <h3>{% if LANGUAGE_CODE == 'en' %}{{ product.name_en }}{% else %}{{ product.name_ar }}{% endif %}</h3>
+        <div class="price">
+          {% if product.offer_snapshot.has_discount %}<del>AED {{ product.offer_snapshot.base_price }}</del> <strong>AED {{ product.offer_snapshot.final_price }}</strong>
+          {% else %}<strong>AED {{ product.offer_snapshot.final_price }}</strong>{% endif %}
+        </div>
+      </div>
+    </a>
+    <div class="product-card-action">
+      {% if product.status == 'AVAILABLE' and product.free_quantity > 0 %}
+        <form method="post" action="{% url 'orders:cart_add' product.public_id %}" class="add-to-cart-form" data-add-to-cart data-free-quantity="{{ product.free_quantity }}">
+          {% csrf_token %}
+          <input type="hidden" name="quantity" value="1">
+          <button type="submit" class="product-add-button" data-add-button>
+            <span class="product-add-button-icon" aria-hidden="true"><svg class="ui-icon"><use href="#icon-cart"></use></svg></span>
+            <span data-add-label>{% if LANGUAGE_CODE == 'en' %}Add to Cart{% else %}أضف إلى السلة{% endif %}</span>
+            <span class="product-add-button-shine" aria-hidden="true"></span>
+          </button>
+        </form>
+      {% else %}
+        <button type="button" class="product-add-button product-add-button--unavailable" disabled aria-disabled="true">
+          <span class="product-add-button-icon" aria-hidden="true"><svg class="ui-icon"><use href="#icon-lock"></use></svg></span>
+          <span>{% if LANGUAGE_CODE == 'en' %}Currently unavailable{% else %}غير متاح حاليًا{% endif %}</span>
+        </button>
+      {% endif %}
+    </div>
+  </article>
+</div>

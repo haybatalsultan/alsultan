@@ -1,0 +1,9 @@
+<header class="management-page-header">
+  <div class="management-page-heading">
+    <a class="management-back" href="{% url 'core:management_dashboard' %}"><svg class="ui-icon" aria-hidden="true"><use href="#icon-back"></use></svg><span>{% if LANGUAGE_CODE == 'en' %}Management Home{% else %}الرجوع إلى لوحة الإدارة{% endif %}</span></a>
+    <nav class="management-breadcrumb" aria-label="{% if LANGUAGE_CODE == 'en' %}Breadcrumb{% else %}مسار الصفحة{% endif %}"><a href="{% url 'core:management_dashboard' %}">{% if LANGUAGE_CODE == 'en' %}Management{% else %}لوحة الإدارة{% endif %}</a><span>/</span><span>{{ page_title }}</span></nav>
+    <h1>{{ page_title }}</h1>
+    {% if page_description %}<p>{{ page_description }}</p>{% endif %}
+  </div>
+  <div class="management-header-actions"><a class="icon-action" href="{% url 'core:management_search' %}" title="{% if LANGUAGE_CODE == 'en' %}Management search{% else %}البحث الإداري{% endif %}" aria-label="{% if LANGUAGE_CODE == 'en' %}Management search{% else %}البحث الإداري{% endif %}"><svg class="ui-icon"><use href="#icon-search"></use></svg></a></div>
+</header>

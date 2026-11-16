@@ -1,0 +1,10 @@
+{% extends 'base.html' %}
+{% block title %}{% if LANGUAGE_CODE == 'en' %}Bad request{% else %}طلب غير صالح{% endif %} — HaybatAlsultan{% endblock %}
+{% block content %}
+<section class="system-state-shell" aria-labelledby="state-title"><div class="container"><div class="system-state-card">
+<div class="system-state-code" aria-hidden="true">400</div><div class="system-state-icon is-error" aria-hidden="true">!</div>
+<h1 id="state-title">{% if LANGUAGE_CODE == 'en' %}Bad request{% else %}طلب غير صالح{% endif %}</h1>
+<p>{% if LANGUAGE_CODE == 'en' %}We could not process this request. Check the information and try again.{% else %}تعذر معالجة الطلب. تحقق من البيانات وحاول مرة أخرى.{% endif %}</p>
+<div class="system-state-actions"><a class="btn btn-gold" href="{% url 'core:home' %}">{% if LANGUAGE_CODE == 'en' %}Go to home{% else %}العودة إلى الرئيسية{% endif %}</a></div>
+</div></div></section>
+{% endblock %}

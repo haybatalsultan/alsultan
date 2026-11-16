@@ -1,0 +1,141 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}{% if LANGUAGE_CODE == 'en' %}Quick Sale{% else %}بيع مباشر{% endif %} — Haybat Al Sultan{% endblock %}
+{% block content %}
+<section class="management-page quick-sale-page">
+  <div class="container management-shell py-4 py-lg-5">
+    {% include 'management/_page_header.html' with page_title=page_title page_description=page_description %}
+
+    <div class="quick-sale-security-note">
+      <svg class="ui-icon"><use href="#icon-shield"></use></svg>
+      <div>
+        <strong>{% if LANGUAGE_CODE == 'en' %}Owner-only direct sale{% else %}بيع مباشر للمالك فقط{% endif %}</strong>
+        <span>{% if LANGUAGE_CODE == 'en' %}Search results are informational. Price and stock are revalidated by the server when you confirm.{% else %}نتيجة البحث للعرض فقط. يعيد السيرفر التحقق من السعر والمخزون عند تأكيد البيع.{% endif %}</span>
+      </div>
+    </div>
+
+    <form method="post"
+          class="management-content-card quick-sale-form quick-sale-pro"
+          novalidate
+          data-quick-sale
+          data-search-url="{% url 'core:management_quick_sale_product_search' %}"
+          data-lang="{{ LANGUAGE_CODE }}">
+      {% csrf_token %}
+      {{ form.idempotency_key }}
+      {% if form.non_field_errors %}<div class="quick-sale-error">{{ form.non_field_errors }}</div>{% endif %}
+
+      <div class="quick-sale-layout">
+        <div class="quick-sale-main">
+          <section class="quick-sale-section quick-sale-product-section">
+            <div class="quick-sale-section-heading">
+              <div><span>01</span><h2>{% if LANGUAGE_CODE == 'en' %}Select item{% else %}اختر القطعة{% endif %}</h2></div>
+              <small>{% if LANGUAGE_CODE == 'en' %}Available and unreserved items only{% else %}المتوفر وغير المحجوز فقط{% endif %}</small>
+            </div>
+
+            <label class="quick-sale-search-label" for="quick-sale-search">
+              {% if LANGUAGE_CODE == 'en' %}Search by item code or product name{% else %}ابحث برقم القطعة أو اسم المنتج{% endif %}
+            </label>
+            <div class="quick-sale-search-box">
+              <svg class="ui-icon"><use href="#icon-search"></use></svg>
+              <input id="quick-sale-search"
+                     type="search"
+                     maxlength="80"
+                     autocomplete="off"
+                     spellcheck="false"
+                     placeholder="{% if LANGUAGE_CODE == 'en' %}Example: HS00025 or Amber{% else %}مثال: HS00025 أو كهرمان{% endif %}"
+                     data-product-search>
+              <span class="quick-sale-search-spinner" data-search-spinner hidden aria-hidden="true"></span>
+            </div>
+            <p class="quick-sale-search-status" data-search-status aria-live="polite"></p>
+
+            <div class="quick-sale-results" data-product-results></div>
+
+            <div class="quick-sale-native-select">
+              <label for="{{ form.product.id_for_label }}">{% if LANGUAGE_CODE == 'en' %}Selected item{% else %}القطعة المختارة{% endif %}</label>
+              {{ form.product }}
+              {{ form.product.errors }}
+            </div>
+
+            <article class="quick-sale-selected-card" data-selected-card hidden>
+              <div class="quick-sale-selected-image"><img src="" alt="" data-selected-image hidden></div>
+              <div class="quick-sale-selected-copy">
+                <div class="quick-sale-selected-top">
+                  <div><small data-selected-code></small><h3 data-selected-name></h3></div>
+                  <span class="quick-sale-available">{% if LANGUAGE_CODE == 'en' %}Available{% else %}متوفر{% endif %}</span>
+                </div>
+                <dl class="quick-sale-specs">
+                  <div><dt>{% if LANGUAGE_CODE == 'en' %}Material{% else %}الخامة{% endif %}</dt><dd data-selected-material>—</dd></div>
+                  <div><dt>{% if LANGUAGE_CODE == 'en' %}Beads{% else %}عدد الحبات{% endif %}</dt><dd data-selected-beads>—</dd></div>
+                  <div><dt>{% if LANGUAGE_CODE == 'en' %}Size{% else %}المقاس{% endif %}</dt><dd data-selected-size>—</dd></div>
+                  <div><dt>{% if LANGUAGE_CODE == 'en' %}Weight{% else %}الوزن{% endif %}</dt><dd data-selected-weight>—</dd></div>
+                  <div><dt>{% if LANGUAGE_CODE == 'en' %}Verification{% else %}الفحص / الشهادة{% endif %}</dt><dd data-selected-verification>—</dd></div>
+                </dl>
+                <div class="quick-sale-selected-price">
+                  <span>{% if LANGUAGE_CODE == 'en' %}Current price{% else %}السعر الحالي{% endif %}</span>
+                  <strong dir="ltr"><span data-selected-price>0.00</span> AED</strong>
+                </div>
+                <button type="button" class="quick-sale-change" data-change-product>{% if LANGUAGE_CODE == 'en' %}Change item{% else %}تغيير القطعة{% endif %}</button>
+              </div>
+            </article>
+          </section>
+
+          <section class="quick-sale-section">
+            <div class="quick-sale-section-heading">
+              <div><span>02</span><h2>{% if LANGUAGE_CODE == 'en' %}Buyer details{% else %}بيانات المشتري{% endif %}</h2></div>
+              <small>{% if LANGUAGE_CODE == 'en' %}Optional for an in-person sale{% else %}اختيارية في البيع المباشر{% endif %}</small>
+            </div>
+            <div class="quick-sale-grid">
+              <div class="quick-sale-field quick-sale-field-wide"><label>{% if LANGUAGE_CODE == 'en' %}Name{% else %}الاسم{% endif %}</label>{{ form.customer_name }}{{ form.customer_name.errors }}</div>
+              <div class="quick-sale-field"><label>{% if LANGUAGE_CODE == 'en' %}Phone{% else %}الهاتف{% endif %}</label>{{ form.customer_phone }}{{ form.customer_phone.errors }}</div>
+              <div class="quick-sale-field"><label>{% if LANGUAGE_CODE == 'en' %}Email{% else %}البريد الإلكتروني{% endif %}</label>{{ form.customer_email }}{{ form.customer_email.errors }}</div>
+            </div>
+          </section>
+        </div>
+
+        <aside class="quick-sale-side">
+          <section class="quick-sale-section quick-sale-payment-section">
+            <div class="quick-sale-section-heading">
+              <div><span>03</span><h2>{% if LANGUAGE_CODE == 'en' %}Payment{% else %}الدفع{% endif %}</h2></div>
+            </div>
+            <div class="quick-sale-field">
+              <label>{% if LANGUAGE_CODE == 'en' %}Payment method{% else %}طريقة الدفع{% endif %}</label>
+              {{ form.payment_method }}{{ form.payment_method.errors }}
+            </div>
+            <div class="quick-sale-deferred-fields" data-deferred-fields hidden>
+              <div class="quick-sale-field"><label>{% if LANGUAGE_CODE == 'en' %}Due date{% else %}تاريخ الاستحقاق{% endif %}</label>{{ form.payment_due_date }}{{ form.payment_due_date.errors }}</div>
+              <div class="quick-sale-field"><label>{% if LANGUAGE_CODE == 'en' %}Reminder before due date (days){% else %}التذكير قبل الاستحقاق (أيام){% endif %}</label>{{ form.payment_reminder_days }}{{ form.payment_reminder_days.errors }}</div>
+              <div class="quick-sale-field"><label>{% if LANGUAGE_CODE == 'en' %}Deferred payment note{% else %}ملاحظة الدفع المؤجل{% endif %}</label>{{ form.deferred_note }}{{ form.deferred_note.errors }}</div>
+            </div>
+            <div class="quick-sale-field">
+              <label>{% if LANGUAGE_CODE == 'en' %}Owner special discount (AED){% else %}خصم خاص من المالك (درهم){% endif %}</label>
+              {{ form.special_discount }}{{ form.special_discount.errors }}
+              <small>{% if LANGUAGE_CODE == 'en' %}The server rejects an invalid discount at confirmation.{% else %}يتحقق السيرفر من الخصم مرة أخرى عند التأكيد.{% endif %}</small>
+            </div>
+
+            <div class="quick-sale-summary">
+              <h3>{% if LANGUAGE_CODE == 'en' %}Sale summary{% else %}ملخص البيع{% endif %}</h3>
+              <div><span>{% if LANGUAGE_CODE == 'en' %}Current price{% else %}السعر الحالي{% endif %}</span><strong dir="ltr"><span data-summary-price>0.00</span> AED</strong></div>
+              <div><span>{% if LANGUAGE_CODE == 'en' %}Special discount{% else %}الخصم الخاص{% endif %}</span><strong dir="ltr">- <span data-summary-discount>0.00</span> AED</strong></div>
+              <div class="quick-sale-summary-total"><span>{% if LANGUAGE_CODE == 'en' %}Total{% else %}الإجمالي{% endif %}</span><strong dir="ltr"><span data-summary-total>0.00</span> AED</strong></div>
+            </div>
+
+            <label class="quick-sale-ack">
+              <input type="checkbox" data-sale-ack>
+              <span>{% if LANGUAGE_CODE == 'en' %}I confirm payment was received and the sale details are correct.{% else %}أؤكد صحة بيانات البيع. في الدفع الفوري أؤكد استلام المبلغ، وفي المؤجل أؤكد تاريخ الاستحقاق.{% endif %}</span>
+            </label>
+
+            <button class="management-primary-btn quick-sale-submit" type="submit" data-sale-submit disabled>
+              {% if LANGUAGE_CODE == 'en' %}Confirm Sale{% else %}تأكيد البيع{% endif %}
+              <span dir="ltr" data-submit-total></span>
+            </button>
+            <p class="quick-sale-confirm-help">{% if LANGUAGE_CODE == 'en' %}Confirmation records the sale as paid and delivered and deducts one available unit.{% else %}التأكيد يسجل العملية كمدفوعة ومسلّمة ويخصم وحدة متوفرة واحدة.{% endif %}</p>
+          </section>
+        </aside>
+      </div>
+    </form>
+  </div>
+</section>
+{% endblock %}
+{% block scripts %}
+<script src="{% static 'js/quick-sale.js' %}" defer></script>
+{% endblock %}

@@ -1,0 +1,91 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}{% if LANGUAGE_CODE == 'en' %}My Account{% else %}حسابي{% endif %} — HaybatAlsultan{% endblock %}
+{% block content %}
+<div class="container py-5">
+  {% if user.role == 'OWNER' or user.role == 'SUPERVISOR' %}
+    <a class="management-back mb-3" href="{% url 'core:management_dashboard' %}"><svg class="ui-icon"><use href="#icon-back"></use></svg><span>{% if LANGUAGE_CODE == 'en' %}Back to Management Portal{% else %}الرجوع إلى لوحة الإدارة{% endif %}</span></a>
+  {% endif %}
+  <h1>{% if LANGUAGE_CODE == 'en' %}My Account{% else %}حسابي{% endif %}</h1>
+  {% if loyalty %}
+  <section class="loyalty-card loyalty-{{ loyalty.code|lower }}">
+    <div class="loyalty-medal" aria-hidden="true"><svg class="ui-icon"><use href="#icon-diamond"></use></svg></div>
+    <div class="loyalty-copy">
+      <span>{% if LANGUAGE_CODE == 'en' %}Your loyalty status{% else %}رتبتك الحالية{% endif %}</span>
+      <h2>{% if LANGUAGE_CODE == 'en' %}{{ loyalty.label_en }}{% else %}{{ loyalty.label_ar }}{% endif %}</h2>
+      <p>
+        {% if LANGUAGE_CODE == 'en' %}
+          {{ loyalty.eligible_orders }} qualifying delivered order{{ loyalty.eligible_orders|pluralize }}.
+          {% if loyalty.next_threshold %}Your next tier starts at {{ loyalty.next_threshold }} qualifying orders.{% endif %}
+        {% else %}
+          عدد طلباتك المؤهلة والمسلّمة: {{ loyalty.eligible_orders }}.
+          {% if loyalty.next_threshold %}تنتقل للرتبة التالية عند {{ loyalty.next_threshold }} طلبات مؤهلة.{% endif %}
+        {% endif %}
+      </p>
+      <small>{% if LANGUAGE_CODE == 'en' %}Cancelled, returned or fully refunded orders do not increase this status.{% else %}الطلبات الملغاة أو المرتجعة أو المستردة بالكامل لا ترفع هذه الرتبة.{% endif %}</small>
+    </div>
+  </section>
+  {% endif %}
+  {% if ambassador_profile %}
+  <section class="ambassador-profile-card card-lux">
+    <div><span>{% if LANGUAGE_CODE == 'en' %}Haybat Alsultan Ambassador{% else %}سفير هيبة السلطان{% endif %}</span><h2 dir="ltr">{{ ambassador_profile.code }}</h2><p>{% if ambassador_program.enabled %}{% if LANGUAGE_CODE == 'en' %}Your ambassador account is active. View referrals, points and redemption options.{% else %}حساب سفيرك متاح. شاهد الإحالات والنقاط وخيارات الاستبدال.{% endif %}{% else %}{% if LANGUAGE_CODE == 'en' %}The program is currently paused; your previous records remain saved.{% else %}البرنامج متوقف حاليًا، وسجلاتك السابقة محفوظة.{% endif %}{% endif %}</p></div>
+    <a class="btn btn-gold" href="{% url 'ambassadors:account' %}">{% if LANGUAGE_CODE == 'en' %}Open Ambassador Account{% else %}فتح حساب السفير{% endif %}</a>
+  </section>
+  {% endif %}
+  <div class="row g-4">
+    <div class="col-lg-6">
+      <div class="card-lux">
+        <h3>{% if LANGUAGE_CODE == 'en' %}Saved Addresses{% else %}العناوين المحفوظة{% endif %}</h3>
+        <div class="saved-address-list">
+          {% for a in addresses %}
+            <article class="saved-address-card{% if a.is_default %} is-default{% endif %}">
+              <strong>{{ a.label|default:a.area }}</strong>
+              {% if a.is_default %}<span class="address-default-badge">{% if LANGUAGE_CODE == 'en' %}Default{% else %}افتراضي{% endif %}</span>{% endif %}
+              <span>{{ a.area }}{% if a.city %}، {{ a.city }}{% endif %}{% if a.emirate %}، {{ a.emirate }}{% endif %}</span>
+              <small>{{ a.country }}{% if a.street %} · {{ a.street }}{% endif %}</small>
+            </article>
+          {% empty %}
+            <p>{% if LANGUAGE_CODE == 'en' %}No saved addresses yet.{% else %}لا توجد عناوين محفوظة بعد.{% endif %}</p>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-6">
+      <form class="card-lux address-form-card" method="post" data-location-scope data-google-maps-key="{{ GOOGLE_MAPS_API_KEY }}" data-google-maps-language="{{ LANGUAGE_CODE|default:'ar' }}">
+        {% csrf_token %}
+        <h3>{% if LANGUAGE_CODE == 'en' %}Add Address{% else %}إضافة عنوان{% endif %}</h3>
+        <p class="text-muted small">{% if LANGUAGE_CODE == 'en' %}Enter any address worldwide manually, or use your current location to fill the country, region, city and nearby address details. Nothing is saved until you press Save Address.{% else %}يمكنك إدخال عنوانك في أي دولة يدويًا، أو استخدام موقعك الحالي لتعبئة الدولة والمنطقة والمدينة وتفاصيل العنوان المتاحة. لن يتم حفظ الموقع حتى تضغط حفظ العنوان.{% endif %}</p>
+        <button
+          type="button"
+          class="location-action-btn"
+          data-use-location
+          data-endpoint="{% url 'core:reverse_geocode_location' %}"
+          data-locating="{% if LANGUAGE_CODE == 'en' %}Locating…{% else %}جاري تحديد موقعك…{% endif %}"
+          data-success="{% if LANGUAGE_CODE == 'en' %}Location updated. Please review the address.{% else %}تم تحديث العنوان من موقعك. يرجى مراجعته قبل الحفظ.{% endif %}"
+          data-partial="{% if LANGUAGE_CODE == 'en' %}Coordinates captured. Complete the address manually.{% else %}تم حفظ الإحداثيات. أكمل تفاصيل العنوان يدويًا.{% endif %}"
+          data-denied="{% if LANGUAGE_CODE == 'en' %}Location permission was not granted.{% else %}لم يتم منح إذن استخدام الموقع.{% endif %}"
+            data-blocked="{% if LANGUAGE_CODE == 'en' %}Location access is blocked. Allow Location for this site in your browser settings, then try again.{% else %}الوصول إلى الموقع محظور. اسمح للموقع باستخدام Location من إعدادات المتصفح ثم حاول مرة أخرى.{% endif %}"
+          data-blocked="{% if LANGUAGE_CODE == 'en' %}Location access is blocked. Allow Location for this site in your browser settings, then try again.{% else %}الوصول إلى الموقع محظور. اسمح للموقع باستخدام Location من إعدادات المتصفح ثم حاول مرة أخرى.{% endif %}"
+          data-unsupported="{% if LANGUAGE_CODE == 'en' %}Your browser does not support location.{% else %}المتصفح لا يدعم تحديد الموقع.{% endif %}"
+          data-insecure="{% if LANGUAGE_CODE == 'en' %}Location requires a secure HTTPS connection.{% else %}تحديد الموقع يتطلب اتصال HTTPS آمنًا.{% endif %}"
+          data-unavailable="{% if LANGUAGE_CODE == 'en' %}Your location is currently unavailable. You can enter the address manually.{% else %}تعذر الحصول على موقعك حاليًا. يمكنك إدخال العنوان يدويًا.{% endif %}"
+          data-timeout="{% if LANGUAGE_CODE == 'en' %}Location request timed out. Please try again.{% else %}انتهت مهلة تحديد الموقع. حاول مرة أخرى.{% endif %}">
+          <svg class="ui-icon"><use href="#icon-location"></use></svg>
+          {% if LANGUAGE_CODE == 'en' %}Use My Current Location{% else %}استخدام موقعي الحالي{% endif %}
+        </button>
+        <div class="location-status" data-location-status aria-live="polite"></div>
+
+        {% for field in address_form %}
+          <div class="mb-3{% if field.is_hidden %} d-none{% endif %}">
+            {{ field.label_tag }}{{ field }}
+            {% if field.errors %}<div class="text-danger small">{{ field.errors }}</div>{% endif %}
+          </div>
+        {% endfor %}
+        {% if address_form.non_field_errors %}<div class="text-danger small mb-3">{{ address_form.non_field_errors }}</div>{% endif %}
+        <button class="btn btn-gold w-100">{% if LANGUAGE_CODE == 'en' %}Save Address{% else %}حفظ العنوان{% endif %}</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}<script src="{% static 'js/address-location.js' %}" defer></script>{% endblock %}

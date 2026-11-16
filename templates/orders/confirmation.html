@@ -1,0 +1,88 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}{% if LANGUAGE_CODE == 'en' %}Order {{ order.reference }}{% else %}الطلب {{ order.reference }}{% endif %} — {% if LANGUAGE_CODE == 'en' %}Haybat Al Sultan{% else %}هيبة السلطان{% endif %}{% endblock %}
+{% block content %}
+<section class="container py-5 order-payment-shell">
+  <div class="order-payment-card">
+    <div class="order-payment-icon" aria-hidden="true">✓</div>
+    <p class="eyebrow">{% if LANGUAGE_CODE == 'en' %}Order received{% else %}تم استلام الطلب{% endif %}</p>
+    <h1>{% if stripe_enabled and manual_payment_enabled %}{% if LANGUAGE_CODE == 'en' %}Choose how to complete payment{% else %}اختر طريقة إكمال الدفع{% endif %}{% elif stripe_enabled %}{% if LANGUAGE_CODE == 'en' %}Complete your secure payment{% else %}أكمل الدفع الآمن لتأكيد طلبك{% endif %}{% else %}{% if LANGUAGE_CODE == 'en' %}Complete your order with Haybat Al Sultan{% else %}أكمل طلبك مع إدارة هيبة السلطان{% endif %}{% endif %}</h1>
+    <p class="order-payment-reference">{% if LANGUAGE_CODE == 'en' %}Order reference{% else %}رقم الطلب{% endif %}: <strong>{{ order.reference }}</strong></p>
+
+    {% if payment_cancelled %}
+      <div class="order-payment-notice warning">
+        {% if LANGUAGE_CODE == 'en' %}Payment was not completed. Your order is still saved and you can try again while the reservation remains valid.{% else %}لم تكتمل عملية الدفع. طلبك ما زال محفوظًا ويمكنك إعادة المحاولة ما دام حجز القطع ساريًا.{% endif %}
+      </div>
+    {% endif %}
+
+    {% if order.payment_status != 'PAID' %}
+      {% if reservation_active and reservation_deadline %}
+      <section class="checkout-expiry-card" data-checkout-expiry data-expires-at="{{ reservation_deadline|date:'c' }}" data-expired-url="{% url 'orders:confirmation' order.public_id %}" aria-live="polite">
+        <div class="checkout-expiry-icon" aria-hidden="true">⌛</div>
+        <div class="checkout-expiry-copy">
+          <span>{% if LANGUAGE_CODE == 'en' %}Reservation time remaining{% else %}الوقت المتبقي لإكمال الطلب{% endif %}</span>
+          <strong dir="ltr" data-checkout-countdown>--:--</strong>
+          <small data-checkout-expiry-message>{% if LANGUAGE_CODE == 'en' %}Your items are reserved from checkout for a limited time. Refreshing the page does not extend this timer.{% else %}القطع محجوزة لك منذ إتمام الطلب لمدة محدودة. تحديث الصفحة لا يمدد مدة الحجز.{% endif %}</small>
+        </div>
+      </section>
+      {% elif order.status == 'CANCELLED' %}
+      <div class="order-payment-notice checkout-expired-notice" aria-live="polite">
+        <strong>{% if LANGUAGE_CODE == 'en' %}Reservation expired{% else %}انتهت مهلة حجز الطلب{% endif %}</strong>
+        <span>{% if LANGUAGE_CODE == 'en' %}The reserved inventory was released. Return to the store and try again if the items are still available.{% else %}تم تحرير القطع المحجوزة وإعادتها للمخزون. يمكنك العودة للمتجر وإعادة المحاولة إذا كانت القطع ما زالت متاحة.{% endif %}</span>
+      </div>
+      {% endif %}
+    {% endif %}
+
+    <div class="order-payment-summary">
+      <div><span>{% if LANGUAGE_CODE == 'en' %}Items{% else %}عدد القطع{% endif %}</span><strong>{{ order.items.count }}</strong></div>
+      <div><span>{% if LANGUAGE_CODE == 'en' %}Total{% else %}الإجمالي{% endif %}</span><strong>{{ order.grand_total }} {{ order.currency }}</strong></div>
+      <div><span>{% if LANGUAGE_CODE == 'en' %}Payment status{% else %}حالة الدفع{% endif %}</span><strong>{{ order.get_payment_status_display }}</strong></div>
+    </div>
+
+    <div class="order-payment-items">
+      {% for item in order.items.all %}
+        <div class="order-payment-item">
+          <div>
+            <strong>{% if LANGUAGE_CODE == 'en' %}{{ item.name_en|default:item.name_ar }}{% else %}{{ item.name_ar|default:item.name_en }}{% endif %}</strong>
+            <small>{{ item.product_reference }} · {{ item.sku }}</small>
+          </div>
+          <span>{{ item.line_total }} {{ order.currency }}</span>
+        </div>
+      {% endfor %}
+    </div>
+
+    {% if order.payment_status == 'PAID' %}
+      <div class="order-payment-notice success">{% if LANGUAGE_CODE == 'en' %}Payment received. Your order is confirmed.{% else %}تم استلام الدفعة وتأكيد طلبك بنجاح.{% endif %}</div>
+      <a class="btn btn-primary w-100" href="{% url 'orders:detail' order.public_id %}">{% if LANGUAGE_CODE == 'en' %}Track order{% else %}متابعة الطلب{% endif %}</a>
+    {% elif order.status != 'CANCELLED' and order.status != 'RETURNED' %}
+      {% if stripe_enabled %}
+        <form method="post" action="{% url 'orders:stripe_payment_start' order.public_id %}" class="order-payment-action" data-reservation-payment-control>
+          {% csrf_token %}
+          <button class="btn btn-primary w-100" data-reservation-payment-button type="submit">{% if LANGUAGE_CODE == 'en' %}Pay securely online{% else %}الدفع الإلكتروني الآمن{% endif %}</button>
+        </form>
+        <p class="order-payment-security">{% if LANGUAGE_CODE == 'en' %}Card details are entered on Stripe Checkout and are never stored by Haybat Al Sultan.{% else %}تُدخل بيانات البطاقة داخل Stripe Checkout ولا يتم تخزينها لدى هيبة السلطان.{% endif %}</p>
+      {% endif %}
+      {% if manual_payment_enabled and whatsapp_url %}
+        <div class="order-payment-notice{% if stripe_enabled %} warning{% endif %}">
+          {% if LANGUAGE_CODE == 'en' %}Prefer a manual transfer? Contact Haybat Al Sultan on WhatsApp for payment instructions. The order remains unpaid until authorized staff confirms receipt.{% else %}تفضل التحويل اليدوي؟ تواصل مع إدارة هيبة السلطان عبر واتساب للحصول على تعليمات الدفع. يبقى الطلب غير مدفوع حتى يؤكد الموظف المخول وصول المبلغ.{% endif %}
+        </div>
+        <form method="post" action="{% url 'orders:manual_payment_start' order.public_id %}" class="order-payment-action" data-reservation-payment-control>
+          {% csrf_token %}
+          <button class="btn btn-outline-success w-100" data-reservation-payment-button type="submit">{% if LANGUAGE_CODE == 'en' %}Continue payment via WhatsApp{% else %}متابعة الدفع عبر واتساب{% endif %}</button>
+        </form>
+      {% endif %}
+    {% endif %}
+
+    <div class="order-payment-secondary">
+      {% if request.user.is_authenticated %}<a href="{% url 'orders:my_orders' %}">{% if LANGUAGE_CODE == 'en' %}My orders{% else %}طلباتي{% endif %}</a>{% endif %}
+      {% if whatsapp_url and order.payment_status == 'PAID' %}<a href="{{ whatsapp_url }}" target="_blank" rel="noopener noreferrer">{% if LANGUAGE_CODE == 'en' %}WhatsApp support{% else %}الدعم عبر واتساب{% endif %}</a>{% endif %}
+      <a href="{% url 'core:home' %}">{% if LANGUAGE_CODE == 'en' %}Continue shopping{% else %}متابعة التسوق{% endif %}</a>
+    </div>
+  </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+  {{ block.super }}
+  <script src="{% static 'js/checkout-expiry.js' %}" defer></script>
+{% endblock %}

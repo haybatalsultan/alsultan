@@ -1,0 +1,197 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}{% if LANGUAGE_CODE == 'en' %}Haybat Alsultan Ambassador{% else %}سفير هيبة السلطان{% endif %} — HaybatAlsultan{% endblock %}
+{% block content %}
+<section class="ambassador-customer-page" aria-labelledby="ambassador-account-title">
+  <div class="container ambassador-customer-shell py-4 py-lg-5">
+    <nav class="ambassador-customer-breadcrumb" aria-label="{% if LANGUAGE_CODE == 'en' %}Breadcrumb{% else %}مسار الصفحة{% endif %}">
+      <a href="{% url 'core:home' %}">{% if LANGUAGE_CODE == 'en' %}Home{% else %}الرئيسية{% endif %}</a>
+      <span aria-hidden="true">‹</span>
+      <a href="{% url 'accounts:profile' %}">{% if LANGUAGE_CODE == 'en' %}My account{% else %}حسابي{% endif %}</a>
+      <span aria-hidden="true">‹</span>
+      <strong>{% if LANGUAGE_CODE == 'en' %}Ambassador{% else %}سفير هيبة السلطان{% endif %}</strong>
+    </nav>
+
+    <header class="ambassador-customer-hero">
+      <div class="ambassador-customer-hero__copy">
+        <span class="ambassador-customer-kicker">HAYBAT ALSULTAN</span>
+        <h1 id="ambassador-account-title">{% if LANGUAGE_CODE == 'en' %}Haybat Alsultan Ambassador{% else %}سفير هيبة السلطان{% endif %}</h1>
+        <p>{% if LANGUAGE_CODE == 'en' %}Your private space to follow referrals, points and rewards with complete clarity.{% else %}مساحتك الخاصة لمتابعة الإحالات والنقاط والمكافآت بكل وضوح.{% endif %}</p>
+        <div class="ambassador-customer-state {% if program.enabled %}is-on{% else %}is-paused{% endif %}">
+          <i aria-hidden="true"></i>
+          {% if program.enabled %}
+            {% if LANGUAGE_CODE == 'en' %}Ambassador program is active{% else %}برنامج سفير هيبة السلطان مفعّل{% endif %}
+          {% else %}
+            {% if LANGUAGE_CODE == 'en' %}Ambassador program is currently paused{% else %}برنامج سفير هيبة السلطان متوقف حاليًا{% endif %}
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="ambassador-customer-code-card" data-ambassador-code-card>
+        <div class="ambassador-customer-code-card__head">
+          <div>
+            <small>{% if LANGUAGE_CODE == 'en' %}Your ambassador code{% else %}رمز سفيرك الخاص{% endif %}</small>
+            <strong dir="ltr" data-ambassador-code>{{ ambassador.code }}</strong>
+          </div>
+          <span class="ambassador-customer-seal" aria-hidden="true">HS</span>
+        </div>
+        <p>{% if LANGUAGE_CODE == 'en' %}Share this code with friends. Your points are added only after an eligible referral is completed.{% else %}شارك هذا الرمز مع أصدقائك. تضاف نقاطك فقط بعد اكتمال الإحالة المؤهلة وفق شروط البرنامج.{% endif %}</p>
+        <button type="button" class="ambassador-copy-btn" data-copy-ambassador-code data-copy-label="{% if LANGUAGE_CODE == 'en' %}Copy code{% else %}نسخ الرمز{% endif %}" data-copied-label="{% if LANGUAGE_CODE == 'en' %}Copied{% else %}تم النسخ{% endif %}">
+          <span aria-hidden="true">⧉</span>
+          <span data-copy-text>{% if LANGUAGE_CODE == 'en' %}Copy code{% else %}نسخ الرمز{% endif %}</span>
+        </button>
+        <output class="ambassador-copy-status" data-copy-status aria-live="polite"></output>
+      </div>
+    </header>
+
+    <section class="ambassador-customer-rules" aria-labelledby="ambassador-rules-title">
+      <div class="ambassador-customer-section-head">
+        <div>
+          <span>{% if LANGUAGE_CODE == 'en' %}PROGRAM RULES{% else %}قواعد البرنامج{% endif %}</span>
+          <h2 id="ambassador-rules-title">{% if LANGUAGE_CODE == 'en' %}Simple and transparent{% else %}واضحة وثابتة{% endif %}</h2>
+        </div>
+      </div>
+      <div class="ambassador-customer-rule-grid">
+        <article>
+          <span class="ambassador-rule-icon" aria-hidden="true">✦</span>
+          <small>{% if LANGUAGE_CODE == 'en' %}Earn points{% else %}كسب النقاط{% endif %}</small>
+          <strong>{% if LANGUAGE_CODE == 'en' %}Every AED 1,000 = 25 points{% else %}كل 1,000 د.إ = 25 نقطة{% endif %}</strong>
+          <p>{% if LANGUAGE_CODE == 'en' %}For every complete eligible AED 1,000 referred purchase.{% else %}لكل ألف درهم مكتمل من مشتريات الإحالة المؤهلة.{% endif %}</p>
+        </article>
+        <article>
+          <span class="ambassador-rule-icon" aria-hidden="true">◇</span>
+          <small>{% if LANGUAGE_CODE == 'en' %}Redeem as discount{% else %}قيمة الاستبدال{% endif %}</small>
+          <strong>{% if LANGUAGE_CODE == 'en' %}1,000 points = AED 25{% else %}1,000 نقطة = 25 د.إ{% endif %}</strong>
+          <p>{% if LANGUAGE_CODE == 'en' %}Redeemable in complete 1,000-point blocks.{% else %}يتم الاستبدال بمضاعفات 1,000 نقطة كاملة.{% endif %}</p>
+        </article>
+        <article>
+          <span class="ambassador-rule-icon" aria-hidden="true">12</span>
+          <small>{% if LANGUAGE_CODE == 'en' %}Point validity{% else %}صلاحية النقاط{% endif %}</small>
+          <strong>{% if LANGUAGE_CODE == 'en' %}12 months per batch{% else %}12 شهرًا لكل دفعة{% endif %}</strong>
+          <p>{% if LANGUAGE_CODE == 'en' %}Each earned batch has its own expiry date.{% else %}لكل دفعة نقاط تاريخ انتهاء مستقل من تاريخ اكتسابها.{% endif %}</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="ambassador-customer-overview" aria-labelledby="ambassador-overview-title">
+      <div class="ambassador-customer-section-head">
+        <div>
+          <span>{% if LANGUAGE_CODE == 'en' %}YOUR BALANCE{% else %}ملخص حسابك{% endif %}</span>
+          <h2 id="ambassador-overview-title">{% if LANGUAGE_CODE == 'en' %}Ambassador overview{% else %}نظرة سريعة على سفيرك{% endif %}</h2>
+        </div>
+      </div>
+      <div class="ambassador-customer-stat-grid">
+        <article class="is-primary"><small>{% if LANGUAGE_CODE == 'en' %}Available points{% else %}النقاط المتاحة{% endif %}</small><strong>{{ balance }}</strong><span>{% if LANGUAGE_CODE == 'en' %}points ready to use{% else %}نقطة متاحة للاستخدام{% endif %}</span></article>
+        <article><small>{% if LANGUAGE_CODE == 'en' %}Available discount value{% else %}قيمة الخصم المتاحة{% endif %}</small><strong dir="ltr">AED {{ discount_value|floatformat:2 }}</strong><span>{% if LANGUAGE_CODE == 'en' %}based on complete blocks{% else %}حسب مضاعفات الاستبدال المكتملة{% endif %}</span></article>
+        <article><small>{% if LANGUAGE_CODE == 'en' %}Successful referrals{% else %}الإحالات الناجحة{% endif %}</small><strong>{{ successful_referrals }}</strong><span>{% if LANGUAGE_CODE == 'en' %}completed referrals{% else %}إحالة مكتملة{% endif %}</span></article>
+        <article><small>{% if LANGUAGE_CODE == 'en' %}Pending referrals{% else %}الإحالات المعلقة{% endif %}</small><strong>{{ pending_referrals }}</strong><span>{% if LANGUAGE_CODE == 'en' %}Potential {{ pending_points }} points{% else %}متوقع {{ pending_points }} نقطة{% endif %}</span></article>
+        <article><small>{% if LANGUAGE_CODE == 'en' %}Used points{% else %}النقاط المستخدمة{% endif %}</small><strong>{{ used_points }}</strong><span>{% if LANGUAGE_CODE == 'en' %}redeemed previously{% else %}تم استخدامها سابقًا{% endif %}</span></article>
+        <article><small>{% if LANGUAGE_CODE == 'en' %}Expired points{% else %}النقاط المنتهية{% endif %}</small><strong>{{ expired_points }}</strong><span>{% if LANGUAGE_CODE == 'en' %}no longer available{% else %}لم تعد متاحة للاستخدام{% endif %}</span></article>
+      </div>
+
+      {% if next_expiry %}
+      <div class="ambassador-customer-expiry">
+        <div>
+          <span class="ambassador-expiry-clock" aria-hidden="true">◷</span>
+          <div>
+            <small>{% if LANGUAGE_CODE == 'en' %}Next expiring points{% else %}أقرب نقاط للانتهاء{% endif %}</small>
+            <strong>{{ next_expiry.remaining_points }} {% if LANGUAGE_CODE == 'en' %}points{% else %}نقطة{% endif %}</strong>
+          </div>
+        </div>
+        <time datetime="{{ next_expiry.expires_at|date:'Y-m-d' }}">{{ next_expiry.expires_at|date:"Y-m-d" }}</time>
+      </div>
+      {% endif %}
+    </section>
+
+    <div class="ambassador-customer-main-grid">
+      <section class="ambassador-customer-panel" aria-labelledby="ambassador-referrals-title">
+        <div class="ambassador-customer-panel__head">
+          <div>
+            <span>{% if LANGUAGE_CODE == 'en' %}REFERRALS{% else %}الإحالات{% endif %}</span>
+            <h2 id="ambassador-referrals-title">{% if LANGUAGE_CODE == 'en' %}Referral activity{% else %}نشاط الإحالات{% endif %}</h2>
+          </div>
+          <small>{% if LANGUAGE_CODE == 'en' %}Latest 20 referrals{% else %}آخر 20 إحالة{% endif %}</small>
+        </div>
+        <div class="ambassador-customer-list">
+          {% for ref in referrals %}
+          <article class="ambassador-customer-list-row">
+            <div class="ambassador-referral-mark {% if ref.status == 'AWARDED' %}is-success{% elif ref.status == 'PENDING' %}is-pending{% else %}is-cancelled{% endif %}" aria-hidden="true"></div>
+            <div class="ambassador-customer-list-row__copy">
+              <strong>{% if LANGUAGE_CODE == 'en' %}Referral{% else %}إحالة{% endif %} · {{ ref.created_at|date:"Y-m-d" }}</strong>
+              <span class="ambassador-referral-status {% if ref.status == 'AWARDED' %}is-success{% elif ref.status == 'PENDING' %}is-pending{% else %}is-cancelled{% endif %}">
+                {% if ref.status == 'AWARDED' %}{% if LANGUAGE_CODE == 'en' %}Completed{% else %}ناجحة{% endif %}{% elif ref.status == 'PENDING' %}{% if LANGUAGE_CODE == 'en' %}Pending{% else %}قيد الانتظار{% endif %}{% else %}{% if LANGUAGE_CODE == 'en' %}Cancelled{% else %}ملغاة{% endif %}{% endif %}
+              </span>
+            </div>
+            <div class="ambassador-customer-list-row__value">
+              <strong>{{ ref.points_awarded }} {% if LANGUAGE_CODE == 'en' %}pts{% else %}نقطة{% endif %}</strong>
+              <small dir="ltr">AED {{ ref.eligible_amount|floatformat:2 }}</small>
+            </div>
+          </article>
+          {% empty %}
+          <div class="ambassador-customer-empty">
+            <span aria-hidden="true">✦</span>
+            <strong>{% if LANGUAGE_CODE == 'en' %}No referrals yet{% else %}لا توجد إحالات حتى الآن{% endif %}</strong>
+            <p>{% if LANGUAGE_CODE == 'en' %}Share your ambassador code to start building your referral history.{% else %}شارك رمز سفيرك ليبدأ سجل الإحالات بالظهور هنا.{% endif %}</p>
+          </div>
+          {% endfor %}
+        </div>
+      </section>
+
+      <aside class="ambassador-customer-side-stack">
+        <section class="ambassador-customer-panel ambassador-customer-redeem" aria-labelledby="ambassador-redeem-title">
+          <div class="ambassador-customer-panel__head">
+            <div>
+              <span>{% if LANGUAGE_CODE == 'en' %}REWARDS{% else %}المكافآت{% endif %}</span>
+              <h2 id="ambassador-redeem-title">{% if LANGUAGE_CODE == 'en' %}Use your points{% else %}استفد من نقاطك{% endif %}</h2>
+            </div>
+          </div>
+          <p>{% if LANGUAGE_CODE == 'en' %}Choose a purchase discount during checkout, or ask the store about available gift options. No gift points are deducted until the reward is agreed and approved.{% else %}اختر خصمًا على مشترياتك أثناء إتمام الطلب، أو اطلب خيارات الهدايا المتاحة. لا يتم خصم نقاط الهدية حتى يتم الاتفاق عليها واعتمادها.{% endif %}</p>
+          <div class="ambassador-customer-redeem-balance">
+            <small>{% if LANGUAGE_CODE == 'en' %}Current redeemable value{% else %}قيمة الخصم الحالية{% endif %}</small>
+            <strong dir="ltr">AED {{ discount_value|floatformat:2 }}</strong>
+            <span>{{ balance }} {% if LANGUAGE_CODE == 'en' %}available points{% else %}نقطة متاحة{% endif %}</span>
+          </div>
+          {% if program.enabled %}
+          <div class="ambassador-customer-actions">
+            <a class="ambassador-customer-primary-btn" href="{% url 'orders:cart' %}">{% if LANGUAGE_CODE == 'en' %}Use on a purchase{% else %}استخدامها على مشترياتي{% endif %}</a>
+            <form method="post" action="{% url 'ambassadors:request_gift' %}">{% csrf_token %}<button class="ambassador-customer-secondary-btn" type="submit">{% if LANGUAGE_CODE == 'en' %}Request gift options{% else %}طلب خيارات هدية{% endif %}</button></form>
+          </div>
+          {% else %}
+          <div class="ambassador-customer-paused-note">{% if LANGUAGE_CODE == 'en' %}New ambassador redemptions are unavailable while the program is paused. Your existing balance remains recorded.{% else %}الاستبدالات الجديدة غير متاحة أثناء توقف البرنامج، ورصيدك الحالي يبقى محفوظًا في حسابك.{% endif %}</div>
+          {% endif %}
+        </section>
+
+        <section class="ambassador-customer-panel" aria-labelledby="ambassador-ledger-title">
+          <div class="ambassador-customer-panel__head">
+            <div>
+              <span>{% if LANGUAGE_CODE == 'en' %}POINTS LOG{% else %}سجل النقاط{% endif %}</span>
+              <h2 id="ambassador-ledger-title">{% if LANGUAGE_CODE == 'en' %}Latest point movements{% else %}آخر حركات النقاط{% endif %}</h2>
+            </div>
+          </div>
+          <div class="ambassador-ledger-list">
+            {% for entry in ledger|slice:":6" %}
+            <div class="ambassador-ledger-row">
+              <div>
+                <strong>
+                  {% if entry.kind == 'EARN' %}{% if LANGUAGE_CODE == 'en' %}Referral points{% else %}نقاط إحالة{% endif %}
+                  {% elif entry.kind == 'REDEEM' %}{% if LANGUAGE_CODE == 'en' %}Redemption{% else %}استبدال نقاط{% endif %}
+                  {% elif entry.kind == 'EXPIRE' %}{% if LANGUAGE_CODE == 'en' %}Expired points{% else %}نقاط منتهية{% endif %}
+                  {% else %}{% if LANGUAGE_CODE == 'en' %}Account adjustment{% else %}تسوية على الحساب{% endif %}{% endif %}
+                </strong>
+                <small>{{ entry.created_at|date:"Y-m-d" }}</small>
+              </div>
+              <b class="{% if entry.points > 0 %}is-plus{% else %}is-minus{% endif %}" dir="ltr">{% if entry.points > 0 %}+{% endif %}{{ entry.points }}</b>
+            </div>
+            {% empty %}
+            <p class="ambassador-ledger-empty">{% if LANGUAGE_CODE == 'en' %}No point movements yet.{% else %}لا توجد حركات نقاط حتى الآن.{% endif %}</p>
+            {% endfor %}
+          </div>
+        </section>
+      </aside>
+    </div>
+  </div>
+</section>
+{% endblock %}
+{% block scripts %}
+<script src="{% static 'js/ambassador-account.js' %}" defer></script>
+{% endblock %}

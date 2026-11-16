@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+{% block title %}{{ page_title }} — Haybat Al Sultan{% endblock %}
+{% block content %}
+<section class="management-page">
+  <div class="container management-shell py-4 py-lg-5">
+    {% include 'management/_page_header.html' with page_title=page_title page_description=page_description %}
+    <section class="management-content-card">
+      <form method="post" class="management-form" novalidate>{% csrf_token %}
+        <label for="notification_email">{% if LANGUAGE_CODE == 'en' %}Administration notification email{% else %}بريد استقبال تنبيهات الإدارة{% endif %}</label>
+        <input class="management-input" id="notification_email" type="email" name="notification_email" maxlength="254" value="{{ store_setting.notification_email }}" placeholder="{{ fallback_email }}" autocomplete="email">
+        <small>{% if LANGUAGE_CODE == 'en' %}If empty, the official store email is used.{% else %}إذا تركته فارغًا، سيتم استخدام البريد الرسمي للمتجر.{% endif %}</small>
+        <hr>
+        <div class="notification-toggle-grid">
+          <label class="notification-toggle"><input type="checkbox" name="notify_admin_new_order" {% if store_setting.notify_admin_new_order %}checked{% endif %}><span><strong>{% if LANGUAGE_CODE == 'en' %}New order alerts{% else %}تنبيه عند إنشاء طلب جديد{% endif %}</strong><small>{% if LANGUAGE_CODE == 'en' %}Notify administration when a new order is created.{% else %}إشعار الإدارة فور إنشاء طلب جديد.{% endif %}</small></span></label>
+          <label class="notification-toggle"><input type="checkbox" name="notify_admin_payment" {% if store_setting.notify_admin_payment %}checked{% endif %}><span><strong>{% if LANGUAGE_CODE == 'en' %}Payment received alerts{% else %}تنبيه عند استلام الدفع{% endif %}</strong><small>{% if LANGUAGE_CODE == 'en' %}Notify administration after verified payment receipt.{% else %}إشعار الإدارة بعد التحقق من استلام الدفع.{% endif %}</small></span></label>
+          <label class="notification-toggle"><input type="checkbox" name="notify_admin_shipping" {% if store_setting.notify_admin_shipping %}checked{% endif %}><span><strong>{% if LANGUAGE_CODE == 'en' %}Shipping & delivery alerts{% else %}تنبيهات الشحن والتسليم{% endif %}</strong><small>{% if LANGUAGE_CODE == 'en' %}Notify administration when delivery status changes.{% else %}إشعار الإدارة عند تغيّر حالة التوصيل.{% endif %}</small></span></label>
+          <label class="notification-toggle"><input type="checkbox" name="notify_customer_payment" {% if store_setting.notify_customer_payment %}checked{% endif %}><span><strong>{% if LANGUAGE_CODE == 'en' %}Customer payment confirmation{% else %}تأكيد الدفع للعميل{% endif %}</strong><small>{% if LANGUAGE_CODE == 'en' %}Send a confirmation after payment is verified.{% else %}إرسال تأكيد للعميل بعد التحقق من الدفع.{% endif %}</small></span></label>
+          <label class="notification-toggle"><input type="checkbox" name="notify_customer_shipping" {% if store_setting.notify_customer_shipping %}checked{% endif %}><span><strong>{% if LANGUAGE_CODE == 'en' %}Customer delivery updates{% else %}تحديثات التوصيل للعميل{% endif %}</strong><small>{% if LANGUAGE_CODE == 'en' %}Send shipping and delivery status updates.{% else %}إرسال تحديثات حالة الشحن والتسليم.{% endif %}</small></span></label>
+        </div>
+        <div class="management-inline-note is-secure">{% if LANGUAGE_CODE == 'en' %}Emails never include card details, Stripe secrets, or internal notes. Email failures do not roll back paid orders.{% else %}لا تحتوي الرسائل على بيانات البطاقات أو أسرار Stripe أو الملاحظات الداخلية، وفشل البريد لا يلغي الطلب أو الدفع.{% endif %}</div>
+        <button class="management-primary-btn" type="submit">{% if LANGUAGE_CODE == 'en' %}Save notification settings{% else %}حفظ إعدادات التنبيهات{% endif %}</button>
+      </form>
+    </section>
+  </div>
+</section>
+{% endblock %}

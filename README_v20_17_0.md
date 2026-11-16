@@ -1,0 +1,3 @@
+# v20.17.0 — Expense Module + Net Profit Engine
+
+Owner-only operating expense register for boxes, bags, packaging, cards/labels, shipping/delivery, marketing, subscriptions/services, payment fees, office/operations and other expenses. Expenses are separate from product `cost_price`, can optionally link to an order, and are never hard-deleted: incorrect entries are voided with a mandatory reason and audit trail. The Smart Accountant now reports recorded operating expenses, category breakdown and Net Product Profit = Gross Product Profit - active recorded operating expenses for the selected period. Supervisors remain blocked server-side. No external AI receives financial data.

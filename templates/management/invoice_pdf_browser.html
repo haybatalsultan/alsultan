@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+@page{size:A4;margin:0}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;background:#fff}
+body{font-family:"Cairo","Arial","Tahoma",sans-serif;color:#302820;direction:rtl;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.sheet{width:190mm;min-height:277mm;margin:0 auto;padding:12mm 11mm 9mm;background:#fff}
+.header{display:flex;justify-content:space-between;align-items:flex-start;gap:14mm;padding-bottom:7mm;border-bottom:2px solid #d7a333}
+.logo{max-width:68mm;max-height:27mm;object-fit:contain;object-position:right top}
+.logo-fallback{font-size:17pt;font-weight:800;color:#744b0f;letter-spacing:.04em}
+.identity{min-width:58mm;text-align:right}
+.kicker{font-size:11pt;font-weight:800;color:#9a6719}.number{margin-top:1.5mm;font-size:17pt;font-weight:900;direction:ltr;text-align:right}
+.date{margin-top:1mm;font-size:8pt;color:#8f7d67;direction:ltr;text-align:right}
+.badge{display:inline-flex;margin-top:3mm;padding:2mm 3mm;border:1px solid #dec690;border-radius:99px;background:#fff7df;color:#744b0f;font-size:8pt;font-weight:800}
+.meta{display:grid;grid-template-columns:1fr 1fr;gap:4mm;margin:6mm 0}
+.card{min-height:23mm;padding:4mm 5mm;border:1px solid #eadfce;border-radius:4mm;background:#fcfaf6}
+.label{font-size:7.5pt;color:#96836c}.value{margin-top:1.5mm;font-size:10.5pt;font-weight:800}.sub{margin-top:1mm;font-size:7.5pt;color:#85735f}
+.items{width:100%;border-collapse:separate;border-spacing:0;overflow:hidden;border:1px solid #eadcc7;border-radius:4mm}
+.items th{padding:3mm;background:#d7a333;color:#fff;font-size:8pt;font-weight:800;text-align:right}
+.items td{padding:4mm 3mm;border-top:1px solid #eee3d2;font-size:8.5pt;line-height:1.55;vertical-align:middle}
+.items .code{direction:ltr;text-align:right}.items .qty{text-align:center}.items .money{direction:ltr;text-align:left;white-space:nowrap}
+.finance{display:grid;grid-template-columns:1fr 1fr;gap:4mm;margin-top:5mm}
+.panel{padding:4mm 5mm;border:1px solid #e7d8c1;border-radius:4mm;background:#fff}
+.panel.soft{background:#fcfaf6}.panel h2{margin:0 0 3mm;font-size:10pt}
+.row{display:flex;justify-content:space-between;gap:5mm;padding:2.2mm 0;border-bottom:1px solid #f0e7da;font-size:8pt}
+.row:last-child{border-bottom:0}.row span{color:#8c7a64}.row strong{font-weight:800}.money{direction:ltr}
+.grand{margin:1mm -2mm 0;padding:2.5mm 2mm;border:0;border-radius:2.5mm;background:#fff5df}.grand span,.grand strong{color:#714b12;font-size:9.5pt;font-weight:900}
+.footer{display:flex;flex-direction:column;align-items:center;gap:1.2mm;margin-top:7mm;padding-top:5mm;border-top:1px solid #eadcc7;text-align:center}
+.stamp{max-width:24mm;max-height:24mm;object-fit:contain}.thanks{font-size:9pt;font-weight:800;color:#754e14}.footer p{margin:0;font-size:7pt;color:#81715f}.contact{direction:ltr}.note{font-size:6.5pt;color:#9a8a76}
+</style>
+</head>
+<body><main class="sheet">
+<header class="header">
+<div>{% if logo_data_uri %}<img class="logo" src="{{ logo_data_uri }}" alt="">{% else %}<div class="logo-fallback">HAYBAT AL SULTAN</div>{% endif %}</div>
+<div class="identity"><div class="kicker">فاتورة</div><div class="number">{{ invoice.invoice_number }}</div><div class="date">{{ invoice.issued_at|date:"d/m/Y · H:i" }}</div><div class="badge">{{ status_text }}</div></div>
+</header>
+
+<section class="meta">
+<div class="card"><div class="label">العميل</div><div class="value">{{ customer_display }}</div>{% if invoice.customer_phone_snapshot %}<div class="sub" dir="ltr">{{ invoice.customer_phone_snapshot }}</div>{% endif %}</div>
+{% if invoice_setting.invoice_show_order_reference %}<div class="card"><div class="label">مرجع الطلب</div><div class="value" dir="ltr">{{ invoice.order_reference_snapshot }}</div><div class="sub">أُصدرت بواسطة {{ invoice.issued_by.username }}</div></div>{% endif %}
+</section>
+
+<table class="items"><thead><tr><th>رقم القطعة</th><th>البيان</th><th>الكمية</th><th>سعر الوحدة</th><th>الإجمالي</th></tr></thead>
+<tbody>{% for item in invoice.items.all %}<tr><td class="code">{{ item.sku_snapshot|default:item.product_reference_snapshot }}</td><td>{{ item.name_ar_snapshot|default:item.name_en_snapshot }}{% if item.requested_bead_count_snapshot and item.original_bead_count_snapshot and item.requested_bead_count_snapshot < item.original_bead_count_snapshot %}<div class="invoice-bead-service">ضبط الخرز: {{ item.original_bead_count_snapshot }} ← {{ item.requested_bead_count_snapshot }} · مجانًا</div>{% endif %}</td><td class="qty">{{ item.quantity_snapshot }}</td><td class="money">{{ item.unit_price_snapshot|floatformat:2 }} {{ invoice.currency_snapshot }}</td><td class="money">{{ item.line_total_snapshot|floatformat:2 }} {{ invoice.currency_snapshot }}</td></tr>{% endfor %}</tbody></table>
+
+<section class="finance">
+<div class="panel soft"><h2>الدفع والتسليم</h2>
+<div class="row"><span>حالة الدفع</span><strong>{{ payment_status_display }}</strong></div>
+<div class="row"><span>طريقة الدفع</span><strong>{{ payment_method_display }}</strong></div>
+{% if invoice.payment_due_date_snapshot %}<div class="row"><span>تاريخ الاستحقاق</span><strong dir="ltr">{{ invoice.payment_due_date_snapshot|date:"d/m/Y" }}</strong></div>{% endif %}
+<div class="row"><span>التسليم</span><strong>{{ delivery_display }}</strong></div></div>
+<div class="panel"><h2>ملخص الفاتورة</h2>
+<div class="row"><span>المجموع</span><strong class="money">{{ invoice.subtotal_snapshot|floatformat:2 }} {{ invoice.currency_snapshot }}</strong></div>
+{% if invoice.discount_total_snapshot %}<div class="row"><span>الخصم</span><strong class="money">- {{ invoice.discount_total_snapshot|floatformat:2 }} {{ invoice.currency_snapshot }}</strong></div>{% endif %}
+{% if invoice.shipping_total_snapshot %}<div class="row"><span>التوصيل</span><strong class="money">{{ invoice.shipping_total_snapshot|floatformat:2 }} {{ invoice.currency_snapshot }}</strong></div>{% endif %}
+{% if invoice.tax_total_snapshot %}<div class="row"><span>الضريبة</span><strong class="money">{{ invoice.tax_total_snapshot|floatformat:2 }} {{ invoice.currency_snapshot }}</strong></div>{% endif %}
+<div class="row grand"><span>الإجمالي</span><strong class="money">{{ invoice.grand_total_snapshot|floatformat:2 }} {{ invoice.currency_snapshot }}</strong></div>
+<div class="row"><span>المدفوع</span><strong class="money">{{ invoice.paid_total_snapshot|floatformat:2 }} {{ invoice.currency_snapshot }}</strong></div>
+{% if invoice.outstanding_snapshot %}<div class="row"><span>المتبقي</span><strong class="money">{{ invoice.outstanding_snapshot|floatformat:2 }} {{ invoice.currency_snapshot }}</strong></div>{% endif %}
+</div></section>
+
+<footer class="footer">{% if stamp_data_uri %}<img class="stamp" src="{{ stamp_data_uri }}" alt="">{% endif %}
+<div class="thanks">{{ invoice_setting.invoice_thank_you|default:"شكرًا لاختياركم هيبة السلطان" }}</div>
+<p>{{ invoice_setting.invoice_address|default:"أبوظبي، الإمارات العربية المتحدة" }}</p>
+<p class="contact">{% if invoice_setting.invoice_show_phone %}{{ invoice_setting.invoice_phone }}{% endif %}{% if invoice_setting.invoice_show_phone and invoice_setting.invoice_show_email %} · {% endif %}{% if invoice_setting.invoice_show_email %}{{ invoice_setting.invoice_email }}{% endif %}</p>
+{% if invoice_setting.invoice_footer_note %}<div class="note">{{ invoice_setting.invoice_footer_note }}</div>{% endif %}
+</footer>
+</main></body></html>

@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+{% block title %}{% if LANGUAGE_CODE == 'en' %}Shop{% else %}المنتجات{% endif %} — {% if LANGUAGE_CODE == 'en' %}Haybat Al Sultan{% else %}هيبة السلطان{% endif %}{% endblock %}
+{% block content %}
+<div class="container py-5">
+  <div class="section-title"><h1>{% if LANGUAGE_CODE == 'en' %}Shop the Collection{% else %}تسوق المجموعة{% endif %}</h1></div>
+  <form class="filter-bar" method="get">
+    <label class="visually-hidden" for="catalog-search">{% if LANGUAGE_CODE == 'en' %}Search products{% else %}البحث عن المنتجات{% endif %}</label>
+    <input id="catalog-search" class="form-control" name="q" value="{{ q }}" maxlength="120" placeholder="{% if LANGUAGE_CODE == 'en' %}Search by name or SKU{% else %}ابحث بالاسم أو رقم القطعة{% endif %}">
+    <label class="visually-hidden" for="catalog-category">{% if LANGUAGE_CODE == 'en' %}Category{% else %}الفئة{% endif %}</label>
+    <select id="catalog-category" class="form-select" name="category"><option value="">{% if LANGUAGE_CODE == 'en' %}All categories{% else %}كل الفئات{% endif %}</option>{% for c in categories %}<option value="{{ c.slug }}" {% if selected_category == c.slug %}selected{% endif %}>{% if LANGUAGE_CODE == 'en' %}{{ c.name_en }}{% else %}{{ c.name_ar }}{% endif %}</option>{% endfor %}</select>
+    <label class="visually-hidden" for="catalog-material">{% if LANGUAGE_CODE == 'en' %}Material{% else %}الخامة{% endif %}</label>
+    <select id="catalog-material" class="form-select" name="material"><option value="">{% if LANGUAGE_CODE == 'en' %}All materials{% else %}كل الخامات{% endif %}</option>{% for m in materials %}<option value="{{ m.slug }}" {% if request.GET.material == m.slug %}selected{% endif %}>{% if LANGUAGE_CODE == 'en' %}{{ m.name_en }}{% else %}{{ m.name_ar }}{% endif %}</option>{% endfor %}</select>
+    <button class="btn btn-gold">{% if LANGUAGE_CODE == 'en' %}Search{% else %}بحث{% endif %}</button>
+  </form>
+  <div class="row g-4">{% for product in page_obj %}{% include 'catalog/_card.html' %}{% empty %}<p>{% if LANGUAGE_CODE == 'en' %}No products matched your search.{% else %}لا توجد منتجات مطابقة لبحثك.{% endif %}</p>{% endfor %}</div>
+  {% include 'catalog/_pagination.html' %}
+</div>
+{% endblock %}

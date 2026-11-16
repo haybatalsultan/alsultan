@@ -1,0 +1,189 @@
+{% extends 'base.html' %}
+{% block title %}{{ title }} — Haybat Al Sultan{% endblock %}
+{% block content %}
+<section class="management-page promotion-form-page">
+  <div class="container management-shell management-form-shell py-4 py-lg-5">
+    {% include 'management/_page_header.html' with page_title=title page_description='' %}
+
+    <div class="promotion-form-intro">
+      <div class="promotion-form-intro-icon"><svg class="ui-icon"><use href="#icon-gift"></use></svg></div>
+      <div>
+        <strong>{% if LANGUAGE_CODE == 'en' %}Build a clear, controlled offer{% else %}أنشئ عرضًا واضحًا ومحكومًا{% endif %}</strong>
+        <p>{% if LANGUAGE_CODE == 'en' %}Choose the scope, discount, schedule and optional gift. Pricing is recalculated securely on the server during checkout.{% else %}حدد نطاق العرض ونوع الخصم ومدة العرض والهدية الاختيارية. يتم إعادة احتساب السعر بشكل آمن من السيرفر عند إنشاء الطلب.{% endif %}</p>
+      </div>
+      <span class="owner-only-label">OWNER</span>
+    </div>
+
+    <div class="management-security-note promotion-security-note">
+      <svg class="ui-icon"><use href="#icon-shield"></use></svg>
+      <div>
+        <strong>{% if LANGUAGE_CODE == 'en' %}Secure server-side pricing{% else %}تسعير آمن من جهة السيرفر{% endif %}</strong>
+        <span>{% if LANGUAGE_CODE == 'en' %}Promotions do not stack automatically. The best valid offer is selected and recalculated before the order is created.{% else %}لا يتم جمع الخصومات تلقائيًا. يختار النظام أفضل عرض صالح ويعيد حسابه قبل إنشاء الطلب دون الاعتماد على السعر القادم من المتصفح.{% endif %}</span>
+      </div>
+    </div>
+
+    <form method="post" class="management-form promotion-management-form" novalidate>
+      {% csrf_token %}
+
+      {% if form.non_field_errors %}
+      <div class="management-form-errors promotion-form-errors">{{ form.non_field_errors }}</div>
+      {% endif %}
+
+      <section class="management-content-card form-section-card promotion-form-section">
+        <div class="content-card-title promotion-section-title">
+          <span class="promotion-section-number">01</span>
+          <div>
+            <h2>{% if LANGUAGE_CODE == 'en' %}Promotion Identity{% else %}بيانات العرض الأساسية{% endif %}</h2>
+            <p>{% if LANGUAGE_CODE == 'en' %}Give the offer a clear Arabic and English name.{% else %}اكتب اسمًا واضحًا للعرض بالعربية والإنجليزية.{% endif %}</p>
+          </div>
+        </div>
+        <div class="management-form-grid">
+          <div class="field-wrap">
+            <label for="{{ form.name_ar.id_for_label }}">{% if LANGUAGE_CODE == 'en' %}Arabic Name{% else %}الاسم بالعربية{% endif %}</label>
+            {{ form.name_ar }}
+            {{ form.name_ar.errors }}
+          </div>
+          <div class="field-wrap">
+            <label for="{{ form.name_en.id_for_label }}">{% if LANGUAGE_CODE == 'en' %}English Name{% else %}الاسم بالإنجليزية{% endif %}</label>
+            {{ form.name_en }}
+            {{ form.name_en.errors }}
+          </div>
+        </div>
+      </section>
+
+      <section class="management-content-card form-section-card promotion-form-section">
+        <div class="content-card-title promotion-section-title">
+          <span class="promotion-section-number">02</span>
+          <div>
+            <h2>{% if LANGUAGE_CODE == 'en' %}Discount & Schedule{% else %}الخصم وجدولة العرض{% endif %}</h2>
+            <p>{% if LANGUAGE_CODE == 'en' %}Define how the offer is calculated and when it should be available.{% else %}حدد طريقة احتساب العرض ووقت بدايته ونهايته.{% endif %}</p>
+          </div>
+        </div>
+        <div class="management-form-grid promotion-four-grid">
+          <div class="field-wrap">
+            <label for="{{ form.discount_type.id_for_label }}">{% if LANGUAGE_CODE == 'en' %}Discount Type{% else %}نوع العرض{% endif %}</label>
+            {{ form.discount_type }}
+            <small class="promotion-field-help">{% if LANGUAGE_CODE == 'en' %}Percentage, fixed amount or gift only.{% else %}نسبة مئوية، مبلغ ثابت، أو هدية فقط.{% endif %}</small>
+            {{ form.discount_type.errors }}
+          </div>
+          <div class="field-wrap">
+            <label for="{{ form.discount_value.id_for_label }}">{% if LANGUAGE_CODE == 'en' %}Discount Value{% else %}قيمة الخصم{% endif %}</label>
+            {{ form.discount_value }}
+            <small class="promotion-field-help">{% if LANGUAGE_CODE == 'en' %}For gift-only offers, keep the value at zero.{% else %}في حالة هدية فقط، اترك القيمة صفرًا.{% endif %}</small>
+            {{ form.discount_value.errors }}
+          </div>
+          <div class="field-wrap">
+            <label for="{{ form.priority.id_for_label }}">{% if LANGUAGE_CODE == 'en' %}Priority{% else %}الأولوية{% endif %}</label>
+            {{ form.priority }}
+            <small class="promotion-field-help">{% if LANGUAGE_CODE == 'en' %}Used only when multiple valid offers compete.{% else %}تستخدم عند وجود أكثر من عرض صالح في نفس الوقت.{% endif %}</small>
+            {{ form.priority.errors }}
+          </div>
+          <div class="field-wrap">
+            <label for="{{ form.scope.id_for_label }}">{% if LANGUAGE_CODE == 'en' %}Scope{% else %}نطاق العرض{% endif %}</label>
+            {{ form.scope }}
+            <small class="promotion-field-help">{% if LANGUAGE_CODE == 'en' %}Entire catalog, selected products or selected categories.{% else %}جميع المنتجات، منتجات محددة، أو تصنيفات محددة.{% endif %}</small>
+            {{ form.scope.errors }}
+          </div>
+          <div class="field-wrap">
+            <label for="{{ form.starts_at.id_for_label }}">{% if LANGUAGE_CODE == 'en' %}Starts At{% else %}بداية العرض{% endif %}</label>
+            {{ form.starts_at }}
+            {{ form.starts_at.errors }}
+          </div>
+          <div class="field-wrap">
+            <label for="{{ form.ends_at.id_for_label }}">{% if LANGUAGE_CODE == 'en' %}Ends At{% else %}نهاية العرض{% endif %}</label>
+            {{ form.ends_at }}
+            {{ form.ends_at.errors }}
+          </div>
+        </div>
+      </section>
+
+      <section class="management-content-card form-section-card promotion-form-section">
+        <div class="content-card-title promotion-section-title">
+          <span class="promotion-section-number">03</span>
+          <div>
+            <h2>{% if LANGUAGE_CODE == 'en' %}Apply Offer To{% else %}تطبيق العرض على{% endif %}</h2>
+            <p>{% if LANGUAGE_CODE == 'en' %}Select products or categories only when the chosen scope requires them.{% else %}اختر المنتجات أو التصنيفات فقط إذا كان نطاق العرض يتطلب ذلك.{% endif %}</p>
+          </div>
+        </div>
+        <div class="promotion-scope-panel">
+          <div class="field-wrap promotion-multiselect-field">
+            <label for="{{ form.products.id_for_label }}">
+              <svg class="ui-icon"><use href="#icon-package"></use></svg>
+              {% if LANGUAGE_CODE == 'en' %}Selected Products{% else %}المنتجات المحددة{% endif %}
+            </label>
+            {{ form.products }}
+            <small class="promotion-field-help">{% if LANGUAGE_CODE == 'en' %}Used only when scope is “Selected Products”.{% else %}يتم استخدامها فقط عند اختيار نطاق «منتجات محددة».{% endif %}</small>
+            {{ form.products.errors }}
+          </div>
+          <div class="field-wrap promotion-multiselect-field">
+            <label for="{{ form.categories.id_for_label }}">
+              <svg class="ui-icon"><use href="#icon-category"></use></svg>
+              {% if LANGUAGE_CODE == 'en' %}Selected Categories{% else %}التصنيفات المحددة{% endif %}
+            </label>
+            {{ form.categories }}
+            <small class="promotion-field-help">{% if LANGUAGE_CODE == 'en' %}Used only when scope is “Selected Categories”.{% else %}يتم استخدامها فقط عند اختيار نطاق «تصنيفات محددة».{% endif %}</small>
+            {{ form.categories.errors }}
+          </div>
+        </div>
+      </section>
+
+      <section class="management-content-card form-section-card promotion-form-section">
+        <div class="content-card-title promotion-section-title">
+          <span class="promotion-section-number">04</span>
+          <div>
+            <h2>{% if LANGUAGE_CODE == 'en' %}Optional Gift{% else %}هدية اختيارية{% endif %}</h2>
+            <p>{% if LANGUAGE_CODE == 'en' %}Add a complimentary gift to the promotion when required.{% else %}أضف هدية مجانية مرتبطة بالعرض عند الحاجة.{% endif %}</p>
+          </div>
+        </div>
+        <div class="management-form-grid three-col">
+          <div class="field-wrap">
+            <label for="{{ form.gift_name_ar.id_for_label }}">{% if LANGUAGE_CODE == 'en' %}Arabic Gift Name{% else %}اسم الهدية بالعربية{% endif %}</label>
+            {{ form.gift_name_ar }}
+            {{ form.gift_name_ar.errors }}
+          </div>
+          <div class="field-wrap">
+            <label for="{{ form.gift_name_en.id_for_label }}">{% if LANGUAGE_CODE == 'en' %}English Gift Name{% else %}اسم الهدية بالإنجليزية{% endif %}</label>
+            {{ form.gift_name_en }}
+            {{ form.gift_name_en.errors }}
+          </div>
+          <div class="field-wrap">
+            <label for="{{ form.gift_quantity.id_for_label }}">{% if LANGUAGE_CODE == 'en' %}Quantity{% else %}الكمية{% endif %}</label>
+            {{ form.gift_quantity }}
+            {{ form.gift_quantity.errors }}
+          </div>
+        </div>
+      </section>
+
+      <section class="management-content-card form-section-card promotion-activation-card">
+        <div class="promotion-activation-copy">
+          <span class="promotion-activation-icon"><svg class="ui-icon"><use href="#icon-shield"></use></svg></span>
+          <div>
+            <strong>{% if LANGUAGE_CODE == 'en' %}Promotion Status{% else %}حالة العرض{% endif %}</strong>
+            <span>{% if LANGUAGE_CODE == 'en' %}Enable this only when the offer is ready to become active according to its schedule.{% else %}فعّل هذا الخيار فقط عندما يكون العرض جاهزًا للعمل حسب الفترة المحددة.{% endif %}</span>
+          </div>
+        </div>
+        <label class="promotion-toggle-control" for="{{ form.is_active.id_for_label }}">
+          {{ form.is_active }}
+          <span>{% if LANGUAGE_CODE == 'en' %}Active{% else %}مفعّل{% endif %}</span>
+        </label>
+        {{ form.is_active.errors }}
+      </section>
+
+      <div class="management-form-actions sticky-form-actions promotion-sticky-actions">
+        <a class="management-secondary-btn" href="{% url 'core:management_promotions' %}">
+          <svg class="ui-icon"><use href="#icon-back"></use></svg>
+          {% if LANGUAGE_CODE == 'en' %}Back{% else %}العودة{% endif %}
+        </a>
+        <button class="management-primary-btn" type="submit">
+          <svg class="ui-icon"><use href="#icon-gift"></use></svg>
+          {% if is_create %}
+            {% if LANGUAGE_CODE == 'en' %}Create Promotion{% else %}إنشاء العرض{% endif %}
+          {% else %}
+            {% if LANGUAGE_CODE == 'en' %}Save Changes{% else %}حفظ التعديلات{% endif %}
+          {% endif %}
+        </button>
+      </div>
+    </form>
+  </div>
+</section>
+{% endblock %}

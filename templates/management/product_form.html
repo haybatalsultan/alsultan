@@ -1,0 +1,111 @@
+{% extends 'base.html' %}
+{% block title %}{{ title }} — Haybat Al Sultan{% endblock %}
+{% block content %}
+<section class="management-page"><div class="container management-shell management-form-shell py-4 py-lg-5">
+{% include 'management/_page_header.html' with page_title=title page_description=page_description %}
+{% if product %}
+<div class="product-reference-banner">
+  <div><span>{% if LANGUAGE_CODE == 'en' %}Permanent Product Reference{% else %}المرجع الثابت للمنتج{% endif %}</span><strong dir="ltr">{{ product.product_reference }}</strong></div>
+  <div><span>SKU</span><strong dir="ltr">{{ product.sku }}</strong></div>
+</div>
+{% else %}
+<div class="item-code-progress-card">
+  <div class="item-code-progress-icon"><svg class="ui-icon"><use href="#icon-package"></use></svg></div>
+  <div class="item-code-progress-copy">
+    <span>{% if LANGUAGE_CODE == 'en' %}Product numbering{% else %}ترقيم المنتجات{% endif %}</span>
+    <strong>
+      {% if last_item_code %}
+        {% if LANGUAGE_CODE == 'en' %}Last created item code{% else %}آخر رقم قطعة تم إنشاؤه{% endif %}:
+        <b dir="ltr">{{ last_item_code }}</b>
+      {% else %}
+        {% if LANGUAGE_CODE == 'en' %}No item code has been created yet{% else %}لم يتم إنشاء أي رقم قطعة حتى الآن{% endif %}
+      {% endif %}
+    </strong>
+    <small>
+      {% if LANGUAGE_CODE == 'en' %}
+        The new product receives its actual HS code only after saving. This page does not reserve or predict the next number.
+      {% else %}
+        يحصل المنتج الجديد على رقم HS الحقيقي بعد الحفظ فقط. هذه الصفحة لا تحجز ولا تتنبأ بالرقم التالي.
+      {% endif %}
+    </small>
+  </div>
+</div>
+<div class="management-security-note"><svg class="ui-icon"><use href="#icon-lock"></use></svg><div><strong>{% if LANGUAGE_CODE == 'en' %}Reference and SKU generated automatically{% else %}المرجع وSKU يُنشآن تلقائيًا{% endif %}</strong><span>{% if LANGUAGE_CODE == 'en' %}After saving, the server creates an immutable HSP reference and an automatic HS item code. Neither can be edited from the browser or management forms.{% else %}بعد الحفظ يولّد السيرفر رقم HSP ثابتًا ورقم قطعة تلقائيًا بصيغة HS00001، ولا يمكن تعديل أي منهما من المتصفح أو نماذج الإدارة.{% endif %}</span></div></div>
+{% endif %}
+<form method="post" class="management-form product-management-form" novalidate>{% csrf_token %}
+  {{ form.non_field_errors }}
+  <section class="management-content-card form-section-card">
+    <div class="content-card-title"><svg class="ui-icon"><use href="#icon-package"></use></svg><h2>{% if LANGUAGE_CODE == 'en' %}Basic Information{% else %}المعلومات الأساسية{% endif %}</h2></div>
+    <div class="management-form-grid">
+      <div class="field-wrap"><label for="{{ form.category.id_for_label }}">{% if LANGUAGE_CODE == 'en' %}Category{% else %}التصنيف{% endif %}</label>{{ form.category }}{{ form.category.errors }}</div>
+      <div class="field-wrap"><label for="{{ form.material.id_for_label }}">{% if LANGUAGE_CODE == 'en' %}Material{% else %}الخامة{% endif %}</label>{{ form.material }}{{ form.material.errors }}</div>
+      <div class="field-wrap"><label for="{{ form.name_ar.id_for_label }}">الاسم بالعربية</label>{{ form.name_ar }}{{ form.name_ar.errors }}</div>
+      <div class="field-wrap"><label for="{{ form.name_en.id_for_label }}">English Name</label>{{ form.name_en }}{{ form.name_en.errors }}</div>
+      {% if form.status %}<div class="field-wrap"><label for="{{ form.status.id_for_label }}">{% if LANGUAGE_CODE == 'en' %}Status{% else %}الحالة{% endif %}</label>{{ form.status }}{{ form.status.errors }}</div>{% endif %}
+    </div>
+  </section>
+
+  <section class="management-content-card form-section-card">
+    <div class="content-card-title"><svg class="ui-icon"><use href="#icon-boxes"></use></svg><h2>{% if LANGUAGE_CODE == 'en' %}Product Specifications{% else %}مواصفات المنتج{% endif %}</h2></div>
+    <div class="management-form-grid three-col">
+      <div class="field-wrap"><label for="{{ form.origin.id_for_label }}">{% if LANGUAGE_CODE == 'en' %}Origin{% else %}المنشأ{% endif %}</label>{{ form.origin }}{{ form.origin.errors }}</div>
+      <div class="field-wrap"><label for="{{ form.color.id_for_label }}">{% if LANGUAGE_CODE == 'en' %}Color{% else %}اللون{% endif %}</label>{{ form.color }}{{ form.color.errors }}</div>
+      <div class="field-wrap"><label for="{{ form.bead_count.id_for_label }}">{% if LANGUAGE_CODE == 'en' %}Bead Count{% else %}عدد الخرز{% endif %}</label>{{ form.bead_count }}{{ form.bead_count.errors }}</div>
+      <div class="field-wrap"><label for="{{ form.bead_size_mm.id_for_label }}">{% if LANGUAGE_CODE == 'en' %}Bead Size (mm){% else %}حجم الخرزة (مم){% endif %}</label>{{ form.bead_size_mm }}{{ form.bead_size_mm.errors }}</div>
+      <div class="field-wrap"><label for="{{ form.weight_g.id_for_label }}">{% if LANGUAGE_CODE == 'en' %}Weight (g){% else %}الوزن (جرام){% endif %}</label>{{ form.weight_g }}{{ form.weight_g.errors }}</div>
+      <div class="field-wrap"><label for="{{ form.shape.id_for_label }}">{% if LANGUAGE_CODE == 'en' %}Shape{% else %}الشكل{% endif %}</label>{{ form.shape }}{{ form.shape.errors }}</div>
+      <div class="field-wrap"><label for="{{ form.tassel_type.id_for_label }}">{% if LANGUAGE_CODE == 'en' %}Tassel Type{% else %}نوع الكركوشة{% endif %}</label>{{ form.tassel_type }}{{ form.tassel_type.errors }}</div>
+      <div class="field-wrap"><label for="{{ form.condition.id_for_label }}">{% if LANGUAGE_CODE == 'en' %}Condition{% else %}الحالة والوصف المادي{% endif %}</label>{{ form.condition }}{{ form.condition.errors }}</div>
+      <div class="field-wrap"><label for="{{ form.available_quantity.id_for_label }}">{% if LANGUAGE_CODE == 'en' %}Available Quantity{% else %}الكمية المتاحة{% endif %}</label>{{ form.available_quantity }}{{ form.available_quantity.errors }}</div>
+    </div>
+  </section>
+
+  {% if form.verification_status %}<section class="management-content-card form-section-card">
+    <div class="content-card-title"><svg class="ui-icon"><use href="#icon-shield"></use></svg><h2>{% if LANGUAGE_CODE == 'en' %}Verification Status{% else %}حالة التوثيق / الفحص{% endif %}</h2></div>
+    <div class="management-form-grid">
+      <div class="field-wrap full"><label for="{{ form.verification_status.id_for_label }}">{% if LANGUAGE_CODE == 'en' %}Product verification{% else %}توثيق المنتج{% endif %}</label>{{ form.verification_status }}{{ form.verification_status.errors }}</div>
+    </div>
+    <p class="management-help-text">{% if LANGUAGE_CODE == 'en' %}Owner only. Choose No verification, Product inspected, or Certified. This claim is shown to customers exactly as selected; do not mark an item as inspected or certified unless you have a valid basis for the claim.{% else %}هذه الخانة للمالك فقط. اختر: لا يوجد، تم فحص المنتج، أو يوجد شهادة موثقة. تظهر الحالة للعميل كما يحددها المالك، لذلك لا تستخدم حالة الفحص أو الشهادة إلا عند وجود أساس صحيح لذلك.{% endif %}</p>
+  </section>{% endif %}
+
+  <section class="management-content-card form-section-card">
+    <div class="content-card-title"><svg class="ui-icon"><use href="#icon-history"></use></svg><h2>{% if LANGUAGE_CODE == 'en' %}Descriptions{% else %}الوصف{% endif %}</h2></div>
+    <div class="management-form-grid">
+      <div class="field-wrap full"><label for="{{ form.description_ar.id_for_label }}">الوصف بالعربية</label>{{ form.description_ar }}{{ form.description_ar.errors }}</div>
+      <div class="field-wrap full"><label for="{{ form.description_en.id_for_label }}">English Description</label>{{ form.description_en }}{{ form.description_en.errors }}</div>
+    </div>
+  </section>
+
+  <section class="management-content-card form-section-card">
+    <div class="content-card-title"><svg class="ui-icon"><use href="#icon-search"></use></svg><h2>SEO</h2></div>
+    <div class="management-form-grid">
+      <div class="field-wrap"><label for="{{ form.meta_title_ar.id_for_label }}">Meta Title AR</label>{{ form.meta_title_ar }}{{ form.meta_title_ar.errors }}</div>
+      <div class="field-wrap"><label for="{{ form.meta_title_en.id_for_label }}">Meta Title EN</label>{{ form.meta_title_en }}{{ form.meta_title_en.errors }}</div>
+      <div class="field-wrap full"><label for="{{ form.meta_description_ar.id_for_label }}">Meta Description AR</label>{{ form.meta_description_ar }}{{ form.meta_description_ar.errors }}</div>
+      <div class="field-wrap full"><label for="{{ form.meta_description_en.id_for_label }}">Meta Description EN</label>{{ form.meta_description_en }}{{ form.meta_description_en.errors }}</div>
+    </div>
+  </section>
+
+  <section class="management-content-card form-section-card">
+    <div class="content-card-title"><svg class="ui-icon"><use href="#icon-price"></use></svg><h2>{% if LANGUAGE_CODE == 'en' %}Store Placement{% else %}الظهور في المتجر{% endif %}</h2></div>
+    <div class="management-toggle-grid">
+      <label for="{{ form.is_featured.id_for_label }}">{{ form.is_featured }} <span>{% if LANGUAGE_CODE == 'en' %}Featured{% else %}منتج مميز{% endif %}</span></label>
+      <label for="{{ form.is_new_arrival.id_for_label }}">{{ form.is_new_arrival }} <span>{% if LANGUAGE_CODE == 'en' %}New Arrival{% else %}وصل حديثًا{% endif %}</span></label>
+      <label for="{{ form.is_best_seller.id_for_label }}">{{ form.is_best_seller }} <span>{% if LANGUAGE_CODE == 'en' %}Best Seller{% else %}الأكثر مبيعًا{% endif %}</span></label>
+    </div>
+  </section>
+
+  {% if product %}
+  <section class="management-content-card form-section-card">
+    <div class="content-card-title"><svg class="ui-icon"><use href="#icon-camera"></use></svg><h2>{% if LANGUAGE_CODE == 'en' %}Product Images{% else %}صور المنتج{% endif %}</h2></div>
+    <p>{% if LANGUAGE_CODE == 'en' %}Images are uploaded securely to Cloudinary and delivered through its CDN.{% else %}يتم رفع صور المنتج بأمان إلى Cloudinary وتقديمها للزوار عبر CDN.{% endif %}</p>
+    <a class="management-secondary-btn" href="{% url 'core:management_product_images' product.public_id %}">{% if LANGUAGE_CODE == 'en' %}Manage Images{% else %}إدارة الصور{% endif %}</a>
+  </section>
+{% endif %}
+  <div class="management-form-actions sticky-form-actions">
+    <button class="management-primary-btn" type="submit">{% if is_create %}{% if LANGUAGE_CODE == 'en' %}Create Product{% else %}إنشاء المنتج{% endif %}{% else %}{% if LANGUAGE_CODE == 'en' %}Save Changes{% else %}حفظ التغييرات{% endif %}{% endif %}</button>
+    <a class="management-secondary-btn" href="{% url 'core:management_products' %}">{% if LANGUAGE_CODE == 'en' %}Back to Products{% else %}العودة إلى المنتجات{% endif %}</a>
+  </div>
+</form>
+</div></section>
+{% endblock %}

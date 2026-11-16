@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+{% block title %}{% if LANGUAGE_CODE == 'en' %}About Us | Haybat Al Sultan{% else %}من نحن | هيبة السلطان{% endif %}{% endblock %}
+{% block content %}
+<section class="about-page">
+  <div class="container">
+    <article class="about-card">
+      <div class="about-heading">
+        <span class="about-ornament" aria-hidden="true">◇</span>
+        <h1>{{ about.title }}</h1>
+        <span class="about-ornament" aria-hidden="true">◇</span>
+      </div>
+      <div class="about-copy">
+        {% for paragraph in about.paragraphs %}<p>{{ paragraph }}</p>{% endfor %}
+      </div>
+      <p class="about-closing">{{ about.closing }}</p>
+    </article>
+  </div>
+</section>
+{% endblock %}
