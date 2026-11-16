@@ -30,12 +30,15 @@ if not exist ".git" (
     echo.
 )
 
+:: Disable global credential helper locally to avoid silently using the wrong Windows cached account
+git config --local credential.helper ""
+
 :: 3. Configure Local Git Identity (Account Isolation)
 echo ------------------------------------------------------------------------------
 echo [1/4] GITHUB ACCOUNT AND IDENTITY CONFIGURATION
 echo ------------------------------------------------------------------------------
-echo Since you are using a different GitHub account, we configure it LOCALLY
-echo for this repository only, without modifying your global computer settings.
+echo Setting your Git author name and email LOCALLY for this repository only,
+echo preventing conflicts with other GitHub accounts on this computer.
 echo.
 
 set "CURRENT_USER_NAME="
@@ -64,10 +67,14 @@ if not defined CURRENT_USER_NAME (
 )
 echo.
 
-:: 4. Configure Remote Repository URL
+:: 4. Configure Remote Repository URL and Authentication Token
 echo ------------------------------------------------------------------------------
-echo [2/4] GITHUB REPOSITORY CONFIGURATION
+echo [2/4] GITHUB REPOSITORY AND AUTHENTICATION
 echo ------------------------------------------------------------------------------
+echo Windows automatically caches credentials for GitHub accounts in Credential Manager.
+echo To ensure this project pushes to your NEW account and not the old one,
+echo you can enter a Personal Access Token (PAT) generated for your new account.
+echo.
 
 set "CURRENT_REMOTE="
 for /f "tokens=*" %%i in ('git remote get-url origin 2^>nul') do set "CURRENT_REMOTE=%%i"
@@ -76,7 +83,7 @@ if defined CURRENT_REMOTE (
     echo Current remote repository URL:
     echo   !CURRENT_REMOTE!
     echo.
-    set /p "KEEP_REMOTE=Do you want to push to this repository? [Y/N] (Default: Y): "
+    set /p "KEEP_REMOTE=Do you want to use this repository? [Y/N] (Default: Y): "
     if /i "!KEEP_REMOTE!"=="N" (
         set "CURRENT_REMOTE="
     )
@@ -84,22 +91,63 @@ if defined CURRENT_REMOTE (
 
 if not defined CURRENT_REMOTE (
     echo.
-    echo Please enter your target GitHub repository URL.
-    echo Example HTTPS: https://github.com/your-username/your-repo.git
-    echo Example SSH  : git@github.com:your-username/your-repo.git
+    echo Please enter your target GitHub repository URL or path.
+    echo Examples:
+    echo   https://github.com/haybatalsultan/alsultan.git
+    echo   haybatalsultan/alsultan
     echo.
-    set /p "REPO_URL=Target Repository URL: "
+    set /p "USER_INPUT_URL=Target Repository: "
     
-    if "!REPO_URL!"=="" (
+    if "!USER_INPUT_URL!"=="" (
         echo [ERROR] Repository URL cannot be empty.
-        echo.
         pause
         exit /b 1
     )
-    
+    set "RAW_URL=!USER_INPUT_URL!"
+) else (
+    set "RAW_URL=!CURRENT_REMOTE!"
+)
+
+:: Normalize URL format
+echo !RAW_URL! | findstr /i "github.com" >nul
+if %ERRORLEVEL% neq 0 (
+    set "RAW_URL=https://github.com/!RAW_URL!.git"
+)
+
+:: Ask for Personal Access Token (PAT)
+echo.
+echo ------------------------------------------------------------------------------
+echo [AUTHENTICATION] PERSONAL ACCESS TOKEN (PAT)
+echo ------------------------------------------------------------------------------
+echo To authenticate directly with your new account (bypassing Windows cached logins):
+echo Provide your Personal Access Token (PAT).
+echo If you don't have one, generate it at: https://github.com/settings/tokens
+echo (Required scope: 'repo' - Full control of private repositories)
+echo.
+echo Press [ENTER] without typing a token if you prefer Git to prompt in the console.
+echo.
+set /p "PAT_TOKEN=Enter your GitHub Personal Access Token (PAT): "
+
+if not "!PAT_TOKEN!"=="" (
+    :: Strip any existing auth info and prepend token
+    for /f "tokens=1,* delims=@" %%a in ("!RAW_URL!") do (
+        if "%%b"=="" (
+            set "CLEAN_URL=!RAW_URL!"
+        ) else (
+            set "CLEAN_URL=https://%%b"
+        )
+    )
+    for /f "tokens=1,* delims=/" %%x in ("!CLEAN_URL:https://=!") do (
+        set "FINAL_URL=https://!PAT_TOKEN!@%%x/%%y"
+    )
     git remote remove origin >nul 2>&1
-    git remote add origin !REPO_URL!
-    echo [OK] Remote 'origin' configured to: !REPO_URL!
+    git remote add origin !FINAL_URL!
+    echo [OK] Remote configured with your custom Personal Access Token.
+) else (
+    git remote remove origin >nul 2>&1
+    git remote add origin !RAW_URL!
+    echo [OK] Remote configured: !RAW_URL!
+    echo [INFO] Local credential manager disabled. Git will prompt you in console.
 )
 echo.
 
@@ -116,7 +164,7 @@ if "!BRANCH!"=="" (
 echo Target Branch: !BRANCH!
 echo.
 
-:: 6. Commit Message
+:: 6. Staging and Commit
 echo ------------------------------------------------------------------------------
 echo [3/4] STAGING AND COMMIT MESSAGE
 echo ------------------------------------------------------------------------------
@@ -155,9 +203,6 @@ echo [4/4] PUSHING TO GITHUB
 echo ------------------------------------------------------------------------------
 echo [*] Pushing branch '!BRANCH!' to origin...
 echo.
-echo NOTE: If GitHub asks for credentials, enter your GitHub Username and 
-echo Personal Access Token (PAT) as the password.
-echo.
 
 git push -u origin !BRANCH!
 if %ERRORLEVEL% equ 0 (
@@ -173,10 +218,12 @@ if %ERRORLEVEL% equ 0 (
 :: 8. Error Recovery Handler
 echo.
 echo ==============================================================================
-echo [WARNING] Direct push was rejected by GitHub.
+echo [WARNING] Push failed or was rejected by GitHub.
 echo ==============================================================================
-echo This typically happens if the remote GitHub repository already contains files 
-echo (such as a README, license, or previous commits) that are not in this local copy.
+echo Common causes:
+echo   1. The repository is private or does not exist under this account.
+echo   2. The Personal Access Token (PAT) lacks 'repo' write permissions.
+echo   3. The remote repository already contains files (README, license, etc.).
 echo.
 echo Choose an option to resolve:
 echo   [1] Pull and Rebase remote changes, then push (Recommended)
