@@ -1,3 +1,7 @@
+# Deployment scripts with local credentials
+push_to_github.bat
+*.local
+
 # ==========================================
 # Node / Frontend / Build artifacts
 # ==========================================
