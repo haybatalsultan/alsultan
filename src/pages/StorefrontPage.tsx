@@ -250,10 +250,10 @@ export const StorefrontPage: React.FC<StorefrontPageProps> = ({
 
           {/* Central Call to Action Content Box */}
           <div className="relative z-10 text-center px-4 max-w-2xl mx-auto space-y-4">
-            <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-[#26221C] drop-shadow-sm tracking-tight leading-tight">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-white drop-shadow-[0_2px_10px_rgba(0,0,0,0.75)] tracking-tight leading-tight">
               هيبة الأصل... جمال الكهرمان
             </h1>
-            <p className="text-sm sm:text-base md:text-lg font-medium text-[#3D352E] max-w-lg mx-auto leading-relaxed drop-shadow-sm">
+            <p className="text-sm sm:text-base md:text-lg font-medium text-white max-w-lg mx-auto leading-relaxed drop-shadow-[0_2px_8px_rgba(0,0,0,0.75)]">
               مسابيح وأحجار طبيعية ونوادر مختارة بعناية لعشاق التميز
             </p>
             <div className="pt-2">
