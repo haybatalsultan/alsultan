@@ -2349,11 +2349,41 @@ app.post('/api/cloud/config', (req, res) => {
 // Production Static Serving
 const distPath = path.join(__dirname, 'dist');
 if (fs.existsSync(distPath)) {
+  console.log(`✅ [Static] Serving luxury storefront and dashboard from: ${distPath}`);
   app.use(express.static(distPath));
   app.get('*', (req, res) => {
     if (!req.path.startsWith('/api')) {
       res.sendFile(path.join(distPath, 'index.html'));
     }
+  });
+} else {
+  console.warn(`⚠️ [Static] "dist" folder not found at: ${distPath}`);
+  app.get('/', (req, res) => {
+    res.status(200).send(`
+      <!DOCTYPE html>
+      <html dir="rtl" lang="ar">
+      <head>
+        <meta charset="utf-8">
+        <title>خادم هيبة السلطان - بانتظار ملفات الواجهة</title>
+        <style>
+          body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0b0f17; color: #f8fafc; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; text-align: center; }
+          .card { background: #131b2e; border: 1px solid #d4af37; border-radius: 16px; padding: 40px; max-width: 600px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+          h1 { color: #d4af37; margin-bottom: 12px; font-size: 24px; }
+          p { color: #94a3b8; line-height: 1.6; }
+          code { background: #1e293b; color: #38bdf8; padding: 4px 8px; border-radius: 6px; }
+          .badge { display: inline-block; padding: 6px 14px; background: rgba(212,175,55,0.15); color: #d4af37; border: 1px solid rgba(212,175,55,0.3); border-radius: 999px; font-size: 13px; margin-bottom: 16px; }
+        </style>
+      </head>
+      <body>
+        <div class="card">
+          <div class="badge">هيبة السلطان - Haybat Al Sultan PRO</div>
+          <h1>الخادم الخلفي يعمل بنجاح ✅</h1>
+          <p>تم تشغيل محرك الخادم وقاعدة البيانات بنجاح، لكن مجلد واجهة المتجر <code>dist</code> لم يتم العثور عليه في الحاوية.</p>
+          <p>قم ببناء الواجهة محلياً عبر <code>npm run build</code> ثم رفع مجلد <code>dist</code> إلى GitHub وإعادة النشر على Easypanel.</p>
+        </div>
+      </body>
+      </html>
+    `);
   });
 }
 

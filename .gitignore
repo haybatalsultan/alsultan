@@ -2,7 +2,7 @@
 # Node / Frontend / Build artifacts
 # ==========================================
 node_modules/
-dist/
+# dist/ is tracked for direct cloud and Easypanel production deployment
 dist-electron/
 out/
 .vite/

@@ -185,7 +185,20 @@ if "!USER_MSG!"=="" (
 )
 
 echo.
-echo [*] Staging all files (git add .) ...
+echo [*] Checking production frontend build (dist)...
+if not exist "dist\index.html" (
+    echo [*] dist directory not found. Building now (npm run build)...
+    call npm run build
+) else (
+    set /p "REBUILD_CHOICE=Do you want to re-build the latest frontend before pushing? [Y/N] (Default: Y): "
+    if not "!REBUILD_CHOICE!"=="N" if not "!REBUILD_CHOICE!"=="n" (
+        echo [*] Compiling production build (npm run build)...
+        call npm run build
+    )
+)
+
+echo.
+echo [*] Staging all files including dist (git add .) ...
 git add .
 
 echo [*] Committing changes...
