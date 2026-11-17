@@ -890,9 +890,10 @@ app.post('/api/auth/admin/login', async (req, res) => {
 
   try {
     const cleanId = loginId.toLowerCase();
+    const aliasUsername = cleanId === 'admin' ? 'owner' : cleanId;
     const user = await queryOne(
-      'SELECT * FROM users WHERE (LOWER(username) = ? OR LOWER(email) = ? OR phone = ?) AND is_active = 1',
-      [cleanId, cleanId, loginId]
+      'SELECT * FROM users WHERE (LOWER(username) = ? OR LOWER(username) = ? OR LOWER(email) = ? OR phone = ?) AND is_active = 1',
+      [cleanId, aliasUsername, cleanId, loginId]
     );
 
     if (!user || !comparePassword(password, user.password_hash)) {
