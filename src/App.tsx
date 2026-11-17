@@ -30,7 +30,7 @@ import { Product, Order, Category, Material, User } from './types';
 import { api, socket } from './lib/api';
 
 export const App: React.FC = () => {
-  // Determine initial portal: '/admin' vs '/wholesale' vs '/product/:id' vs Storefront '/'
+  // Determine initial portal: '/admin' vs '/wholesale' vs '/p/:id' vs Storefront '/'
   const getInitialPortal = (): 'storefront' | 'admin' | 'wholesale' | 'product' => {
     const path = window.location.pathname.toLowerCase();
     const search = window.location.search.toLowerCase();
@@ -40,7 +40,7 @@ export const App: React.FC = () => {
     if (path.startsWith('/wholesale') || search.includes('portal=wholesale')) {
       return 'wholesale';
     }
-    if (path.startsWith('/product/')) {
+    if (path.startsWith('/product/') || path.startsWith('/p/')) {
       return 'product';
     }
     return 'storefront';
@@ -97,17 +97,47 @@ export const App: React.FC = () => {
 
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
+  // Helper: Resolve product by unpredictable UUID, SKU, Reference or ID
+  const resolveProductFromPath = async (pathname: string, prods: Product[]) => {
+    let token = '';
+    const lower = pathname.toLowerCase();
+    if (lower.startsWith('/p/')) {
+      token = pathname.slice(3).split('/')[0]?.trim();
+    } else if (lower.startsWith('/product/')) {
+      token = pathname.slice(9).split('/')[0]?.trim();
+    }
+    if (!token) return;
+
+    // First check in-memory catalog
+    let found = prods.find((p: Product) =>
+      p.public_id === token ||
+      p.product_reference === token ||
+      p.sku.toLowerCase() === token.toLowerCase() ||
+      String(p.id) === token
+    );
+
+    // If not found in-memory, fetch directly from backend API
+    if (!found) {
+      try {
+        found = await api.getProduct(token);
+      } catch (e) {
+        console.warn('Could not load product for token:', token);
+      }
+    }
+
+    if (found) {
+      setViewingProduct(found);
+      setPortal('product');
+    }
+  };
+
   // Sync browser URL & Back/Forward button history
   useEffect(() => {
     const handlePopState = () => {
       const initPortal = getInitialPortal();
       setPortal(initPortal);
       if (initPortal === 'product') {
-        const pid = parseInt(window.location.pathname.split('/product/')[1], 10);
-        if (!isNaN(pid) && allStoreProducts.length > 0) {
-          const p = allStoreProducts.find(item => item.id === pid);
-          if (p) setViewingProduct(p);
-        }
+        resolveProductFromPath(window.location.pathname, allStoreProducts);
       } else {
         setViewingProduct(null);
       }
@@ -131,7 +161,8 @@ export const App: React.FC = () => {
   const handleViewProduct = (prod: Product) => {
     setViewingProduct(prod);
     setPortal('product');
-    const targetPath = `/product/${prod.id}`;
+    // Unpredictable URL token: public_id (UUID)
+    const targetPath = `/p/${prod.public_id || prod.id}`;
     if (window.location.pathname !== targetPath) {
       window.history.pushState({}, '', targetPath);
     }
@@ -166,17 +197,10 @@ export const App: React.FC = () => {
       setMaterials(mats);
       setAllStoreProducts(prods || []);
 
-      // If initial path is /product/:id, open that product
+      // If initial path is /p/:token or /product/:token, open that product
       const path = window.location.pathname;
-      if (path.startsWith('/product/')) {
-        const pid = parseInt(path.split('/product/')[1], 10);
-        if (!isNaN(pid) && prods) {
-          const found = prods.find((p: Product) => p.id === pid);
-          if (found) {
-            setViewingProduct(found);
-            setPortal('product');
-          }
-        }
+      if (path.startsWith('/p/') || path.startsWith('/product/')) {
+        resolveProductFromPath(path, prods || []);
       }
     } catch (e) {
       console.error(e);
@@ -442,19 +466,8 @@ export const App: React.FC = () => {
             key={viewingProduct.id}
             product={viewingProduct}
             allProducts={allStoreProducts}
-            onOpenCheckout={(p) => setCheckoutProduct(p)}
-            onReserve={async (p) => {
-              try {
-                await api.reserveProduct(p.id, 'client_cart_session', 15);
-                setCartItem(p);
-                alert(`🔒 تم حجز المسبحة (${p.name_ar}) باسمك لمدة 15 دقيقة حصرياً! لن يتمكن أي شخص آخر من شرائها.`);
-                setRefreshTrigger(n => n + 1);
-              } catch (err: any) {
-                alert(err.response?.data?.error || 'تعذر حجز المسبحة');
-              }
-            }}
-            onSelectProduct={(p) => handleViewProduct(p)}
             onBackToStore={() => navigatePortal('storefront')}
+            currentUser={staffUser || customerUser}
           />
         ) : (
           <StorefrontPage

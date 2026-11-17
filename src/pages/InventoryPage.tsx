@@ -13,11 +13,13 @@ import {
   Sparkles,
   CheckCircle2,
   Trash2,
-  DollarSign
+  DollarSign,
+  QrCode
 } from 'lucide-react';
 import { api } from '../lib/api';
 import { Product, Category, Material, ProductStatus, User } from '../types';
 import { hasPermission } from '../lib/permissions';
+import { BoxQRLabelModal } from '../components/BoxQRLabelModal';
 
 interface InventoryPageProps {
   onOpenProductModal: (product: Product | null) => void;
@@ -41,6 +43,7 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [categoryFilter, setCategoryFilter] = useState<string>('');
   const [loading, setLoading] = useState(true);
+  const [selectedQRProduct, setSelectedQRProduct] = useState<Product | null>(null);
 
   // Permission Checks
   const canCreate = hasPermission(currentUser, 'inventory.create');
@@ -318,6 +321,14 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({
                       </button>
                     )}
 
+                    <button
+                      onClick={() => setSelectedQRProduct(p)}
+                      title="طباعة ملصق العلبة الملكي (QR Code)"
+                      className="p-2 bg-[#FAF7F2] hover:bg-[#FAF4E8] text-[#9A6817] text-xs rounded-xl border border-[#E0D7C6] hover:border-[#C9972B] flex items-center justify-center transition cursor-pointer"
+                    >
+                      <QrCode className="w-4 h-4" />
+                    </button>
+
                     {canEdit && (
                       <button
                         onClick={() => onOpenProductModal(p)}
@@ -343,6 +354,14 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({
             );
           })}
         </div>
+      )}
+
+      {/* Luxury Box QR Label Modal */}
+      {selectedQRProduct && (
+        <BoxQRLabelModal
+          product={selectedQRProduct}
+          onClose={() => setSelectedQRProduct(null)}
+        />
       )}
     </div>
   );

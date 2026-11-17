@@ -2,492 +2,346 @@ import React, { useEffect, useState } from 'react';
 import {
   Gem,
   Award,
-  Clock,
-  ShoppingCart,
-  MessageCircle,
   Sparkles,
-  Truck,
-  Gift,
   ShieldCheck,
   ArrowRight,
   CheckCircle2,
   Share2,
   FileText,
   BadgeCheck,
-  ChevronLeft,
   Copy,
-  Check
+  Check,
+  Printer,
+  ChevronLeft,
+  ExternalLink,
+  MessageCircle
 } from 'lucide-react';
 import { Product } from '../types';
+import { BoxQRLabelModal } from '../components/BoxQRLabelModal';
 
 interface ProductDetailPageProps {
   product: Product;
-  allProducts: Product[];
-  onOpenCheckout: (product: Product) => void;
-  onReserve: (product: Product) => void;
-  onSelectProduct: (product: Product) => void;
+  allProducts?: Product[];
   onBackToStore: () => void;
+  currentUser?: any;
 }
 
 export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
   product,
-  allProducts,
-  onOpenCheckout,
-  onReserve,
-  onSelectProduct,
-  onBackToStore
+  allProducts = [],
+  onBackToStore,
+  currentUser
 }) => {
-  const [copiedSku, setCopiedSku] = useState(false);
+  const [copiedLink, setCopiedLink] = useState(false);
+  const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, [product.id]);
+  }, [product.id, product.public_id]);
 
-  const handleCopySku = () => {
-    navigator.clipboard.writeText(product.sku);
-    setCopiedSku(true);
-    setTimeout(() => setCopiedSku(false), 2000);
+  const origin = typeof window !== 'undefined' ? window.location.origin : 'https://haybatalsultan.com';
+  const pieceUrl = `${origin}/p/${product.public_id || product.id}`;
+
+  const handleCopyLink = () => {
+    navigator.clipboard.writeText(pieceUrl);
+    setCopiedLink(true);
+    setTimeout(() => setCopiedLink(false), 2000);
   };
 
-  const handleWhatsAppOrder = () => {
+  const handleWhatsAppContact = () => {
     const text = encodeURIComponent(
-      `السلام عليكم ورحمة الله وبركاته،\nأود اقتناء هذه التحفة من هيبة السلطان:\n\n• الاسم: ${product.name_ar}\n• الرمز المرجعي: ${product.product_reference}\n• الـ SKU: ${product.sku}\n• السعر: ${product.selling_price.toLocaleString()} AED\n\nيرجى تأكيد التوافر وإجراءات الاستلام أو التوصيل.`
+      `السلام عليكم ورحمة الله وبركاته،\nأنا أستعرض وثيقة هذه المسبحة من هيبة السلطان:\n\n• الاسم: ${product.name_ar}\n• الرمز: ${product.sku} (${product.product_reference})\n• الرابط: ${pieceUrl}\n\nأود الاستفسار عنها أو طلب قطعة مماثلة.`
     );
     window.open(`https://wa.me/971504084006?text=${text}`, '_blank');
   };
 
-  // Find related products (same material, category, or closest in price)
-  const relatedProducts = allProducts
-    .filter((p) => p.id !== product.id && p.status === 'AVAILABLE')
-    .sort((a, b) => {
-      // Prioritize same material or category
-      const aMatch = (a.material_id && a.material_id === product.material_id) ? 2 : 0;
-      const bMatch = (b.material_id && b.material_id === product.material_id) ? 2 : 0;
-      return bMatch - aMatch;
-    })
-    .slice(0, 3);
-
   const fallbackStory = `تحفة ملكية نادرة صيغت بحرفية يدوية رفيعة المستوى على يد أمهر خراطي المسابيح التقليديين. تم استخراج خاماتها الطبيعية وعنايتها بدقة للحفاظ على نقائها التاريخي وملمسها الفريد، وتأتي مصحوبة بفحص مخبري رسمي يثبت أصالتها المطلقة وخلوها من أي معالجات صناعية. قطعة فريدة تليق بالمجموعات الخاصة وأصحاب الذوق الرفيع.`;
 
   return (
-    <div className="min-h-screen bg-[#FAF7F2] text-[#26221C] py-8 selection:bg-[#C9972B]/20" dir="rtl">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
-        
-        {/* 1. Breadcrumbs & Back Navigation */}
-        <div className="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-[#EBE3D5]">
-          <nav className="flex items-center gap-2 text-xs text-[#746A5D]">
-            <button
-              onClick={onBackToStore}
-              className="hover:text-[#9A6817] font-semibold transition cursor-pointer"
-            >
-              الرئيسية
-            </button>
-            <span className="text-[#C8BCAB]">/</span>
-            <button
-              onClick={onBackToStore}
-              className="hover:text-[#9A6817] font-semibold transition cursor-pointer"
-            >
-              المعروضات الفاخرة
-            </button>
-            <span className="text-[#C8BCAB]">/</span>
-            <span className="text-[#26221C] font-bold truncate max-w-[200px] sm:max-w-xs">
-              {product.name_ar}
-            </span>
-          </nav>
+    <div className="min-h-screen bg-[#FAF7F2] text-[#26221C] py-6 sm:py-10 selection:bg-[#C9972B]/20" dir="rtl">
+      
+      {/* Box QR Print Modal */}
+      {isPrintModalOpen && (
+        <BoxQRLabelModal
+          product={product}
+          onClose={() => setIsPrintModalOpen(false)}
+        />
+      )}
 
-          <button
-            onClick={onBackToStore}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-white hover:bg-[#FAF4E8] text-[#26221C] hover:text-[#9A6817] border border-[#DDD3C1] hover:border-[#C9972B] rounded-2xl text-xs font-bold transition shadow-2xs cursor-pointer"
-          >
-            <ArrowRight className="w-4 h-4 text-[#C9972B]" />
-            <span>العودة لكافة المعروضات</span>
-          </button>
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 space-y-8">
+
+        {/* 1. Royal Top Bar & Verification Header */}
+        <div className="flex flex-wrap items-center justify-between gap-3 pb-5 border-b border-[#EBE3D5]">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={onBackToStore}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-[#FAF4E8] text-[#26221C] hover:text-[#9A6817] border border-[#DDD3C1] hover:border-[#C9972B] rounded-xl text-xs font-bold transition cursor-pointer"
+            >
+              <ArrowRight className="w-3.5 h-3.5" />
+              <span>المتجر الرئيسي</span>
+            </button>
+            <span className="text-[#C8BCAB]">/</span>
+            <span className="text-xs text-[#8C8275] font-mono">وثيقة التحقق #{product.sku}</span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setIsPrintModalOpen(true)}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#FAF4E8] hover:bg-[#F2ECE1] text-[#9A6817] border border-[#C9972B]/30 rounded-xl text-xs font-bold transition shadow-2xs cursor-pointer"
+              title="طباعة ملصق العلبة الملكي (QR)"
+            >
+              <Printer className="w-3.5 h-3.5" />
+              <span>طباعة ملصق العلبة</span>
+            </button>
+
+            <button
+              onClick={handleCopyLink}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-[#FAF4E8] text-[#26221C] border border-[#DDD3C1] rounded-xl text-xs font-semibold transition cursor-pointer"
+              title="نسخ رابط التحقق غير القابل للتخمين"
+            >
+              {copiedLink ? (
+                <>
+                  <Check className="w-3.5 h-3.5 text-emerald-600" />
+                  <span className="text-emerald-700 font-bold">تم النسخ</span>
+                </>
+              ) : (
+                <>
+                  <Copy className="w-3.5 h-3.5 text-[#746A5D]" />
+                  <span>مشاركة الوثيقة</span>
+                </>
+              )}
+            </button>
+          </div>
         </div>
 
-        {/* 2. Primary Product Showcase Grid (Image + Purchasing Box) */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
-          
-          {/* Right Column: Visual Showcase (6 cols) */}
-          <div className="lg:col-span-6 space-y-4">
-            <div className="relative aspect-square rounded-3xl overflow-hidden bg-white border border-[#EBE3D5] shadow-lg group">
-              <img
-                src={product.image_url || '/branding/hero-amber.jpg'}
-                alt={product.name_ar}
-                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-              />
+        {/* 2. Official Certificate Badge */}
+        <div className="bg-gradient-to-r from-[#1C1814] via-[#2A241E] to-[#1C1814] text-white p-4 sm:p-5 rounded-3xl border border-[#C9972B]/40 shadow-xl flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-right">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 rounded-2xl bg-[#C9972B]/20 border border-[#C9972B]/50 flex items-center justify-center shrink-0">
+              <Award className="w-6 h-6 text-[#E5B84B]" />
+            </div>
+            <div>
+              <div className="flex items-center justify-center sm:justify-start gap-1.5 text-[#F4E3BA] font-bold text-sm">
+                <Sparkles className="w-3.5 h-3.5 text-[#C9972B]" />
+                <span>هيبة السلطان - وثيقة أصالة ومواصفات رسمية</span>
+              </div>
+              <p className="text-xs text-[#C8BCAB] mt-0.5">
+                قطعة مقتناة أصلية موثقة برمز تعريفي فريد غير قابل للتكرار أو التخمين
+              </p>
+            </div>
+          </div>
 
-              {/* Top Badges */}
-              <div className="absolute top-4 right-4 flex flex-col gap-2 z-10">
-                <span className="bg-[#26221C]/90 backdrop-blur-md text-[#E2B84B] border border-[#C9972B]/60 px-3.5 py-1.5 rounded-full text-xs font-black shadow-md flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5 text-[#E2B84B]" />
-                  <span>قطعة فريدة حصرية</span>
-                </span>
-                {product.verification_status === 'CERTIFIED' && (
-                  <span className="bg-emerald-600/95 backdrop-blur text-white px-3 py-1 rounded-full text-xs font-bold shadow-md flex items-center gap-1">
-                    <BadgeCheck className="w-3.5 h-3.5" />
-                    <span>مفحوصة ومعتمدة رسمياً</span>
-                  </span>
-                )}
+          <div className="flex items-center gap-2 bg-white/10 px-3.5 py-1.5 rounded-full border border-[#C9972B]/30 text-xs font-mono text-[#F4E3BA]">
+            <ShieldCheck className="w-4 h-4 text-emerald-400" />
+            <span>AUTHENTIC GUARANTEED</span>
+          </div>
+        </div>
+
+        {/* 3. Product Presentation Card */}
+        <div className="bg-white rounded-3xl border border-[#EBE3D5] p-5 sm:p-8 shadow-xs space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+            
+            {/* Image Showcase */}
+            <div className="relative aspect-square rounded-2xl overflow-hidden bg-[#F5EFE6] border-2 border-[#E5DAC8] group shadow-inner flex items-center justify-center">
+              {product.primary_image ? (
+                <img
+                  src={product.primary_image}
+                  alt={product.name_ar}
+                  className="w-full h-full object-cover transition duration-700 group-hover:scale-105"
+                />
+              ) : (
+                <div className="flex flex-col items-center justify-center text-[#9E9485] gap-2 p-6 text-center">
+                  <Gem className="w-16 h-16 text-[#C9972B]/40" />
+                  <span className="text-xs font-serif font-bold text-[#746A5D]">صورة التحفة التوثيقية</span>
+                </div>
+              )}
+
+              {/* Status Pill */}
+              <div className="absolute top-3 right-3 bg-white/95 backdrop-blur-xs px-3 py-1 rounded-full text-xs font-bold text-[#9A6817] border border-[#E0D7C6] shadow-xs flex items-center gap-1.5">
+                <BadgeCheck className="w-4 h-4 text-[#C9972B]" />
+                <span>قطعة معتمدة</span>
               </div>
 
-              {/* SKU & Reference Pill */}
-              <div className="absolute bottom-4 left-4 bg-white/95 backdrop-blur-md px-3 py-1 rounded-xl text-xs font-mono font-bold text-[#746A5D] border border-[#E4D5B8] shadow-xs">
+              {/* Serial Watermark */}
+              <div className="absolute bottom-3 left-3 bg-[#1C1814]/80 backdrop-blur-xs text-white/90 px-3 py-1 rounded-lg text-[11px] font-mono border border-white/10">
                 {product.sku}
               </div>
             </div>
 
-            {/* Quality Guarantees Strip */}
-            <div className="grid grid-cols-3 gap-3 p-4 bg-white rounded-2xl border border-[#EBE3D5] text-center shadow-xs">
-              <div className="space-y-1">
-                <Truck className="w-4 h-4 text-[#C9972B] mx-auto" />
-                <p className="text-[11px] font-bold text-[#26221C]">شحن سريع ومؤمن</p>
-                <p className="text-[9px] text-[#746A5D]">للإمارات ودول الخليج</p>
+            {/* Product Identity & Valuation */}
+            <div className="space-y-4">
+              <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#FAF4E8] rounded-full border border-[#E8DCBE] text-xs font-mono font-bold text-[#9A6817]">
+                <span>رقم الصنف: {product.sku}</span>
+                <span>•</span>
+                <span className="text-[#645A4C]">{product.product_reference}</span>
               </div>
-              <div className="space-y-1 border-r border-l border-[#F0E6D6]">
-                <Gift className="w-4 h-4 text-[#C9972B] mx-auto" />
-                <p className="text-[11px] font-bold text-[#26221C]">تغليف هدايا ملكي</p>
-                <p className="text-[9px] text-[#746A5D]">علبة مخملية فاخرة</p>
-              </div>
-              <div className="space-y-1">
-                <ShieldCheck className="w-4 h-4 text-[#C9972B] mx-auto" />
-                <p className="text-[11px] font-bold text-[#26221C]">ضمان الأصالة 100%</p>
-                <p className="text-[9px] text-[#746A5D]">شهادة فحص مخبرية</p>
-              </div>
-            </div>
-          </div>
 
-          {/* Left Column: Product Info, Price & Actions (6 cols) */}
-          <div className="lg:col-span-6 bg-white border border-[#EBE3D5] rounded-3xl p-6 sm:p-8 shadow-sm space-y-6">
-            
-            {/* Meta Tags */}
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="px-3 py-1 rounded-full text-xs font-bold bg-[#FAF4E8] text-[#9A6817] border border-[#E4D5B8]">
-                {product.category_name_ar || 'مسابيح فاخرة'}
-              </span>
-              <span className="px-3 py-1 rounded-full text-xs font-bold bg-[#FAF7F2] text-[#746A5D] border border-[#DDD3C1]">
-                {product.origin || 'أصيل المنشأ'}
-              </span>
-              <div className="mr-auto flex items-center gap-1.5 text-xs text-[#746A5D]">
-                <span className="font-mono text-xs">{product.sku}</span>
-                <button
-                  onClick={handleCopySku}
-                  className="p-1 hover:text-[#C9972B] transition"
-                  title="نسخ كود المسبحة"
-                >
-                  {copiedSku ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
-                </button>
-              </div>
-            </div>
-
-            {/* Title */}
-            <div>
-              <h1 className="text-xl sm:text-2xl md:text-3xl font-black text-[#26221C] leading-tight">
+              <h1 className="text-xl sm:text-2xl font-black text-[#26221C] leading-snug">
                 {product.name_ar}
               </h1>
-              <p className="text-xs text-[#8C8275] font-mono mt-1 dir-ltr text-right">
-                Ref: {product.product_reference}
-              </p>
-            </div>
 
-            {/* Price Box */}
-            <div className="p-5 bg-gradient-to-r from-[#FAF4E8] via-[#FFFDF8] to-[#F5ECE0] rounded-2xl border border-[#E4D5B8] flex items-baseline justify-between">
-              <div>
-                <span className="block text-xs font-semibold text-[#8C8275]">قيمة الاقتناء المعتمدة</span>
-                <div className="flex items-baseline gap-2 mt-1">
-                  <span className="text-3xl sm:text-4xl font-black text-[#9A6817]">
+              {product.name_en && (
+                <p className="text-xs text-[#8C8275] font-serif tracking-wide">
+                  {product.name_en}
+                </p>
+              )}
+
+              {/* Official Valuation */}
+              <div className="bg-[#FAF7F2] p-4 rounded-2xl border border-[#EEE4D4] flex items-baseline justify-between">
+                <div>
+                  <span className="text-xs text-[#746A5D] block">القيمة التقديرية المعتمدة:</span>
+                  <span className="text-2xl sm:text-3xl font-black text-[#9A6817]">
                     {product.selling_price.toLocaleString()}
                   </span>
-                  <span className="text-sm font-black text-[#4B4338]">درهم إماراتي (AED)</span>
+                  <span className="text-xs text-[#746A5D] font-bold mr-1.5">درهم إماراتي (AED)</span>
+                </div>
+                <div className="text-left text-[11px] text-[#8C8275] font-mono">
+                  <span className="block">حالة الصنف:</span>
+                  <span className="font-bold text-emerald-700">مقتنى أصلي</span>
                 </div>
               </div>
-              <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1 rounded-full">
-                متوفرة للتسليم الفوري
-              </span>
-            </div>
 
-            {/* Core Action Buttons */}
-            <div className="space-y-3 pt-2">
-              {/* 1. Primary Checkout / Add to Cart */}
-              <button
-                onClick={() => onOpenCheckout(product)}
-                className="w-full py-4 bg-[#C9972B] hover:bg-[#B8851E] text-white text-sm sm:text-base font-black rounded-2xl transition-all shadow-[0_6px_20px_rgba(201,151,43,0.35)] hover:shadow-xl flex items-center justify-center gap-2.5 cursor-pointer transform hover:-translate-y-0.5 active:translate-y-0"
-              >
-                <ShoppingCart className="w-5 h-5" />
-                <span>اقتناء فوري أونلاين (إتمام الطلب)</span>
-              </button>
-
-              {/* 2. Secondary: 15-min Lock + WhatsApp Inquiry */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <button
-                  onClick={() => onReserve(product)}
-                  className="py-3 bg-[#FAF4E8] hover:bg-[#F3E7CE] text-[#9A6817] border border-[#E4D5B8] text-xs font-bold rounded-xl transition flex items-center justify-center gap-2 cursor-pointer"
-                  title="حجز مؤقت يمنع أي شخص أو معرض آخر من شرائها لمدة 15 دقيقة"
-                >
-                  <Clock className="w-4 h-4" />
-                  <span>حجز حصري 15 دقيقة</span>
-                </button>
-
-                <button
-                  onClick={handleWhatsAppOrder}
-                  className="py-3 bg-[#25D366] hover:bg-[#1EBE5D] text-white text-xs font-bold rounded-xl transition flex items-center justify-center gap-2 shadow-xs cursor-pointer"
-                >
-                  <MessageCircle className="w-4 h-4" />
-                  <span>طلب واستشارة عبر واتساب</span>
-                </button>
+              {/* Quick Specs Highlights */}
+              <div className="grid grid-cols-3 gap-2.5 text-center text-xs">
+                <div className="p-3 bg-white rounded-xl border border-[#EADBCE]">
+                  <span className="block text-[11px] text-[#8C8275] mb-0.5">عدد الخرز</span>
+                  <span className="font-black text-[#26221C] text-sm">{product.bead_count} حبة</span>
+                </div>
+                <div className="p-3 bg-white rounded-xl border border-[#EADBCE]">
+                  <span className="block text-[11px] text-[#8C8275] mb-0.5">مقاس الخرزة</span>
+                  <span className="font-black text-[#26221C] text-sm">{product.bead_size_mm} mm</span>
+                </div>
+                <div className="p-3 bg-white rounded-xl border border-[#EADBCE]">
+                  <span className="block text-[11px] text-[#8C8275] mb-0.5">الوزن الصافي</span>
+                  <span className="font-black text-[#26221C] text-sm">{product.weight_g} g</span>
+                </div>
               </div>
-            </div>
 
-            {/* Exclusivity Trust Note */}
-            <div className="pt-2 border-t border-[#F5EFE6] flex items-center gap-2 text-xs text-[#746A5D]">
-              <CheckCircle2 className="w-4 h-4 text-[#C9972B] shrink-0" />
-              <span>
-                محصنة ضد البيع المزدوج: بمجرد تأكيدك للاقتناء يتم إغلاق المعروض فوراً من النظام المركزي.
-              </span>
+              <p className="text-xs text-[#746A5D] leading-relaxed pt-1">
+                تأتي هذه التحفة محفوظة في علبة فاخرة ومبطنة بمخمل ملكي، مع ملصق التحقق المشفر وبطاقة الضمان الذهبي من هيبة السلطان.
+              </p>
             </div>
-
           </div>
         </div>
 
-        {/* 3. Section: قصة الصنف (Product Heritage Story) */}
-        <section className="bg-white border border-[#EBE3D5] rounded-3xl p-6 sm:p-10 shadow-xs space-y-6">
-          <div className="flex items-center gap-3 pb-4 border-b border-[#EBE3D5]">
-            <div className="w-10 h-10 rounded-2xl bg-[#26221C] text-[#E2B84B] flex items-center justify-center shadow-md">
-              <Sparkles className="w-5 h-5" />
+        {/* 4. Heritage Story Section (قصة الصنف) */}
+        <div className="bg-white rounded-3xl border border-[#EBE3D5] p-6 sm:p-8 shadow-xs space-y-4">
+          <div className="flex items-center gap-3 pb-3 border-b border-[#F2ECE1]">
+            <div className="w-10 h-10 rounded-xl bg-[#FAF4E8] border border-[#EADBCE] flex items-center justify-center">
+              <Sparkles className="w-5 h-5 text-[#C9972B]" />
             </div>
             <div>
-              <h2 className="text-lg sm:text-xl font-black text-[#26221C]">
-                قصة التحفة وأصالة الصنعة
-              </h2>
-              <p className="text-xs text-[#746A5D]">
-                تاريخ الخامة، عراقة المنشأ، والحرفية التي صاغت هذا المقتنى الفريد
-              </p>
+              <h2 className="text-lg font-black text-[#26221C]">عراقة وقصة الصنف</h2>
+              <p className="text-xs text-[#8C8275]">التاريخ الحرفي والمصدر الطبيعي للخامة</p>
             </div>
           </div>
 
-          <div className="prose max-w-none text-[#3D352E] text-sm sm:text-base leading-relaxed space-y-4">
-            <p className="font-normal text-justify leading-loose">
+          <div className="text-sm sm:text-base leading-relaxed text-[#4B4338] bg-[#FAF7F2] p-5 sm:p-6 rounded-2xl border border-[#EEE4D4] font-serif space-y-3">
+            <p className="first-letter:text-2xl first-letter:font-black first-letter:text-[#9A6817]">
               {product.description_ar || fallbackStory}
             </p>
           </div>
+        </div>
 
-          <div className="bg-[#FAF7F2] border-r-4 border-[#C9972B] p-4 rounded-xl text-xs sm:text-sm text-[#4B4338] italic">
-            "كل مسبحة في دار هيبة السلطان ليست مجرد خرز، بل هي رحلة عبر الزمن ومقتنى تتوارثه الأجيال، يعكس هيبة حامله وذائقته الملكية."
-          </div>
-        </section>
-
-        {/* 4. Section: جدول مواصفات الصنف الفنية (Technical Specifications Table) */}
-        <section className="bg-white border border-[#EBE3D5] rounded-3xl p-6 sm:p-10 shadow-xs space-y-6">
-          <div className="flex items-center gap-3 pb-4 border-b border-[#EBE3D5]">
-            <div className="w-10 h-10 rounded-2xl bg-[#26221C] text-[#E2B84B] flex items-center justify-center shadow-md">
-              <FileText className="w-5 h-5" />
+        {/* 5. Technical Specifications Table (جدول مواصفات الصنف الفنية) */}
+        <div className="bg-white rounded-3xl border border-[#EBE3D5] p-6 sm:p-8 shadow-xs space-y-4">
+          <div className="flex items-center gap-3 pb-3 border-b border-[#F2ECE1]">
+            <div className="w-10 h-10 rounded-xl bg-[#FAF4E8] border border-[#EADBCE] flex items-center justify-center">
+              <FileText className="w-5 h-5 text-[#9A6817]" />
             </div>
             <div>
-              <h2 className="text-lg sm:text-xl font-black text-[#26221C]">
-                جدول المواصفات الفنية المعتمدة
-              </h2>
-              <p className="text-xs text-[#746A5D]">
-                القياسات الهندسية والأوزان الدقيقة المفحوصة مخبرياً
-              </p>
+              <h2 className="text-lg font-black text-[#26221C]">جدول المواصفات الفنية المعتمدة</h2>
+              <p className="text-xs text-[#8C8275]">المعايير المادية الدقيقة المفحوصة مخبرياً</p>
             </div>
           </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full text-right border-collapse text-xs sm:text-sm">
-              <tbody className="divide-y divide-[#EBE3D5]">
-                <tr className="hover:bg-[#FAF7F2] transition">
-                  <td className="py-3.5 px-4 font-bold text-[#8C8275] bg-[#FAF7F2]/60 w-1/3 sm:w-1/4">
-                    الخامة والنوع
-                  </td>
-                  <td className="py-3.5 px-4 font-extrabold text-[#26221C]">
-                    {product.name_ar}
-                  </td>
+          <div className="overflow-hidden rounded-2xl border border-[#E8DEC9]">
+            <table className="w-full text-right text-xs sm:text-sm">
+              <tbody className="divide-y divide-[#EFE7D8]">
+                <tr className="bg-[#FAF7F2]">
+                  <td className="py-3 px-4 sm:px-6 font-bold text-[#746A5D] w-1/3">الخامة / المادة</td>
+                  <td className="py-3 px-4 sm:px-6 font-black text-[#26221C]">{product.material_name_ar || 'خامة طبيعية نادرة'}</td>
                 </tr>
-
-                <tr className="hover:bg-[#FAF7F2] transition">
-                  <td className="py-3.5 px-4 font-bold text-[#8C8275] bg-[#FAF7F2]/60">
-                    عدد الخرز (Bead Count)
-                  </td>
-                  <td className="py-3.5 px-4 font-mono font-bold text-[#26221C]">
-                    {product.bead_count} خرزة
-                  </td>
+                <tr className="bg-white">
+                  <td className="py-3 px-4 sm:px-6 font-bold text-[#746A5D]">عدد الخرز (Bead Count)</td>
+                  <td className="py-3 px-4 sm:px-6 font-bold text-[#26221C] font-mono">{product.bead_count} حبة</td>
                 </tr>
-
-                <tr className="hover:bg-[#FAF7F2] transition">
-                  <td className="py-3.5 px-4 font-bold text-[#8C8275] bg-[#FAF7F2]/60">
-                    قياس الخرز (Size)
-                  </td>
-                  <td className="py-3.5 px-4 font-mono font-bold text-[#26221C]">
-                    {product.bead_size_mm} ملم (mm)
-                  </td>
+                <tr className="bg-[#FAF7F2]">
+                  <td className="py-3 px-4 sm:px-6 font-bold text-[#746A5D]">قياس قطر الخرزة (Size mm)</td>
+                  <td className="py-3 px-4 sm:px-6 font-bold text-[#26221C] font-mono">{product.bead_size_mm} مليمتر</td>
                 </tr>
-
-                <tr className="hover:bg-[#FAF7F2] transition">
-                  <td className="py-3.5 px-4 font-bold text-[#8C8275] bg-[#FAF7F2]/60">
-                    الوزن الصافي (Weight)
-                  </td>
-                  <td className="py-3.5 px-4 font-mono font-bold text-[#26221C]">
-                    {product.weight_g} جرام (g)
-                  </td>
+                <tr className="bg-white">
+                  <td className="py-3 px-4 sm:px-6 font-bold text-[#746A5D]">الوزن الصافي الإجمالي (Weight)</td>
+                  <td className="py-3 px-4 sm:px-6 font-bold text-[#26221C] font-mono">{product.weight_g} جرام</td>
                 </tr>
-
-                <tr className="hover:bg-[#FAF7F2] transition">
-                  <td className="py-3.5 px-4 font-bold text-[#8C8275] bg-[#FAF7F2]/60">
-                    شكل القصة (Shape / Cut)
-                  </td>
-                  <td className="py-3.5 px-4 font-bold text-[#26221C]">
-                    {product.shape || 'قصة برميلية كلاسيكية'}
-                  </td>
+                <tr className="bg-[#FAF7F2]">
+                  <td className="py-3 px-4 sm:px-6 font-bold text-[#746A5D]">قصة وشكل الخراطة (Shape)</td>
+                  <td className="py-3 px-4 sm:px-6 font-bold text-[#26221C]">{product.shape || 'برميلي ملكي'}</td>
                 </tr>
-
-                <tr className="hover:bg-[#FAF7F2] transition">
-                  <td className="py-3.5 px-4 font-bold text-[#8C8275] bg-[#FAF7F2]/60">
-                    الكركوشة والشرابة (Tassel)
-                  </td>
-                  <td className="py-3.5 px-4 font-bold text-[#26221C]">
-                    {product.tassel_type || 'فضة إسترليني خالصة عيار 1000'}
-                  </td>
+                <tr className="bg-white">
+                  <td className="py-3 px-4 sm:px-6 font-bold text-[#746A5D]">الكركوشة والشاهد (Tassel)</td>
+                  <td className="py-3 px-4 sm:px-6 font-bold text-[#26221C]">{product.tassel_type || 'فضة كازازية عيار 1000'}</td>
                 </tr>
-
-                <tr className="hover:bg-[#FAF7F2] transition">
-                  <td className="py-3.5 px-4 font-bold text-[#8C8275] bg-[#FAF7F2]/60">
-                    بلد المنشأ والاستخراج (Origin)
-                  </td>
-                  <td className="py-3.5 px-4 font-bold text-[#26221C]">
-                    {product.origin || 'طبيعي معتمد'}
-                  </td>
+                <tr className="bg-[#FAF7F2]">
+                  <td className="py-3 px-4 sm:px-6 font-bold text-[#746A5D]">بلد المنشأ (Origin)</td>
+                  <td className="py-3 px-4 sm:px-6 font-bold text-[#26221C]">{product.origin || 'أوروبا / البلطيق'}</td>
                 </tr>
-
-                <tr className="hover:bg-[#FAF7F2] transition">
-                  <td className="py-3.5 px-4 font-bold text-[#8C8275] bg-[#FAF7F2]/60">
-                    اللون والتعتيق (Color / Patina)
-                  </td>
-                  <td className="py-3.5 px-4 font-bold text-[#26221C]">
-                    {product.color || 'تعتيق طبيعي أصلي'}
-                  </td>
+                <tr className="bg-white">
+                  <td className="py-3 px-4 sm:px-6 font-bold text-[#746A5D]">اللون ودرجة التعريق (Patina)</td>
+                  <td className="py-3 px-4 sm:px-6 font-bold text-[#26221C]">{product.color || 'أصفر ملكي معرق طبيعي'}</td>
                 </tr>
-
-                <tr className="hover:bg-[#FAF7F2] transition">
-                  <td className="py-3.5 px-4 font-bold text-[#8C8275] bg-[#FAF7F2]/60">
-                    حالة الفحص والشهادة المخبرية
-                  </td>
-                  <td className="py-3.5 px-4 font-bold text-emerald-800 flex items-center gap-1.5">
-                    <BadgeCheck className="w-4 h-4 text-emerald-600" />
-                    <span>
-                      {product.verification_status === 'CERTIFIED'
-                        ? `معتمدة بشهادة فحص رقم (${product.certificate_number || 'HA-CERT-9042'})`
-                        : 'أصلية مفحوصة ومضمونة مخبرياً'}
-                    </span>
-                  </td>
-                </tr>
-
-                <tr className="hover:bg-[#FAF7F2] transition">
-                  <td className="py-3.5 px-4 font-bold text-[#8C8275] bg-[#FAF7F2]/60">
-                    رمز القطعة (Reference / SKU)
-                  </td>
-                  <td className="py-3.5 px-4 font-mono font-bold text-[#9A6817]">
-                    {product.sku} ({product.product_reference})
+                <tr className="bg-[#FAF7F2]">
+                  <td className="py-3 px-4 sm:px-6 font-bold text-[#746A5D]">شهادة الفحص المخبري</td>
+                  <td className="py-3 px-4 sm:px-6 font-bold text-emerald-800 flex items-center gap-1.5">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <span>مفحوصة ومطابقة لأعلى معايير الأصالة الدولية</span>
                   </td>
                 </tr>
               </tbody>
             </table>
           </div>
-        </section>
+        </div>
 
-        {/* 5. Section: مقترحات قريبة من نفس الصنف (Related Recommendations) */}
-        {relatedProducts.length > 0 && (
-          <section className="space-y-6 pt-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-xl sm:text-2xl font-black text-[#26221C] flex items-center gap-2">
-                  <Gem className="w-6 h-6 text-[#C9972B]" />
-                  <span>مقترحات قريبة ونوادر مشابهة</span>
-                </h2>
-                <p className="text-xs sm:text-sm text-[#746A5D] mt-1">
-                  قطع مختارة من نفس الفئة وعراقة الخامة قد تنال إعجابكم
-                </p>
-              </div>
+        {/* 6. Sole Primary Action: Explore Storefront / Other Products */}
+        <div className="bg-gradient-to-b from-[#FAF4E8] to-[#F2ECE1] p-6 sm:p-8 rounded-3xl border-2 border-[#C9972B]/40 text-center space-y-4 shadow-sm">
+          <div className="max-w-md mx-auto space-y-2">
+            <h3 className="text-lg font-black text-[#26221C]">
+              هل تود اكتشاف المزيد من نوادر هيبة السلطان؟
+            </h3>
+            <p className="text-xs text-[#746A5D] leading-relaxed">
+              استكشف مجموعتنا الحصرية من مسابيح الكهرمان البلطيقي الملكي، الفاتوران النادر، والبكلايت الفاخر.
+            </p>
+          </div>
 
-              <button
-                onClick={onBackToStore}
-                className="text-xs font-bold text-[#9A6817] hover:underline flex items-center gap-1 cursor-pointer"
-              >
-                <span>مشاهدة الكل</span>
-                <ChevronLeft className="w-4 h-4" />
-              </button>
-            </div>
+          <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
+            {/* The main requested button */}
+            <button
+              onClick={onBackToStore}
+              className="w-full sm:w-auto px-8 py-4 bg-gradient-to-r from-[#C9972B] via-[#B8851E] to-[#9A6817] hover:from-[#DFB048] hover:to-[#B47B1F] text-white font-black text-sm rounded-2xl shadow-lg hover:shadow-xl transition flex items-center justify-center gap-2.5 cursor-pointer transform hover:-translate-y-0.5"
+            >
+              <Sparkles className="w-4 h-4" />
+              <span>شاهد منتجات أخرى وتصفح المتجر</span>
+              <ChevronLeft className="w-4 h-4" />
+            </button>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {relatedProducts.map((rel) => (
-                <div
-                  key={rel.id}
-                  className="bg-white border border-[#EBE3D5] rounded-3xl overflow-hidden flex flex-col justify-between hover:shadow-xl hover:border-[#C9972B] transition-all group"
-                >
-                  <div>
-                    {/* Thumbnail */}
-                    <div
-                      onClick={() => onSelectProduct(rel)}
-                      className="relative aspect-square overflow-hidden bg-[#FBF8F2] cursor-pointer"
-                    >
-                      <img
-                        src={rel.image_url || '/branding/hero-amber.jpg'}
-                        alt={rel.name_ar}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                      />
-                      <div className="absolute top-3 right-3 bg-white/95 backdrop-blur px-2.5 py-1 rounded-full text-[10px] font-bold text-[#9A6817] border border-[#E8DEC8]">
-                        {rel.sku}
-                      </div>
-                    </div>
+            {/* Subtle WhatsApp consultation */}
+            <button
+              onClick={handleWhatsAppContact}
+              className="w-full sm:w-auto px-6 py-4 bg-white hover:bg-[#FAF7F2] text-[#26221C] border border-[#DDD3C1] hover:border-[#C9972B] font-bold text-xs rounded-2xl transition flex items-center justify-center gap-2 cursor-pointer"
+            >
+              <MessageCircle className="w-4 h-4 text-emerald-600" />
+              <span>استفسار حول هذه القطعة عبر واتساب</span>
+            </button>
+          </div>
+        </div>
 
-                    {/* Info */}
-                    <div className="p-5 space-y-2">
-                      <h3
-                        onClick={() => onSelectProduct(rel)}
-                        className="font-black text-sm text-[#26221C] group-hover:text-[#9A6817] transition cursor-pointer line-clamp-1"
-                      >
-                        {rel.name_ar}
-                      </h3>
-
-                      <div className="flex items-center gap-2 text-[11px] text-[#746A5D]">
-                        <span>{rel.bead_count} خرزة</span>
-                        <span>•</span>
-                        <span>{rel.bead_size_mm}mm</span>
-                        <span>•</span>
-                        <span>{rel.weight_g}g</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Actions & Price */}
-                  <div className="p-5 pt-0 border-t border-[#F5EFE6] mt-2">
-                    <div className="flex items-baseline justify-between py-2">
-                      <span className="text-[11px] text-[#746A5D]">القيمة:</span>
-                      <span className="text-base font-black text-[#9A6817]">
-                        {rel.selling_price.toLocaleString()} <span className="text-[10px] text-[#746A5D]">AED</span>
-                      </span>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-2 pt-1">
-                      <button
-                        onClick={() => onSelectProduct(rel)}
-                        className="py-2 bg-[#FAF4E8] hover:bg-[#F3E7CE] text-[#9A6817] border border-[#E4D5B8] text-xs font-bold rounded-xl transition flex items-center justify-center gap-1 cursor-pointer"
-                      >
-                        <span>عرض التفاصيل</span>
-                      </button>
-
-                      <button
-                        onClick={() => onOpenCheckout(rel)}
-                        className="py-2 bg-[#C9972B] hover:bg-[#B8851E] text-white text-xs font-bold rounded-xl transition flex items-center justify-center gap-1 shadow-xs cursor-pointer"
-                      >
-                        <ShoppingCart className="w-3.5 h-3.5" />
-                        <span>اقتناء</span>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
+        {/* 7. Footer Seal */}
+        <div className="text-center text-[11px] text-[#9E9485] space-y-1 pb-4">
+          <p>© جميع الحقوق محفوظة لدار هيبة السلطان للمقتنيات والمسابيح الفاخرة</p>
+          <p className="font-mono text-[10px] text-[#B0A696]">
+            Secure Verification Identifier: {product.public_id || product.id}
+          </p>
+        </div>
 
       </div>
     </div>
