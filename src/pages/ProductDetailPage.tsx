@@ -14,7 +14,9 @@ import {
   Printer,
   ChevronLeft,
   ExternalLink,
-  MessageCircle
+  MessageCircle,
+  Gift,
+  Truck
 } from 'lucide-react';
 import { Product } from '../types';
 import { BoxQRLabelModal } from '../components/BoxQRLabelModal';
@@ -332,6 +334,26 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
               <MessageCircle className="w-4 h-4 text-emerald-600" />
               <span>استفسار حول هذه القطعة عبر واتساب</span>
             </button>
+          </div>
+        </div>
+
+        {/* Royal Trust & Benefits Announcement Bar in Footer */}
+        <div className="bg-gradient-to-r from-[#F7EFE3] via-[#FBF8F2] to-[#F6EEE2] border border-[#EEE4D4] rounded-2xl py-3 px-4 text-xs text-[#2B241B]">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-right">
+            <div className="flex items-center gap-2 font-medium">
+              <Gift className="w-4 h-4 text-[#C9972B]" />
+              <span>تغليف فاخر للهدايا ومستندات الفحص الرسمية</span>
+            </div>
+
+            <div className="flex items-center gap-1.5 font-bold text-[#9A6817]">
+              <Sparkles className="w-3.5 h-3.5 text-[#C9972B]" />
+              <span>✦ هيبة السلطان — أصالة المقتنيات الملكية</span>
+            </div>
+
+            <div className="flex items-center gap-2 font-medium">
+              <Truck className="w-4 h-4 text-[#C9972B]" />
+              <span>شحن مؤمن لجميع دول الخليج والعالم</span>
+            </div>
           </div>
         </div>
 

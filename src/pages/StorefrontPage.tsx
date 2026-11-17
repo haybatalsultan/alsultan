@@ -611,8 +611,28 @@ export const StorefrontPage: React.FC<StorefrontPageProps> = ({
       </section>
 
       {/* 4. Luxury Footer */}
-      <footer className="mt-12 bg-white border-t border-[#EBE3D5] py-8 text-center text-xs text-[#746A5D]">
-        <div className="max-w-7xl mx-auto px-4 space-y-3">
+      <footer className="mt-12 bg-white border-t border-[#EBE3D5] text-center text-xs text-[#746A5D]">
+        {/* Royal Trust & Benefits Announcement Bar */}
+        <div className="bg-gradient-to-r from-[#F7EFE3] via-[#FBF8F2] to-[#F6EEE2] border-b border-[#EEE4D4] py-3 px-4 text-xs text-[#2B241B]">
+          <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div className="flex items-center gap-2 font-medium">
+              <Gift className="w-4 h-4 text-[#C9972B]" />
+              <span>تغليف فاخر للهدايا ومستندات الفحص الرسمية</span>
+            </div>
+
+            <div className="flex items-center gap-1.5 font-bold text-[#9A6817]">
+              <Sparkles className="w-3.5 h-3.5 text-[#C9972B]" />
+              <span>✦ هيبة السلطان — أصالة المقتنيات الملكية</span>
+            </div>
+
+            <div className="flex items-center gap-2 font-medium">
+              <Truck className="w-4 h-4 text-[#C9972B]" />
+              <span>شحن مؤمن لجميع دول الخليج والعالم</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="max-w-7xl mx-auto px-4 py-8 space-y-3">
           <div className="flex items-center justify-center gap-2 text-[#9A6817] font-black text-sm">
             <span>هيبة السلطان للمسابيح الفاخرة</span>
             <span>•</span>

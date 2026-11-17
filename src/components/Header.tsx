@@ -76,27 +76,7 @@ export const Header: React.FC<HeaderProps> = ({
 
   return (
     <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-[#EBE3D5] shadow-[0_2px_15px_rgba(70,45,15,0.04)] selection:bg-[#C9972B]/20">
-      {/* 1. Top Announcement Bar */}
-      <div className="bg-gradient-to-r from-[#F7EFE3] via-[#FBF8F2] to-[#F6EEE2] border-b border-[#EEE4D4] py-1.5 px-4 text-xs text-[#2B241B]">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-1.5 font-medium">
-            <Gift className="w-3.5 h-3.5 text-[#C9972B]" />
-            <span>تغليف فاخر للهدايا ومستندات الفحص الرسمية</span>
-          </div>
-
-          <div className="flex items-center gap-1 font-bold text-[#9A6817]">
-            <Sparkles className="w-3 h-3 text-[#C9972B]" />
-            <span>✦ هيبة السلطان — أصالة المقتنيات الملكية</span>
-          </div>
-
-          <div className="flex items-center gap-1.5 font-medium">
-            <Truck className="w-3.5 h-3.5 text-[#C9972B]" />
-            <span>شحن مؤمن لجميع دول الخليج والعالم</span>
-          </div>
-        </div>
-      </div>
-
-      {/* 2. Top Language & Currency Bar */}
+      {/* Top Language & Currency Bar */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-1 flex items-center justify-between text-[11px] text-[#746A5D] border-b border-[#F5EFE6]">
         <div className="flex items-center gap-3">
           <span className="flex items-center gap-1 font-semibold text-[#4B4338]">
