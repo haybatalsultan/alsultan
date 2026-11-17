@@ -638,8 +638,19 @@ export const StorefrontPage: React.FC<StorefrontPageProps> = ({
             <span>•</span>
             <span className="text-[11px] font-mono tracking-wider">HAYBAT ALSULTAN</span>
           </div>
-          <p className="text-[#8C8275]">
-            أبوظبي، الإمارات العربية المتحدة | خدمة العملاء: +971 50 408 4006
+          <p className="text-[#8C8275] flex items-center justify-center gap-2 flex-wrap">
+            <span>أبوظبي، الإمارات العربية المتحدة</span>
+            <span className="text-[#D0C5B4]">|</span>
+            <span>خدمة العملاء:</span>
+            <a
+              href="https://wa.me/971504084006"
+              target="_blank"
+              rel="noopener noreferrer"
+              dir="ltr"
+              className="font-mono font-bold text-[#9A6817] hover:underline inline-block direction-ltr"
+            >
+              +971 50 408 4006
+            </a>
           </p>
 
           <div className="pt-3 border-t border-[#F2ECE1] text-[11px] text-[#A89E90]">

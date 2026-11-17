@@ -52,7 +52,9 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({ order, onClose }) =>
               <div>
                 <h1 className="text-2xl font-black text-[#9A6817] tracking-wide">هيبة السلطان</h1>
                 <p className="text-xs text-[#746A5D] mt-1 font-medium">دار المسابيح الفاخرة والقطع الحصرية النادرة</p>
-                <p className="text-[11px] text-[#8C8275] mt-0.5">أبوظبي، الإمارات العربية المتحدة | +971 50 408 4006</p>
+                <p className="text-[11px] text-[#8C8275] mt-0.5">
+                  أبوظبي، الإمارات العربية المتحدة | <span dir="ltr" className="font-mono inline-block font-semibold">+971 50 408 4006</span>
+                </p>
               </div>
             </div>
             <div className="text-left flex flex-col items-end">
