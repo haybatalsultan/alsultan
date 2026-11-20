@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
-import { ShoppingBag, X, Check, Truck, CreditCard, Banknote, ShieldCheck } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { ShoppingBag, X, Check, Truck, CreditCard, Banknote, ShieldCheck, Globe, MapPin } from 'lucide-react';
 import { api } from '../lib/api';
-import { Product } from '../types';
+import { Product, Country } from '../types';
 
 interface CheckoutModalProps {
   product: Product | null;
@@ -9,6 +9,31 @@ interface CheckoutModalProps {
   onClose: () => void;
   onSuccess: (order: any) => void;
 }
+
+const DEFAULT_ARAB_COUNTRIES = [
+  'الإمارات العربية المتحدة',
+  'المملكة العربية السعودية',
+  'دولة الكويت',
+  'دولة قطر',
+  'سلطنة عمان',
+  'مملكة البحرين',
+  'جمهورية مصر العربية',
+  'المملكة الأردنية الهاشمية',
+  'جمهورية العراق',
+  'الجمهورية اللبنانية',
+  'دولة فلسطين',
+  'الجمهورية العربية السورية',
+  'الجمهورية اليمنية',
+  'دولة ليبيا',
+  'الجمهورية التونسية',
+  'الجمهورية الجزائرية',
+  'المملكة المغربية',
+  'جمهورية السودان',
+  'جمهورية الصومال',
+  'الجمهورية الإسلامية الموريتانية',
+  'جمهورية جيبوتي',
+  'جزر القمر'
+];
 
 export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   product,
@@ -19,11 +44,28 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const [customerName, setCustomerName] = useState(customerUser?.full_name || '');
   const [customerPhone, setCustomerPhone] = useState(customerUser?.phone || '');
   const [customerEmail, setCustomerEmail] = useState(customerUser?.email || '');
-  const [city, setCity] = useState('أبوظبي');
-  const [address, setAddress] = useState('');
+  const [country, setCountry] = useState(customerUser?.country || 'الإمارات العربية المتحدة');
+  const [city, setCity] = useState(customerUser?.city || 'أبوظبي');
+  const [address, setAddress] = useState(customerUser?.address || '');
   const [notes, setNotes] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<'CASH_ON_DELIVERY' | 'BANK_TRANSFER'>('CASH_ON_DELIVERY');
+  const [countriesList, setCountriesList] = useState<string[]>(DEFAULT_ARAB_COUNTRIES);
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    // Fetch countries from server (Arab + Custom countries from Settings)
+    api.getCountries().then((data: Country[]) => {
+      if (Array.isArray(data) && data.length > 0) {
+        const countryNames = data.map((c) => c.name_ar);
+        setCountriesList(countryNames);
+        if (!countryNames.includes(country)) {
+          setCountry(countryNames[0]);
+        }
+      }
+    }).catch(() => {
+      // Fallback already pre-set to DEFAULT_ARAB_COUNTRIES
+    });
+  }, []);
 
   if (!product) return null;
 
@@ -34,6 +76,16 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
       return;
     }
 
+    if (!country.trim()) {
+      alert('يرجى تحديد دولة الشحن والتوصيل');
+      return;
+    }
+
+    if (!address.trim()) {
+      alert('يرجى كتابة العنوان بالتفصيل لضمان دقة التوصيل');
+      return;
+    }
+
     setSubmitting(true);
     try {
       const res = await api.checkoutOnline({
@@ -41,8 +93,9 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
         customer_name: customerName.trim(),
         customer_phone: customerPhone.trim(),
         customer_email: customerEmail.trim(),
-        city,
-        address: address.trim() || 'العنوان المسجل',
+        country: country.trim(),
+        city: city.trim() || 'الرئيسية',
+        address: address.trim(),
         notes: notes.trim(),
         payment_method: paymentMethod
       });
@@ -57,8 +110,10 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
     }
   };
 
+  const isUAE = country.includes('الإمارات');
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 backdrop-blur-sm p-4 overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 overflow-y-auto">
       <div className="bg-white border border-[#EBE3D5] rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden my-6 animate-in fade-in zoom-in-95 duration-200">
         {/* Header */}
         <div className="p-5 border-b border-[#F2ECE1] flex items-center justify-between bg-[#FAF7F2]">
@@ -68,7 +123,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
             </div>
             <div>
               <h3 className="font-bold text-sm text-[#26221C]">إتمام طلب الاقتناء الفاخر</h3>
-              <p className="text-xs text-[#746A5D]">توصيل آمن وسريع مع الحفظ الملكي للقطعة</p>
+              <p className="text-xs text-[#746A5D]">توصيل مؤمن وسريع لكافة دول الخليج والعالم العربي</p>
             </div>
           </div>
           <button
@@ -112,7 +167,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-[#4B4338] mb-1">رقم الهاتف *</label>
+              <label className="block text-xs font-semibold text-[#4B4338] mb-1">رقم الهاتف للتوصيل *</label>
               <input
                 type="text"
                 required
@@ -124,33 +179,74 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-semibold text-[#4B4338] mb-1">الإمارة / المدينة *</label>
-              <select
-                value={city}
-                onChange={(e) => setCity(e.target.value)}
-                className="w-full bg-[#FAF7F2] border border-[#D8CCA8] rounded-xl px-3 py-2 text-xs text-[#26221C] focus:outline-none focus:border-[#C9972B]"
-              >
-                <option value="أبوظبي">أبوظبي</option>
-                <option value="دبي">دبي</option>
-                <option value="الشارقة">الشارقة</option>
-                <option value="عجمان">عجمان</option>
-                <option value="رأس الخيمة">رأس الخيمة</option>
-                <option value="الفجيرة">الفجيرة</option>
-                <option value="أم القيوين">أم القيوين</option>
-                <option value="العين">العين</option>
-                <option value="أخرى / شحن دولي">أخرى / شحن دولي</option>
-              </select>
+          {/* Country & Shipping Destination Section */}
+          <div className="p-3.5 rounded-2xl bg-[#FCFAF7] border border-[#EBE3D5] space-y-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {/* Country Selection Dropdown */}
+              <div>
+                <label className="block text-xs font-semibold text-[#4B4338] mb-1 flex items-center gap-1">
+                  <Globe className="w-3.5 h-3.5 text-[#C9972B]" />
+                  <span>دولة الشحن والتوصيل *</span>
+                </label>
+                <select
+                  value={country}
+                  onChange={(e) => setCountry(e.target.value)}
+                  className="w-full bg-white border border-[#D8CCA8] rounded-xl px-3 py-2 text-xs text-[#26221C] font-semibold focus:outline-none focus:border-[#C9972B]"
+                >
+                  {countriesList.map((cName) => (
+                    <option key={cName} value={cName}>
+                      {cName}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* City / Province */}
+              <div>
+                <label className="block text-xs font-semibold text-[#4B4338] mb-1">
+                  {isUAE ? 'الإمارة / المدينة *' : 'المدينة / المحافظة *'}
+                </label>
+                {isUAE ? (
+                  <select
+                    value={city}
+                    onChange={(e) => setCity(e.target.value)}
+                    className="w-full bg-white border border-[#D8CCA8] rounded-xl px-3 py-2 text-xs text-[#26221C] focus:outline-none focus:border-[#C9972B]"
+                  >
+                    <option value="أبوظبي">أبوظبي</option>
+                    <option value="دبي">دبي</option>
+                    <option value="الشارقة">الشارقة</option>
+                    <option value="عجمان">عجمان</option>
+                    <option value="رأس الخيمة">رأس الخيمة</option>
+                    <option value="الفجيرة">الفجيرة</option>
+                    <option value="أم القيوين">أم القيوين</option>
+                    <option value="العين">العين</option>
+                  </select>
+                ) : (
+                  <input
+                    type="text"
+                    required
+                    placeholder="مثال: الرياض، الدوحة، القاهرة..."
+                    value={city}
+                    onChange={(e) => setCity(e.target.value)}
+                    className="w-full bg-white border border-[#D8CCA8] rounded-xl px-3 py-2 text-xs text-[#26221C] focus:outline-none focus:border-[#C9972B]"
+                  />
+                )}
+              </div>
             </div>
+
+            {/* Detailed Street & Address */}
             <div>
-              <label className="block text-xs font-semibold text-[#4B4338] mb-1">العنوان بالتفصيل</label>
+              <label className="block text-xs font-semibold text-[#4B4338] mb-1 flex items-center gap-1">
+                <MapPin className="w-3.5 h-3.5 text-[#C9972B]" />
+                <span>العنوان بالتفصيل (الحي، اسم الشارع، رقم المبنى/الفيلا) *</span>
+              </label>
               <input
                 type="text"
-                placeholder="المنطقة، الشارع، المبنى"
+                required
+                placeholder="مثال: حي الروضة، شارع الفلاح، فيلا 14"
                 value={address}
                 onChange={(e) => setAddress(e.target.value)}
-                className="w-full bg-[#FAF7F2] border border-[#D8CCA8] rounded-xl px-3 py-2 text-xs text-[#26221C] focus:outline-none focus:border-[#C9972B]"
+                className="w-full bg-white border border-[#D8CCA8] rounded-xl px-3 py-2 text-xs text-[#26221C] focus:outline-none focus:border-[#C9972B]"
               />
             </div>
           </div>

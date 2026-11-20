@@ -143,6 +143,24 @@ export const api = {
     return res.data;
   },
 
+  // Countries & Destinations
+  getCountries: async (all?: boolean) => {
+    const res = await axios.get(`${API_BASE}/countries`, { params: { all: all ? 1 : undefined } });
+    return res.data;
+  },
+  createCountry: async (data: { name_ar: string; name_en?: string; code?: string; phone_code?: string; currency?: string; sort_order?: number; actor_name?: string }) => {
+    const res = await axios.post(`${API_BASE}/countries`, data);
+    return res.data;
+  },
+  updateCountry: async (id: number, data: Partial<{ name_ar: string; name_en: string; code: string; phone_code: string; currency: string; sort_order: number; is_active: number }>) => {
+    const res = await axios.put(`${API_BASE}/countries/${id}`, data);
+    return res.data;
+  },
+  deleteCountry: async (id: number) => {
+    const res = await axios.delete(`${API_BASE}/countries/${id}`);
+    return res.data;
+  },
+
   // Quick Sale POS
   quickSale: async (data: any) => {
     const res = await axios.post(`${API_BASE}/quick-sale`, data);

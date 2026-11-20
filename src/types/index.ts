@@ -24,6 +24,18 @@ export interface Material {
   is_active: number;
 }
 
+export interface Country {
+  id: number;
+  name_ar: string;
+  name_en?: string;
+  code?: string;
+  phone_code?: string;
+  currency?: string;
+  sort_order: number;
+  is_active: number;
+  is_system?: number;
+}
+
 export interface Product {
   id: number;
   public_id: string;

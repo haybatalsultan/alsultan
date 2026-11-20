@@ -1,6 +1,31 @@
-import React, { useState } from 'react';
-import { User, Lock, Phone, Mail, X, ArrowLeft, CheckCircle2, AlertCircle } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { User, Lock, Phone, Mail, X, ArrowLeft, CheckCircle2, AlertCircle, Globe, MapPin } from 'lucide-react';
 import { api } from '../lib/api';
+
+const DEFAULT_ARAB_COUNTRIES = [
+  'الإمارات العربية المتحدة',
+  'المملكة العربية السعودية',
+  'دولة الكويت',
+  'دولة قطر',
+  'سلطنة عمان',
+  'مملكة البحرين',
+  'جمهورية مصر العربية',
+  'المملكة الأردنية الهاشمية',
+  'جمهورية العراق',
+  'الجمهورية اللبنانية',
+  'دولة فلسطين',
+  'الجمهورية العربية السورية',
+  'الجمهورية اليمنية',
+  'دولة ليبيا',
+  'الجمهورية التونسية',
+  'الجمهورية الجزائرية',
+  'المملكة المغربية',
+  'جمهورية السودان',
+  'جمهورية الصومال',
+  'الجمهورية الإسلامية الموريتانية',
+  'جمهورية جيبوتي',
+  'جزر القمر'
+];
 
 interface CustomerAuthModalProps {
   isOpen: boolean;
@@ -16,8 +41,21 @@ export const CustomerAuthModal: React.FC<CustomerAuthModalProps> = ({ isOpen, on
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [username, setUsername] = useState('');
+  const [country, setCountry] = useState('الإمارات العربية المتحدة');
+  const [address, setAddress] = useState('');
+  const [countriesList, setCountriesList] = useState<string[]>(DEFAULT_ARAB_COUNTRIES);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+
+  useEffect(() => {
+    if (isOpen) {
+      api.getCountries().then((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          setCountriesList(data.map((c: any) => c.name_ar));
+        }
+      }).catch(() => {});
+    }
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -39,7 +77,9 @@ export const CustomerAuthModal: React.FC<CustomerAuthModalProps> = ({ isOpen, on
           password,
           full_name: fullName.trim(),
           phone: phone.trim(),
-          email: email.trim()
+          email: email.trim(),
+          country: country.trim(),
+          address: address.trim()
         });
         localStorage.setItem('haybat_customer_token', res.token);
         localStorage.setItem('haybat_customer_user', JSON.stringify(res.user));
@@ -168,6 +208,36 @@ export const CustomerAuthModal: React.FC<CustomerAuthModalProps> = ({ isOpen, on
                     className="w-full bg-[#FAF7F2] border border-[#D8CCA8] rounded-xl pr-9 pl-3 py-2 text-xs text-[#26221C] focus:outline-none focus:border-[#C9972B]"
                   />
                 </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-[#4B4338] mb-1 flex items-center gap-1">
+                  <Globe className="w-3.5 h-3.5 text-[#C9972B]" />
+                  <span>دولة الإقامة *</span>
+                </label>
+                <select
+                  value={country}
+                  onChange={(e) => setCountry(e.target.value)}
+                  className="w-full bg-[#FAF7F2] border border-[#D8CCA8] rounded-xl px-3 py-2 text-xs text-[#26221C] font-semibold focus:outline-none focus:border-[#C9972B]"
+                >
+                  {countriesList.map((cName) => (
+                    <option key={cName} value={cName}>{cName}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-[#4B4338] mb-1 flex items-center gap-1">
+                  <MapPin className="w-3.5 h-3.5 text-[#C9972B]" />
+                  <span>العنوان بالتفصيل</span>
+                </label>
+                <input
+                  type="text"
+                  placeholder="المدينة، الحي، الشارع، المبنى"
+                  value={address}
+                  onChange={(e) => setAddress(e.target.value)}
+                  className="w-full bg-[#FAF7F2] border border-[#D8CCA8] rounded-xl px-3 py-2 text-xs text-[#26221C] focus:outline-none focus:border-[#C9972B]"
+                />
               </div>
             </>
           )}

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Receipt, Search, Eye, Printer, Clock, CheckCircle2, ArrowRight } from 'lucide-react';
+import { Receipt, Search, Eye, Printer, Clock, CheckCircle2, ArrowRight, MapPin } from 'lucide-react';
 import { api } from '../lib/api';
 import { Order } from '../types';
 
@@ -108,6 +108,16 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({ onViewInvoice }) => {
                   <td className="p-4">
                     <p className="font-bold text-[#26221C]">{ord.customer_name}</p>
                     <p className="text-[#746A5D] text-[11px]">{ord.customer_phone}</p>
+                    {(ord.country || ord.city || ord.area) && (
+                      <p className="text-[#9A6817] text-[10px] flex items-center gap-1 mt-0.5 font-medium">
+                        <MapPin className="w-3 h-3 text-[#C9972B] shrink-0" />
+                        <span>
+                          {ord.country || 'الإمارات'}
+                          {ord.city ? ` • ${ord.city}` : ''}
+                          {ord.area ? ` (${ord.area})` : ''}
+                        </span>
+                      </p>
+                    )}
                   </td>
                   <td className="p-4">
                     <span className="text-[#3D352E] font-medium">

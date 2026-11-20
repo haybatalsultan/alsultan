@@ -86,7 +86,7 @@ app.use((req, res, next) => {
       '/auth', '/products', '/categories', '/materials', '/orders',
       '/quick-sale', '/custody', '/bead-adjustments', '/expenses',
       '/receivables', '/accountant', '/ambassadors', '/audit',
-      '/settings', '/license', '/cloud', '/database', '/health', '/upload'
+      '/settings', '/license', '/cloud', '/database', '/health', '/upload', '/countries'
     ];
     if (knownPrefixes.some(p => req.path === p || req.path.startsWith(p + '/'))) {
       req.url = '/api' + req.url;
@@ -192,7 +192,26 @@ async function initDatabase() {
       is_active INTEGER DEFAULT 1,
       mfa_secret TEXT DEFAULT '',
       mfa_enabled INTEGER DEFAULT 0,
+      country TEXT DEFAULT 'الإمارات العربية المتحدة',
+      address TEXT DEFAULT '',
       created_at TEXT DEFAULT (datetime('now', 'localtime'))
+    );
+  `);
+
+  try { await query('ALTER TABLE users ADD COLUMN country TEXT DEFAULT "الإمارات العربية المتحدة"'); } catch (e) {}
+  try { await query('ALTER TABLE users ADD COLUMN address TEXT DEFAULT ""'); } catch (e) {}
+
+  await query(`
+    CREATE TABLE IF NOT EXISTS countries (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name_ar TEXT NOT NULL UNIQUE,
+      name_en TEXT DEFAULT '',
+      code TEXT DEFAULT '',
+      phone_code TEXT DEFAULT '',
+      currency TEXT DEFAULT 'AED',
+      sort_order INTEGER DEFAULT 0,
+      is_active INTEGER DEFAULT 1,
+      is_system INTEGER DEFAULT 0
     );
   `);
 
@@ -488,6 +507,42 @@ async function initDatabase() {
     console.log('✅ [Seed] Default Materials inserted.');
   }
 
+  // Seed All 22 Arab Countries (if countries table is empty)
+  const countryCount = await queryOne('SELECT COUNT(*) as c FROM countries');
+  if (countryCount && countryCount.c === 0) {
+    const arabCountries = [
+      ['الإمارات العربية المتحدة', 'United Arab Emirates', 'AE', '+971', 'AED', 1, 1],
+      ['المملكة العربية السعودية', 'Saudi Arabia', 'SA', '+966', 'SAR', 2, 1],
+      ['دولة الكويت', 'Kuwait', 'KW', '+965', 'KWD', 3, 1],
+      ['دولة قطر', 'Qatar', 'QA', '+974', 'QAR', 4, 1],
+      ['سلطنة عمان', 'Oman', 'OM', '+968', 'OMR', 5, 1],
+      ['مملكة البحرين', 'Bahrain', 'BH', '+973', 'BHD', 6, 1],
+      ['جمهورية مصر العربية', 'Egypt', 'EG', '+20', 'EGP', 7, 1],
+      ['المملكة الأردنية الهاشمية', 'Jordan', 'JO', '+962', 'JOD', 8, 1],
+      ['جمهورية العراق', 'Iraq', 'IQ', '+964', 'IQD', 9, 1],
+      ['الجمهورية اللبنانية', 'Lebanon', 'LB', '+961', 'USD', 10, 1],
+      ['دولة فلسطين', 'Palestine', 'PS', '+970', 'USD', 11, 1],
+      ['الجمهورية العربية السورية', 'Syria', 'SY', '+963', 'SYP', 12, 1],
+      ['الجمهورية اليمنية', 'Yemen', 'YE', '+967', 'YER', 13, 1],
+      ['دولة ليبيا', 'Libya', 'LY', '+218', 'LYD', 14, 1],
+      ['الجمهورية التونسية', 'Tunisia', 'TN', '+216', 'TND', 15, 1],
+      ['الجمهورية الجزائرية', 'Algeria', 'DZ', '+213', 'DZD', 16, 1],
+      ['المملكة المغربية', 'Morocco', 'MA', '+212', 'MAD', 17, 1],
+      ['جمهورية السودان', 'Sudan', 'SD', '+249', 'SDG', 18, 1],
+      ['جمهورية الصومال', 'Somalia', 'SO', '+252', 'SOS', 19, 1],
+      ['الجمهورية الإسلامية الموريتانية', 'Mauritania', 'MR', '+222', 'MRU', 20, 1],
+      ['جمهورية جيبوتي', 'Djibouti', 'DJ', '+253', 'DJF', 21, 1],
+      ['جزر القمر', 'Comoros', 'KM', '+269', 'KMF', 22, 1]
+    ];
+    for (const [ar, en, code, phone, cur, sort, sys] of arabCountries) {
+      await query(`
+        INSERT INTO countries (name_ar, name_en, code, phone_code, currency, sort_order, is_active, is_system)
+        VALUES (?, ?, ?, ?, ?, ?, 1, ?)
+      `, [ar, en, code, phone, cur, sort, sys]);
+    }
+    console.log('✅ [Seed] All 22 Arab Countries seeded successfully.');
+  }
+
   // Seed Initial Rare Rosary Products (if empty)
   const prodCount = await queryOne('SELECT COUNT(*) as c FROM products');
   if (prodCount && prodCount.c === 0) {
@@ -734,7 +789,7 @@ app.post('/api/auth/login', async (req, res) => {
 
 // B) Customer Registration (Storefront)
 app.post('/api/auth/customer/register', async (req, res) => {
-  const { username, password, full_name, phone, email } = req.body;
+  const { username, password, full_name, phone, email, country, address } = req.body;
   if (!username || !password || !full_name) {
     return res.status(400).json({ error: 'الاسم، اسم المستخدم، وكلمة المرور مطلوبة' });
   }
@@ -752,15 +807,17 @@ app.post('/api/auth/customer/register', async (req, res) => {
     const passwordHash = hashPassword(password);
 
     await query(`
-      INSERT INTO users (public_id, username, password_hash, full_name, role, phone, email, is_active)
-      VALUES (?, ?, ?, ?, 'CUSTOMER', ?, ?, 1)
+      INSERT INTO users (public_id, username, password_hash, full_name, role, phone, email, country, address, is_active)
+      VALUES (?, ?, ?, ?, 'CUSTOMER', ?, ?, ?, ?, 1)
     `, [
       publicId,
       username.trim().toLowerCase(),
       passwordHash,
       full_name.trim(),
       (phone || '').trim(),
-      (email || '').trim().toLowerCase()
+      (email || '').trim().toLowerCase(),
+      (country || 'الإمارات العربية المتحدة').trim(),
+      (address || '').trim()
     ]);
 
     const newUser = await queryOne('SELECT * FROM users WHERE public_id = ?', [publicId]);
@@ -776,7 +833,9 @@ app.post('/api/auth/customer/register', async (req, res) => {
         full_name: newUser.full_name,
         role: 'CUSTOMER',
         phone: newUser.phone,
-        email: newUser.email
+        email: newUser.email,
+        country: newUser.country,
+        address: newUser.address
       }
     });
   } catch (err) {
@@ -1174,6 +1233,7 @@ app.post('/api/orders/checkout', async (req, res) => {
     customer_name,
     customer_phone,
     customer_email,
+    country,
     city,
     address,
     notes,
@@ -1207,17 +1267,17 @@ app.post('/api/orders/checkout', async (req, res) => {
     const orderRef = `WEB-${datePart}-${randPart}`;
     const orderPublicId = crypto.randomUUID();
 
-    // 1. Create order
+    // 1. Create order with full country and shipping destination
     await query(`
       INSERT INTO orders (
         public_id, reference, customer_name, customer_phone, customer_email,
         country, city, area, subtotal, discount_total, tax_total, grand_total,
         currency, sale_channel, delivery_method, status, payment_status,
         payment_method, paid_amount, outstanding_amount, additional_notes, delivered_at
-      ) VALUES (?, ?, ?, ?, ?, 'AE', ?, ?, ?, 0.0, 0.0, ?, 'AED', 'ONLINE', 'COURIER', 'PENDING', 'UNPAID', ?, 0.0, ?, ?, datetime('now', 'localtime'))
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0.0, 0.0, ?, 'AED', 'ONLINE', 'COURIER', 'PENDING', 'UNPAID', ?, 0.0, ?, ?, datetime('now', 'localtime'))
     `, [
       orderPublicId, orderRef, customer_name.trim(), customer_phone.trim(), (customer_email || '').trim(),
-      city || 'أبوظبي', address || 'توصيل منزلي فاخر', price, price,
+      (country || 'الإمارات العربية المتحدة').trim(), (city || 'أبوظبي').trim(), (address || 'توصيل منزلي فاخر').trim(), price, price,
       payment_method || 'CASH_ON_DELIVERY', price, notes || ''
     ]);
 
@@ -1903,6 +1963,109 @@ app.get('/api/materials', async (req, res) => {
   try {
     const list = await query('SELECT * FROM materials ORDER BY sort_order ASC, id ASC');
     res.json(list);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Countries & Shipping Destinations API
+app.get('/api/countries', async (req, res) => {
+  try {
+    const { all } = req.query;
+    let sql = 'SELECT * FROM countries';
+    if (!all) {
+      sql += ' WHERE is_active = 1';
+    }
+    sql += ' ORDER BY sort_order ASC, name_ar ASC';
+    const list = await query(sql);
+    res.json(list);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/countries', async (req, res) => {
+  const { name_ar, name_en, code, phone_code, currency, sort_order } = req.body;
+  if (!name_ar || !name_ar.trim()) {
+    return res.status(400).json({ error: 'اسم الدولة بالعربية مطلوب' });
+  }
+
+  try {
+    const cleanNameAr = name_ar.trim();
+    const existing = await queryOne('SELECT id FROM countries WHERE LOWER(name_ar) = ?', [cleanNameAr.toLowerCase()]);
+    if (existing) {
+      return res.status(400).json({ error: 'الدولة مسجلة مسبقاً في النظام' });
+    }
+
+    const nextOrder = parseInt(sort_order, 10) || 50;
+    await query(`
+      INSERT INTO countries (name_ar, name_en, code, phone_code, currency, sort_order, is_active, is_system)
+      VALUES (?, ?, ?, ?, ?, ?, 1, 0)
+    `, [
+      cleanNameAr,
+      (name_en || '').trim(),
+      (code || '').trim().toUpperCase(),
+      (phone_code || '').trim(),
+      (currency || 'AED').trim().toUpperCase(),
+      nextOrder
+    ]);
+
+    const created = await queryOne('SELECT * FROM countries WHERE name_ar = ?', [cleanNameAr]);
+    await recordAudit(req.body.actor_name || 'Admin', 'OWNER', 'CREATE_COUNTRY', 'SETTINGS', { name: cleanNameAr, id: created.id });
+    io.emit('country:created', created);
+    res.status(201).json(created);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.put('/api/countries/:id', async (req, res) => {
+  const countryId = req.params.id;
+  const { name_ar, name_en, code, phone_code, currency, sort_order, is_active } = req.body;
+
+  try {
+    const existing = await queryOne('SELECT * FROM countries WHERE id = ?', [countryId]);
+    if (!existing) return res.status(404).json({ error: 'الدولة غير موجودة' });
+
+    await query(`
+      UPDATE countries SET
+        name_ar = ?, name_en = ?, code = ?, phone_code = ?,
+        currency = ?, sort_order = ?, is_active = ?
+      WHERE id = ?
+    `, [
+      name_ar ? name_ar.trim() : existing.name_ar,
+      name_en !== undefined ? name_en.trim() : existing.name_en,
+      code !== undefined ? code.trim().toUpperCase() : existing.code,
+      phone_code !== undefined ? phone_code.trim() : existing.phone_code,
+      currency !== undefined ? currency.trim().toUpperCase() : existing.currency,
+      sort_order !== undefined ? Number(sort_order) : existing.sort_order,
+      is_active !== undefined ? Number(is_active) : existing.is_active,
+      countryId
+    ]);
+
+    const updated = await queryOne('SELECT * FROM countries WHERE id = ?', [countryId]);
+    await recordAudit(req.body.actor_name || 'Admin', 'OWNER', 'UPDATE_COUNTRY', 'SETTINGS', { name: updated.name_ar, id: countryId });
+    io.emit('country:updated', updated);
+    res.json(updated);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete('/api/countries/:id', async (req, res) => {
+  const countryId = req.params.id;
+  try {
+    const existing = await queryOne('SELECT * FROM countries WHERE id = ?', [countryId]);
+    if (!existing) return res.status(404).json({ error: 'الدولة غير موجودة' });
+
+    if (existing.is_system) {
+      return res.status(400).json({ error: 'لا يمكن حذف الدول العربية الأساسية المدمجة بالنظام. يمكنك تعطيل تفعيلها بدلاً من ذلك.' });
+    }
+
+    await query('DELETE FROM countries WHERE id = ?', [countryId]);
+    await recordAudit('Admin', 'OWNER', 'DELETE_COUNTRY', 'SETTINGS', { name: existing.name_ar, id: countryId });
+    io.emit('country:deleted', { id: countryId });
+    res.json({ success: true, message: 'تم حذف الدولة بنجاح' });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
