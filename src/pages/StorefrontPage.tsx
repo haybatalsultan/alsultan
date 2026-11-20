@@ -231,25 +231,6 @@ export const StorefrontPage: React.FC<StorefrontPageProps> = ({
           {/* Subtle Gradient Overlay for Content Readability */}
           <div className="absolute inset-0 bg-gradient-to-r from-black/25 via-transparent to-black/25 pointer-events-none" />
 
-          {/* Carousel Arrow Controls */}
-          <button
-            type="button"
-            className="absolute left-4 sm:left-8 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/80 hover:bg-white text-[#26221C] shadow-lg flex items-center justify-center transition backdrop-blur z-20 cursor-pointer"
-            onClick={() => {}}
-            aria-label="Previous slide"
-          >
-            <ChevronLeft className="w-5 h-5" />
-          </button>
-
-          <button
-            type="button"
-            className="absolute right-4 sm:right-8 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/80 hover:bg-white text-[#26221C] shadow-lg flex items-center justify-center transition backdrop-blur z-20 cursor-pointer"
-            onClick={() => {}}
-            aria-label="Next slide"
-          >
-            <ChevronRight className="w-5 h-5" />
-          </button>
-
           {/* Central Call to Action Content Box */}
           <div className="relative z-10 text-center px-4 max-w-2xl mx-auto space-y-4">
             <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-white drop-shadow-[0_2px_10px_rgba(0,0,0,0.75)] tracking-tight leading-tight">
