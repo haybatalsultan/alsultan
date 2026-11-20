@@ -122,6 +122,18 @@ export const api = {
     const res = await axios.get(`${API_BASE}/categories`);
     return res.data;
   },
+  createCategory: async (data: { name_ar: string; name_en?: string; slug?: string; sort_order?: number }) => {
+    const res = await axios.post(`${API_BASE}/categories`, data);
+    return res.data;
+  },
+  updateCategory: async (id: number, data: { name_ar: string; name_en?: string; slug?: string; sort_order?: number }) => {
+    const res = await axios.put(`${API_BASE}/categories/${id}`, data);
+    return res.data;
+  },
+  deleteCategory: async (id: number) => {
+    const res = await axios.delete(`${API_BASE}/categories/${id}`);
+    return res.data;
+  },
   getMaterials: async () => {
     const res = await axios.get(`${API_BASE}/materials`);
     return res.data;

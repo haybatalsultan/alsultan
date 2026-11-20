@@ -14,12 +14,14 @@ import {
   CheckCircle2,
   Trash2,
   DollarSign,
-  QrCode
+  QrCode,
+  FolderTree
 } from 'lucide-react';
 import { api } from '../lib/api';
 import { Product, Category, Material, ProductStatus, User } from '../types';
 import { hasPermission } from '../lib/permissions';
 import { BoxQRLabelModal } from '../components/BoxQRLabelModal';
+import { CategoryManagerModal } from '../components/CategoryManagerModal';
 
 interface InventoryPageProps {
   onOpenProductModal: (product: Product | null) => void;
@@ -44,6 +46,7 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({
   const [categoryFilter, setCategoryFilter] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [selectedQRProduct, setSelectedQRProduct] = useState<Product | null>(null);
+  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
 
   // Permission Checks
   const canCreate = hasPermission(currentUser, 'inventory.create');
@@ -138,15 +141,26 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({
           </p>
         </div>
 
-        {canCreate && (
+        <div className="flex items-center gap-2.5 flex-wrap">
           <button
-            onClick={() => onOpenProductModal(null)}
-            className="px-5 py-2.5 bg-[#26221C] hover:bg-[#3D352E] text-[#E2B84B] rounded-xl text-xs sm:text-sm font-black transition shadow-md flex items-center justify-center gap-2 shrink-0 cursor-pointer"
+            onClick={() => setIsCategoryModalOpen(true)}
+            className="px-4 py-2.5 bg-[#FAF4E8] hover:bg-[#F2ECE1] text-[#9A6817] border border-[#C9972B]/40 rounded-xl text-xs sm:text-sm font-bold transition shadow-2xs flex items-center justify-center gap-2 shrink-0 cursor-pointer"
+            title="إضافة، تعديل أو حذف تصنيفات المسابيح"
           >
-            <Plus className="w-4 h-4" />
-            <span>إضافة مسبحة جديدة</span>
+            <FolderTree className="w-4 h-4 text-[#C9972B]" />
+            <span>إدارة التصنيفات</span>
           </button>
-        )}
+
+          {canCreate && (
+            <button
+              onClick={() => onOpenProductModal(null)}
+              className="px-5 py-2.5 bg-[#26221C] hover:bg-[#3D352E] text-[#E2B84B] rounded-xl text-xs sm:text-sm font-black transition shadow-md flex items-center justify-center gap-2 shrink-0 cursor-pointer"
+            >
+              <Plus className="w-4 h-4" />
+              <span>إضافة مسبحة جديدة</span>
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Filter & Search Bar */}
@@ -363,6 +377,15 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({
           onClose={() => setSelectedQRProduct(null)}
         />
       )}
+
+      {/* Category Manager Modal */}
+      <CategoryManagerModal
+        isOpen={isCategoryModalOpen}
+        onClose={() => setIsCategoryModalOpen(false)}
+        categories={categories}
+        products={products}
+        onCategoryChanged={loadCatalog}
+      />
     </div>
   );
 };

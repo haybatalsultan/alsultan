@@ -1731,6 +1731,100 @@ app.get('/api/categories', async (req, res) => {
   }
 });
 
+// Add new category
+app.post('/api/categories', async (req, res) => {
+  const { name_ar, name_en, slug, sort_order, is_active } = req.body;
+  if (!name_ar || !name_ar.trim()) {
+    return res.status(400).json({ error: 'اسم التصنيف بالعربية مطلوب' });
+  }
+
+  try {
+    const publicId = crypto.randomUUID();
+    const cleanNameAr = name_ar.trim();
+    const cleanNameEn = (name_en || '').trim();
+    let cleanSlug = (slug || '').trim().toLowerCase().replace(/[^a-z0-9_-]/g, '-');
+    if (!cleanSlug) {
+      cleanSlug = 'cat-' + Date.now();
+    }
+
+    const existing = await queryOne('SELECT id FROM categories WHERE slug = ?', [cleanSlug]);
+    if (existing) {
+      cleanSlug = `${cleanSlug}-${Math.floor(Math.random() * 1000)}`;
+    }
+
+    const order = parseInt(sort_order, 10) || 0;
+    const active = is_active !== undefined ? (is_active ? 1 : 0) : 1;
+
+    await query(`
+      INSERT INTO categories (public_id, name_ar, name_en, slug, sort_order, is_active)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `, [publicId, cleanNameAr, cleanNameEn, cleanSlug, order, active]);
+
+    const created = await queryOne('SELECT * FROM categories WHERE public_id = ?', [publicId]);
+    await recordAudit('Admin', 'OWNER', 'CREATE_CATEGORY', 'CATALOG', { name_ar: cleanNameAr, id: created.id });
+    io.emit('category:created', created);
+    res.status(201).json(created);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Update category
+app.put('/api/categories/:id', async (req, res) => {
+  const categoryId = req.params.id;
+  const { name_ar, name_en, slug, sort_order, is_active } = req.body;
+  if (!name_ar || !name_ar.trim()) {
+    return res.status(400).json({ error: 'اسم التصنيف بالعربية مطلوب' });
+  }
+
+  try {
+    const existing = await queryOne('SELECT * FROM categories WHERE id = ?', [categoryId]);
+    if (!existing) return res.status(404).json({ error: 'التصنيف غير موجود' });
+
+    const cleanNameAr = name_ar.trim();
+    const cleanNameEn = (name_en || '').trim();
+    const cleanSlug = (slug || existing.slug).trim().toLowerCase().replace(/[^a-z0-9_-]/g, '-');
+    const order = sort_order !== undefined ? parseInt(sort_order, 10) : existing.sort_order;
+    const active = is_active !== undefined ? (is_active ? 1 : 0) : existing.is_active;
+
+    await query(`
+      UPDATE categories
+      SET name_ar = ?, name_en = ?, slug = ?, sort_order = ?, is_active = ?
+      WHERE id = ?
+    `, [cleanNameAr, cleanNameEn, cleanSlug, order, active, categoryId]);
+
+    const updated = await queryOne('SELECT * FROM categories WHERE id = ?', [categoryId]);
+    await recordAudit('Admin', 'OWNER', 'UPDATE_CATEGORY', 'CATALOG', { name_ar: cleanNameAr, id: categoryId });
+    io.emit('category:updated', updated);
+    res.json(updated);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Delete category
+app.delete('/api/categories/:id', async (req, res) => {
+  const categoryId = req.params.id;
+  try {
+    const existing = await queryOne('SELECT * FROM categories WHERE id = ?', [categoryId]);
+    if (!existing) return res.status(404).json({ error: 'التصنيف غير موجود' });
+
+    const linked = await queryOne('SELECT COUNT(*) as count FROM products WHERE category_id = ?', [categoryId]);
+    if (linked && linked.count > 0) {
+      return res.status(400).json({
+        error: `لا يمكن حذف التصنيف لوجود ${linked.count} مسبحة مرتبطة به حالياً. يرجى تعديل تصنيف المسابيح أولاً قبل الحذف.`
+      });
+    }
+
+    await query('DELETE FROM categories WHERE id = ?', [categoryId]);
+    await recordAudit('Admin', 'OWNER', 'DELETE_CATEGORY', 'CATALOG', { name_ar: existing.name_ar, id: categoryId });
+    io.emit('category:deleted', { id: categoryId });
+    res.json({ success: true, message: 'تم حذف التصنيف بنجاح' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.get('/api/materials', async (req, res) => {
   try {
     const list = await query('SELECT * FROM materials ORDER BY sort_order ASC, id ASC');
