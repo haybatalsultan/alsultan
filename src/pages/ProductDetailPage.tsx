@@ -37,6 +37,25 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
   const [copiedLink, setCopiedLink] = useState(false);
   const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
 
+  // Parse all available product images (primary + secondary up to 3)
+  const productImages: string[] = [
+    product.image_url || (product as any).primary_image,
+    ...(() => {
+      try {
+        if (typeof product.secondary_images === 'string') {
+          return JSON.parse(product.secondary_images);
+        }
+        if (Array.isArray(product.secondary_images)) {
+          return product.secondary_images;
+        }
+      } catch {}
+      return [];
+    })()
+  ].filter(Boolean);
+
+  const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const activeImage = productImages[activeImageIndex] || productImages[0] || product.image_url || '/branding/hero-amber.jpg';
+
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [product.id, product.public_id]);
@@ -143,31 +162,58 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
         <div className="bg-white rounded-3xl border border-[#EBE3D5] p-5 sm:p-8 shadow-xs space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
             
-            {/* Image Showcase */}
-            <div className="relative aspect-square rounded-2xl overflow-hidden bg-[#F5EFE6] border-2 border-[#E5DAC8] group shadow-inner flex items-center justify-center">
-              {product.primary_image ? (
-                <img
-                  src={product.primary_image}
-                  alt={product.name_ar}
-                  className="w-full h-full object-cover transition duration-700 group-hover:scale-105"
-                />
-              ) : (
-                <div className="flex flex-col items-center justify-center text-[#9E9485] gap-2 p-6 text-center">
-                  <Gem className="w-16 h-16 text-[#C9972B]/40" />
-                  <span className="text-xs font-serif font-bold text-[#746A5D]">صورة التحفة التوثيقية</span>
+            {/* Image Showcase & Multi-Angle Gallery */}
+            <div className="space-y-3">
+              <div className="relative aspect-square rounded-2xl overflow-hidden bg-[#F5EFE6] border-2 border-[#E5DAC8] group shadow-inner flex items-center justify-center">
+                {activeImage ? (
+                  <img
+                    src={activeImage}
+                    alt={product.name_ar}
+                    className="w-full h-full object-cover transition duration-700 group-hover:scale-105"
+                  />
+                ) : (
+                  <div className="flex flex-col items-center justify-center text-[#9E9485] gap-2 p-6 text-center">
+                    <Gem className="w-16 h-16 text-[#C9972B]/40" />
+                    <span className="text-xs font-serif font-bold text-[#746A5D]">صورة التحفة التوثيقية</span>
+                  </div>
+                )}
+
+                {/* Status Pill */}
+                <div className="absolute top-3 right-3 bg-white/95 backdrop-blur-xs px-3 py-1 rounded-full text-xs font-bold text-[#9A6817] border border-[#E0D7C6] shadow-xs flex items-center gap-1.5">
+                  <BadgeCheck className="w-4 h-4 text-[#C9972B]" />
+                  <span>قطعة معتمدة</span>
+                </div>
+
+                {/* Serial Watermark */}
+                <div className="absolute bottom-3 left-3 bg-[#1C1814]/80 backdrop-blur-xs text-white/90 px-3 py-1 rounded-lg text-[11px] font-mono border border-white/10">
+                  {product.sku}
+                </div>
+              </div>
+
+              {/* Multi-Image Thumbnails (Up to 3 images) */}
+              {productImages.length > 1 && (
+                <div className="flex items-center justify-center gap-2.5 pt-1">
+                  {productImages.map((img, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => setActiveImageIndex(idx)}
+                      className={`relative w-16 h-16 rounded-xl overflow-hidden border-2 transition cursor-pointer ${
+                        activeImageIndex === idx
+                          ? 'border-[#C9972B] shadow-md ring-2 ring-[#C9972B]/40 scale-105'
+                          : 'border-[#E0D7C6] opacity-70 hover:opacity-100 hover:border-[#C9972B]'
+                      }`}
+                    >
+                      <img src={img} alt={`صورة ${idx + 1}`} className="w-full h-full object-cover" />
+                      {idx === 0 && (
+                        <span className="absolute bottom-0 inset-x-0 bg-[#C9972B] text-white text-[8px] font-bold py-0.5 text-center leading-none">
+                          الغلاف
+                        </span>
+                      )}
+                    </button>
+                  ))}
                 </div>
               )}
-
-              {/* Status Pill */}
-              <div className="absolute top-3 right-3 bg-white/95 backdrop-blur-xs px-3 py-1 rounded-full text-xs font-bold text-[#9A6817] border border-[#E0D7C6] shadow-xs flex items-center gap-1.5">
-                <BadgeCheck className="w-4 h-4 text-[#C9972B]" />
-                <span>قطعة معتمدة</span>
-              </div>
-
-              {/* Serial Watermark */}
-              <div className="absolute bottom-3 left-3 bg-[#1C1814]/80 backdrop-blur-xs text-white/90 px-3 py-1 rounded-lg text-[11px] font-mono border border-white/10">
-                {product.sku}
-              </div>
             </div>
 
             {/* Product Identity & Valuation */}

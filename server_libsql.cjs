@@ -86,7 +86,7 @@ app.use((req, res, next) => {
       '/auth', '/products', '/categories', '/materials', '/orders',
       '/quick-sale', '/custody', '/bead-adjustments', '/expenses',
       '/receivables', '/accountant', '/ambassadors', '/audit',
-      '/settings', '/license', '/cloud', '/database', '/health'
+      '/settings', '/license', '/cloud', '/database', '/health', '/upload'
     ];
     if (knownPrefixes.some(p => req.path === p || req.path.startsWith(p + '/'))) {
       req.url = '/api' + req.url;
@@ -111,6 +111,18 @@ const DATA_DIR = getDataDir();
 if (!fs.existsSync(DATA_DIR)) {
   try { fs.mkdirSync(DATA_DIR, { recursive: true }); } catch (e) {}
 }
+
+const UPLOADS_DIR = path.join(DATA_DIR, 'uploads');
+if (!fs.existsSync(UPLOADS_DIR)) {
+  try { fs.mkdirSync(UPLOADS_DIR, { recursive: true }); } catch (e) {}
+}
+
+// Serve uploaded luxury rosary images with long-term cache headers
+app.use('/uploads', express.static(UPLOADS_DIR, {
+  maxAge: '30d',
+  etag: true,
+  lastModified: true
+}));
 
 const DB_PATH = path.join(DATA_DIR, 'haybatalsultan.db');
 const client = createClient({
@@ -1603,6 +1615,52 @@ app.get('/api/products/:id', async (req, res) => {
   }
 });
 
+// Upload and store rosary image (supports compressed base64 webp/jpeg/png)
+app.post('/api/upload', (req, res) => {
+  try {
+    const { dataUrl, filename } = req.body;
+    if (!dataUrl || typeof dataUrl !== 'string') {
+      return res.status(400).json({ error: 'لم يتم توفير بيانات الصورة' });
+    }
+
+    const matches = dataUrl.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+    if (!matches || matches.length !== 3) {
+      return res.status(400).json({ error: 'صيغة الصورة غير صالحة أو غير مدعومة' });
+    }
+
+    const mimeType = matches[1].toLowerCase();
+    const base64Data = matches[2];
+    const buffer = Buffer.from(base64Data, 'base64');
+
+    if (buffer.length > 15 * 1024 * 1024) {
+      return res.status(400).json({ error: 'حجم الصورة كبير جداً (الحد الأقصى 15 ميجابايت)' });
+    }
+
+    let ext = 'webp';
+    if (mimeType.includes('jpeg') || mimeType.includes('jpg')) ext = 'jpg';
+    else if (mimeType.includes('png')) ext = 'png';
+    else if (mimeType.includes('webp')) ext = 'webp';
+    else if (mimeType.includes('gif')) ext = 'gif';
+
+    const safeRand = crypto.randomBytes(6).toString('hex');
+    const safeFilename = `rosary_${Date.now()}_${safeRand}.${ext}`;
+    const filePath = path.join(UPLOADS_DIR, safeFilename);
+
+    fs.writeFileSync(filePath, buffer);
+
+    const publicUrl = `/uploads/${safeFilename}`;
+    res.json({
+      success: true,
+      url: publicUrl,
+      size: buffer.length,
+      filename: safeFilename
+    });
+  } catch (err) {
+    console.error('❌ Upload error:', err);
+    res.status(500).json({ error: 'حدث خطأ أثناء رفع وحفظ الصورة: ' + err.message });
+  }
+});
+
 app.post('/api/products', async (req, res) => {
   try {
     const b = req.body;
@@ -1620,6 +1678,13 @@ app.post('/api/products', async (req, res) => {
     const nextId = (maxRow?.maxId || 0) + 1;
     const sku = `HS${String(nextId).padStart(5, '0')}`;
 
+    let secImagesJson = '[]';
+    if (Array.isArray(b.secondary_images)) {
+      secImagesJson = JSON.stringify(b.secondary_images);
+    } else if (typeof b.secondary_images === 'string') {
+      secImagesJson = b.secondary_images;
+    }
+
     await query(`
       INSERT INTO products (
         public_id, product_reference, sku, name_ar, name_en, description_ar, description_en,
@@ -1633,7 +1698,7 @@ app.post('/api/products', async (req, res) => {
       b.bead_size_mm || 10.0, b.weight_g || 40.0, b.shape || 'برميلي', b.tassel_type || 'فضة',
       b.condition || 'جديد فاخر', Number(b.cost_price || 0), Number(b.selling_price), b.discount_price ? Number(b.discount_price) : null,
       b.status || 'AVAILABLE', b.is_unique !== undefined ? b.is_unique : 1, b.verification_status || 'CERTIFIED',
-      b.certificate_number || '', b.image_url || '', JSON.stringify(b.secondary_images || [])
+      b.certificate_number || '', b.image_url || '', secImagesJson
     ]);
 
     const created = await queryOne('SELECT * FROM products WHERE public_id = ?', [publicId]);
@@ -1651,6 +1716,15 @@ app.put('/api/products/:id', async (req, res) => {
     const b = req.body;
     const existing = await queryOne('SELECT * FROM products WHERE id = ?', [req.params.id]);
     if (!existing) return res.status(404).json({ error: 'المسبحة غير موجودة' });
+
+    let secImagesToSave = existing.secondary_images;
+    if (b.secondary_images !== undefined) {
+      if (Array.isArray(b.secondary_images)) {
+        secImagesToSave = JSON.stringify(b.secondary_images);
+      } else if (typeof b.secondary_images === 'string') {
+        secImagesToSave = b.secondary_images;
+      }
+    }
 
     await query(`
       UPDATE products SET
@@ -1674,7 +1748,7 @@ app.put('/api/products/:id', async (req, res) => {
       b.status ?? existing.status, b.verification_status ?? existing.verification_status,
       b.certificate_number ?? existing.certificate_number,
       b.image_url ?? existing.image_url,
-      b.secondary_images ? JSON.stringify(b.secondary_images) : existing.secondary_images,
+      secImagesToSave,
       req.params.id
     ]);
 
