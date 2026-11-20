@@ -198,9 +198,6 @@ async function initDatabase() {
     );
   `);
 
-  try { await query('ALTER TABLE users ADD COLUMN country TEXT DEFAULT "الإمارات العربية المتحدة"'); } catch (e) {}
-  try { await query('ALTER TABLE users ADD COLUMN address TEXT DEFAULT ""'); } catch (e) {}
-
   await query(`
     CREATE TABLE IF NOT EXISTS countries (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -657,6 +654,8 @@ async function initDatabase() {
   try {
     const userCols = await query('PRAGMA table_info(users)');
     const userColNames = userCols.map(c => c.name);
+    if (!userColNames.includes('country')) await query("ALTER TABLE users ADD COLUMN country TEXT DEFAULT 'الإمارات العربية المتحدة'");
+    if (!userColNames.includes('address')) await query("ALTER TABLE users ADD COLUMN address TEXT DEFAULT ''");
     if (!userColNames.includes('company_name')) await query("ALTER TABLE users ADD COLUMN company_name TEXT DEFAULT ''");
     if (!userColNames.includes('commercial_register')) await query("ALTER TABLE users ADD COLUMN commercial_register TEXT DEFAULT ''");
     if (!userColNames.includes('tax_id')) await query("ALTER TABLE users ADD COLUMN tax_id TEXT DEFAULT ''");
