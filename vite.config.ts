@@ -17,7 +17,28 @@ export default defineConfig(() => {
     },
     build: {
       target: 'esnext',
-      chunkSizeWarningLimit: 2000,
+      chunkSizeWarningLimit: 1000,
+      cssCodeSplit: true,
+      rollupOptions: {
+        output: {
+          manualChunks(id) {
+            if (id.includes('node_modules')) {
+              if (id.includes('react') || id.includes('react-dom') || id.includes('scheduler')) {
+                return 'vendor-react';
+              }
+              if (id.includes('lucide-react')) {
+                return 'vendor-icons';
+              }
+              if (id.includes('socket.io-client')) {
+                return 'vendor-socket';
+              }
+              if (id.includes('xlsx')) {
+                return 'vendor-xlsx';
+              }
+            }
+          },
+        },
+      },
     },
     server: {
       port: 3000,

@@ -223,6 +223,8 @@ export const StorefrontPage: React.FC<StorefrontPageProps> = ({
           <img
             src="/branding/hero-amber.jpg"
             alt="هيبة الأصل... جمال الكهرمان"
+            fetchPriority="high"
+            decoding="async"
             className="absolute inset-0 w-full h-full object-cover object-center"
           />
 
@@ -505,6 +507,8 @@ export const StorefrontPage: React.FC<StorefrontPageProps> = ({
                     <img
                       src={p.image_url || '/branding/hero-amber.jpg'}
                       alt={p.name_ar}
+                      loading="lazy"
+                      decoding="async"
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                     />
 

@@ -162,7 +162,10 @@ export const Header: React.FC<HeaderProps> = ({
           <img
             src="/branding/logo-header.png"
             alt="هيبة السلطان - HAYBAT ALSULTAN"
-            className="h-12 sm:h-16 object-contain hover:opacity-95 transition"
+            width={200}
+            height={64}
+            decoding="async"
+            className="h-12 sm:h-16 w-auto object-contain hover:opacity-95 transition"
             onError={(e) => {
               e.currentTarget.style.display = 'none';
             }}

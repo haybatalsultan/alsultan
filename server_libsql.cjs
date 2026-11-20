@@ -18,6 +18,7 @@ const os = require('os');
 const { createClient } = require('@libsql/client');
 const crypto = require('crypto');
 const cron = require('node-cron');
+const zlib = require('zlib');
 require('dotenv').config();
 
 function hashPassword(pwd) {
@@ -48,6 +49,35 @@ const HOST = '0.0.0.0';
 app.use(cors({ origin: '*', methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'] }));
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+
+// High-Performance Built-in GZIP Compression Middleware
+app.use((req, res, next) => {
+  const enc = req.headers['accept-encoding'] || '';
+  if (!enc.includes('gzip')) return next();
+
+  const originalSend = res.send;
+  res.send = function (body) {
+    if (res.headersSent || !body) return originalSend.apply(this, arguments);
+
+    const cType = String(res.getHeader('Content-Type') || '');
+    const isCompressible = typeof body === 'string' || Buffer.isBuffer(body);
+    const shouldCompress = /text|json|javascript|css|xml|svg/i.test(cType) || (cType === '' && typeof body === 'string');
+
+    if (isCompressible && shouldCompress && Buffer.byteLength(body) > 1024) {
+      res.removeHeader('Content-Length');
+      res.setHeader('Content-Encoding', 'gzip');
+      res.setHeader('Vary', 'Accept-Encoding');
+      zlib.gzip(body, (err, compressed) => {
+        if (err) return originalSend.apply(this, arguments);
+        res.setHeader('Content-Length', compressed.length);
+        originalSend.call(this, compressed);
+      });
+      return this;
+    }
+    return originalSend.apply(this, arguments);
+  };
+  next();
+});
 
 // Automatic API route prefix rewrites (supports both /products and /api/products)
 app.use((req, res, next) => {
@@ -2347,13 +2377,31 @@ app.post('/api/cloud/config', (req, res) => {
   res.json(cloudConfig.saveCloudConfig(req.body));
 });
 
-// Production Static Serving
+// Production Static Serving with Caching
 const distPath = path.join(__dirname, 'dist');
 if (fs.existsSync(distPath)) {
   console.log(`✅ [Static] Serving luxury storefront and dashboard from: ${distPath}`);
-  app.use(express.static(distPath));
+  
+  app.use(express.static(distPath, {
+    maxAge: '7d',
+    etag: true,
+    lastModified: true,
+    setHeaders: (res, filePath) => {
+      // Immutable long-term caching for hashed JS/CSS assets and fonts
+      if (filePath.includes(path.sep + 'assets' + path.sep) || filePath.includes(path.sep + 'fonts' + path.sep)) {
+        res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+      } else if (filePath.endsWith('.html')) {
+        res.setHeader('Cache-Control', 'public, max-age=0, must-revalidate');
+      } else {
+        // Branding images, etc.
+        res.setHeader('Cache-Control', 'public, max-age=604800, stale-while-revalidate=86400');
+      }
+    }
+  }));
+
   app.get('*', (req, res) => {
     if (!req.path.startsWith('/api')) {
+      res.setHeader('Cache-Control', 'public, max-age=0, must-revalidate');
       res.sendFile(path.join(distPath, 'index.html'));
     }
   });

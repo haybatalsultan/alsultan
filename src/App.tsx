@@ -1,20 +1,22 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { Header } from './components/Header';
-import { DashboardPage } from './pages/DashboardPage';
-import { QuickSalePOSPage } from './pages/QuickSalePOSPage';
-import { InventoryPage } from './pages/InventoryPage';
-import { CustodyPage } from './pages/CustodyPage';
-import { WorkshopPage } from './pages/WorkshopPage';
-import { OrdersPage } from './pages/OrdersPage';
-import { AccountantPage } from './pages/AccountantPage';
 import { StorefrontPage } from './pages/StorefrontPage';
-import { AmbassadorsPage } from './pages/AmbassadorsPage';
-import { SettingsPage } from './pages/SettingsPage';
-import { UsersPage } from './pages/UsersPage';
-import { AdminLoginPage } from './pages/AdminLoginPage';
-import { B2BWholesalePage } from './pages/B2BWholesalePage';
 import { ProductDetailPage } from './pages/ProductDetailPage';
+
+// Code Splitting & Lazy-loading for Admin ERP & B2B Portals
+const DashboardPage = lazy(() => import('./pages/DashboardPage').then(m => ({ default: m.DashboardPage })));
+const QuickSalePOSPage = lazy(() => import('./pages/QuickSalePOSPage').then(m => ({ default: m.QuickSalePOSPage })));
+const InventoryPage = lazy(() => import('./pages/InventoryPage').then(m => ({ default: m.InventoryPage })));
+const CustodyPage = lazy(() => import('./pages/CustodyPage').then(m => ({ default: m.CustodyPage })));
+const WorkshopPage = lazy(() => import('./pages/WorkshopPage').then(m => ({ default: m.WorkshopPage })));
+const OrdersPage = lazy(() => import('./pages/OrdersPage').then(m => ({ default: m.OrdersPage })));
+const AccountantPage = lazy(() => import('./pages/AccountantPage').then(m => ({ default: m.AccountantPage })));
+const AmbassadorsPage = lazy(() => import('./pages/AmbassadorsPage').then(m => ({ default: m.AmbassadorsPage })));
+const SettingsPage = lazy(() => import('./pages/SettingsPage').then(m => ({ default: m.SettingsPage })));
+const UsersPage = lazy(() => import('./pages/UsersPage').then(m => ({ default: m.UsersPage })));
+const AdminLoginPage = lazy(() => import('./pages/AdminLoginPage').then(m => ({ default: m.AdminLoginPage })));
+const B2BWholesalePage = lazy(() => import('./pages/B2BWholesalePage').then(m => ({ default: m.B2BWholesalePage })));
 
 // Modals
 import { ProductModal } from './components/ProductModal';
@@ -28,6 +30,12 @@ import { CheckoutModal } from './components/CheckoutModal';
 
 import { Product, Order, Category, Material, User } from './types';
 import { api, socket } from './lib/api';
+
+const LazyLoadingSpinner = () => (
+  <div className="min-h-[300px] flex items-center justify-center p-8 text-[#9A6817]">
+    <div className="w-8 h-8 border-3 border-[#C9972B] border-t-transparent rounded-full animate-spin" />
+  </div>
+);
 
 export const App: React.FC = () => {
   // Determine initial portal: '/admin' vs '/wholesale' vs '/p/:id' vs Storefront '/'
@@ -232,10 +240,12 @@ export const App: React.FC = () => {
     // If not authenticated as staff, show the dedicated Admin Login Page
     if (!staffUser) {
       return (
-        <AdminLoginPage
-          onSuccess={(loggedUser) => setStaffUser(loggedUser)}
-          onBackToStore={() => navigatePortal('storefront')}
-        />
+        <Suspense fallback={<LazyLoadingSpinner />}>
+          <AdminLoginPage
+            onSuccess={(loggedUser) => setStaffUser(loggedUser)}
+            onBackToStore={() => navigatePortal('storefront')}
+          />
+        </Suspense>
       );
     }
 
@@ -262,6 +272,7 @@ export const App: React.FC = () => {
           />
 
           <main className="flex-1 overflow-y-auto">
+            <Suspense fallback={<LazyLoadingSpinner />}>
             {currentTab === 'dashboard' && (
               <DashboardPage
                 key={refreshTrigger}
@@ -336,6 +347,7 @@ export const App: React.FC = () => {
             {currentTab === 'settings' && (
               <SettingsPage key={refreshTrigger} />
             )}
+            </Suspense>
           </main>
         </div>
 
@@ -410,11 +422,13 @@ export const App: React.FC = () => {
         />
 
         <main className="flex-1">
-          <B2BWholesalePage
-            currentUser={customerUser}
-            onUserLoginSuccess={(u) => setCustomerUser(u)}
-            onNavigateHome={() => navigatePortal('storefront')}
-          />
+          <Suspense fallback={<LazyLoadingSpinner />}>
+            <B2BWholesalePage
+              currentUser={customerUser}
+              onUserLoginSuccess={(u) => setCustomerUser(u)}
+              onNavigateHome={() => navigatePortal('storefront')}
+            />
+          </Suspense>
         </main>
 
         <CustomerOrdersModal
