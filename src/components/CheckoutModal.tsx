@@ -49,7 +49,6 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const [city, setCity] = useState(customerUser?.city || 'أبوظبي');
   const [address, setAddress] = useState(customerUser?.address || '');
   const [notes, setNotes] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState<'CASH_ON_DELIVERY' | 'BANK_TRANSFER'>('CASH_ON_DELIVERY');
   const [countriesList, setCountriesList] = useState<string[]>(DEFAULT_ARAB_COUNTRIES);
   const [submitting, setSubmitting] = useState(false);
 
@@ -98,7 +97,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
         city: city.trim() || 'الرئيسية',
         address: address.trim(),
         notes: notes.trim(),
-        payment_method: paymentMethod
+        payment_method: 'عند الاستلام / التنسيق المباشر'
       });
 
       toast.success(`${res.message}\nرقم الطلب المرجعي: ${res.order.reference}`, 'تم إتمام الطلب بنجاح');
@@ -249,37 +248,6 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                 onChange={(e) => setAddress(e.target.value)}
                 className="w-full bg-white border border-[#D8CCA8] rounded-xl px-3 py-2 text-xs text-[#26221C] focus:outline-none focus:border-[#C9972B]"
               />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-xs font-semibold text-[#4B4338] mb-1">طريقة الدفع المفضلة</label>
-            <div className="grid grid-cols-2 gap-2 text-xs">
-              <button
-                type="button"
-                onClick={() => setPaymentMethod('CASH_ON_DELIVERY')}
-                className={`flex items-center gap-2 p-2.5 rounded-xl border text-xs font-bold transition cursor-pointer ${
-                  paymentMethod === 'CASH_ON_DELIVERY'
-                    ? 'bg-[#FAF4E8] text-[#9A6817] border-[#C9972B] shadow-sm'
-                    : 'bg-[#FAF7F2] text-[#4B4338] border-[#E0D7C6]'
-                }`}
-              >
-                <Banknote className="w-4 h-4 text-[#C9972B]" />
-                <span>الدفع عند الاستلام</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setPaymentMethod('BANK_TRANSFER')}
-                className={`flex items-center gap-2 p-2.5 rounded-xl border text-xs font-bold transition cursor-pointer ${
-                  paymentMethod === 'BANK_TRANSFER'
-                    ? 'bg-[#FAF4E8] text-[#9A6817] border-[#C9972B] shadow-sm'
-                    : 'bg-[#FAF7F2] text-[#4B4338] border-[#E0D7C6]'
-                }`}
-              >
-                <CreditCard className="w-4 h-4 text-[#C9972B]" />
-                <span>تحويل بنكي مباشر</span>
-              </button>
             </div>
           </div>
 

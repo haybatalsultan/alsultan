@@ -36,7 +36,6 @@ export const B2BCheckoutModal: React.FC<B2BCheckoutModalProps> = ({
   const [email, setEmail] = useState(customerUser?.email || '');
   const [city, setCity] = useState('أبوظبي');
   const [shippingAddress, setShippingAddress] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState<'BANK_TRANSFER' | 'CHEQUE' | 'CREDIT_TERMS'>('BANK_TRANSFER');
   const [notes, setNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
@@ -73,7 +72,7 @@ export const B2BCheckoutModal: React.FC<B2BCheckoutModalProps> = ({
         email: email.trim(),
         shipping_address: shippingAddress.trim() || 'المقر التجاري للمنشأة',
         city,
-        payment_method: paymentMethod,
+        payment_method: 'أمر شراء معتمد',
         notes: notes.trim()
       };
 
@@ -212,79 +211,6 @@ export const B2BCheckoutModal: React.FC<B2BCheckoutModalProps> = ({
                   className="w-full px-3.5 py-2.5 text-xs bg-[#FAF7F2] border border-[#DDD3C1] rounded-xl focus:outline-none focus:border-[#C9972B]"
                 />
               </div>
-            </div>
-          </div>
-
-          {/* B2B Payment Methods */}
-          <div className="space-y-3 pt-2">
-            <h4 className="text-xs font-black text-[#9A6817] flex items-center gap-1.5 pb-1 border-b border-[#F2ECE1]">
-              <Banknote className="w-4 h-4 text-[#C9972B]" />
-              <span>طريقة الدفع التجاري المعتمدة</span>
-            </h4>
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-              <label
-                className={`p-3 rounded-2xl border text-xs cursor-pointer transition flex flex-col justify-between space-y-1.5 ${
-                  paymentMethod === 'BANK_TRANSFER'
-                    ? 'border-[#C9972B] bg-[#FAF4E8] text-[#9A6817] font-bold shadow-xs'
-                    : 'border-[#EBE3D5] bg-white text-[#746A5D] hover:bg-[#FAF7F2]'
-                }`}
-              >
-                <div className="flex items-center justify-between">
-                  <Banknote className="w-4 h-4 text-[#C9972B]" />
-                  <input
-                    type="radio"
-                    name="b2b_payment"
-                    checked={paymentMethod === 'BANK_TRANSFER'}
-                    onChange={() => setPaymentMethod('BANK_TRANSFER')}
-                    className="text-[#C9972B] focus:ring-[#C9972B]"
-                  />
-                </div>
-                <span className="font-extrabold">تحويل بنكي رسمي</span>
-                <span className="text-[10px] text-[#8C8275] leading-tight">إيداع مباشر في حساب الشركة</span>
-              </label>
-
-              <label
-                className={`p-3 rounded-2xl border text-xs cursor-pointer transition flex flex-col justify-between space-y-1.5 ${
-                  paymentMethod === 'CHEQUE'
-                    ? 'border-[#C9972B] bg-[#FAF4E8] text-[#9A6817] font-bold shadow-xs'
-                    : 'border-[#EBE3D5] bg-white text-[#746A5D] hover:bg-[#FAF7F2]'
-                }`}
-              >
-                <div className="flex items-center justify-between">
-                  <CreditCard className="w-4 h-4 text-[#C9972B]" />
-                  <input
-                    type="radio"
-                    name="b2b_payment"
-                    checked={paymentMethod === 'CHEQUE'}
-                    onChange={() => setPaymentMethod('CHEQUE')}
-                    className="text-[#C9972B] focus:ring-[#C9972B]"
-                  />
-                </div>
-                <span className="font-extrabold">شيك مصرفي</span>
-                <span className="text-[10px] text-[#8C8275] leading-tight">شيك بنكي معتمد عند التسليم</span>
-              </label>
-
-              <label
-                className={`p-3 rounded-2xl border text-xs cursor-pointer transition flex flex-col justify-between space-y-1.5 ${
-                  paymentMethod === 'CREDIT_TERMS'
-                    ? 'border-[#C9972B] bg-[#FAF4E8] text-[#9A6817] font-bold shadow-xs'
-                    : 'border-[#EBE3D5] bg-white text-[#746A5D] hover:bg-[#FAF7F2]'
-                }`}
-              >
-                <div className="flex items-center justify-between">
-                  <ShieldCheck className="w-4 h-4 text-[#C9972B]" />
-                  <input
-                    type="radio"
-                    name="b2b_payment"
-                    checked={paymentMethod === 'CREDIT_TERMS'}
-                    onChange={() => setPaymentMethod('CREDIT_TERMS')}
-                    className="text-[#C9972B] focus:ring-[#C9972B]"
-                  />
-                </div>
-                <span className="font-extrabold">آجل Net 30</span>
-                <span className="text-[10px] text-[#8C8275] leading-tight">تسهيلات ائتمانية للتجار المعتمدين</span>
-              </label>
             </div>
           </div>
 
