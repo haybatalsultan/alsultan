@@ -29,6 +29,7 @@ interface InventoryPageProps {
   onOpenCustodyModal: (product: Product) => void;
   onOpenBeadModal: (product: Product) => void;
   onOpenQuickSaleModal: (product: Product) => void;
+  onViewProduct?: (product: Product) => void;
   currentUser?: User;
 }
 
@@ -37,6 +38,7 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({
   onOpenCustodyModal,
   onOpenBeadModal,
   onOpenQuickSaleModal,
+  onViewProduct,
   currentUser
 }) => {
   const [products, setProducts] = useState<Product[]>([]);
@@ -236,12 +238,24 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({
               >
                 <div>
                   {/* Image and Badges */}
-                  <div className="relative aspect-video rounded-2xl overflow-hidden bg-[#FAF7F2] border border-[#E0D7C6] mb-4">
+                  <div
+                    onClick={() => onViewProduct ? onViewProduct(p) : onOpenProductModal(p)}
+                    className="relative aspect-video rounded-2xl overflow-hidden bg-[#FAF7F2] border border-[#E0D7C6] mb-4 cursor-pointer group/img"
+                    title="انقر لعرض تفاصيل المسبحة وصورها وتكبيرها"
+                  >
                     <img
                       src={p.image_url || '/branding/hero-amber.jpg'}
                       alt=""
-                      className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
+                      className="w-full h-full object-cover group-hover/img:scale-108 transition duration-500"
                     />
+                    
+                    {/* Hover Inspection Overlay */}
+                    <div className="absolute inset-0 bg-black/25 opacity-0 group-hover/img:opacity-100 transition-opacity duration-300 flex items-center justify-center pointer-events-none">
+                      <span className="bg-[#1C1814]/90 text-[#F4E3BA] text-[11px] font-bold px-3 py-1 rounded-xl border border-[#C9972B]/60 shadow-lg flex items-center gap-1.5 backdrop-blur-xs scale-95 group-hover/img:scale-100 transition-transform">
+                        <Sparkles className="w-3.5 h-3.5 text-[#C9972B]" />
+                        <span>معاينة وتكبير الصور</span>
+                      </span>
+                    </div>
                     <div className="absolute top-2.5 right-2.5 flex items-center gap-1.5">
                       {getStatusBadge(p.status)}
                     </div>

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import {
   Gem,
   Award,
@@ -13,10 +13,17 @@ import {
   Check,
   Printer,
   ChevronLeft,
+  ChevronRight,
   ExternalLink,
   MessageCircle,
   Gift,
-  Truck
+  Truck,
+  ZoomIn,
+  ZoomOut,
+  RotateCcw,
+  X,
+  Maximize2,
+  Move
 } from 'lucide-react';
 import { Product } from '../types';
 import { BoxQRLabelModal } from '../components/BoxQRLabelModal';
@@ -37,8 +44,15 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
   const [copiedLink, setCopiedLink] = useState(false);
   const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
 
+  // Zoom Lightbox State
+  const [isZoomOpen, setIsZoomOpen] = useState(false);
+  const [zoomScale, setZoomScale] = useState(1);
+  const [panPosition, setPanPosition] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+
   // Parse all available product images (primary + secondary up to 3)
-  const productImages: string[] = [
+  const rawImages: string[] = [
     product.image_url || (product as any).primary_image,
     ...(() => {
       try {
@@ -51,10 +65,97 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
       } catch {}
       return [];
     })()
-  ].filter(Boolean);
+  ].filter((img): img is string => typeof img === 'string' && img.trim().length > 0);
+
+  const productImages: string[] = Array.from(new Set(rawImages)).length > 0
+    ? Array.from(new Set(rawImages))
+    : ['/branding/hero-amber.jpg'];
 
   const [activeImageIndex, setActiveImageIndex] = useState(0);
-  const activeImage = productImages[activeImageIndex] || productImages[0] || product.image_url || '/branding/hero-amber.jpg';
+  const activeImage = productImages[activeImageIndex] || productImages[0];
+
+  const handleNextImage = useCallback(() => {
+    setActiveImageIndex((prev) => (prev + 1) % productImages.length);
+    setZoomScale(1);
+    setPanPosition({ x: 0, y: 0 });
+  }, [productImages.length]);
+
+  const handlePrevImage = useCallback(() => {
+    setActiveImageIndex((prev) => (prev - 1 + productImages.length) % productImages.length);
+    setZoomScale(1);
+    setPanPosition({ x: 0, y: 0 });
+  }, [productImages.length]);
+
+  const handleResetZoom = () => {
+    setZoomScale(1);
+    setPanPosition({ x: 0, y: 0 });
+  };
+
+  const handleZoomIn = () => {
+    setZoomScale((s) => Math.min(3.5, Math.round((s + 0.5) * 10) / 10));
+  };
+
+  const handleZoomOut = () => {
+    setZoomScale((s) => {
+      const next = Math.max(1, Math.round((s - 0.5) * 10) / 10);
+      if (next === 1) setPanPosition({ x: 0, y: 0 });
+      return next;
+    });
+  };
+
+  const handleToggleZoom = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (zoomScale === 1) {
+      setZoomScale(2);
+    } else if (zoomScale === 2) {
+      setZoomScale(3);
+    } else {
+      handleResetZoom();
+    }
+  };
+
+  // Keyboard navigation when zoom lightbox is open
+  useEffect(() => {
+    if (!isZoomOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIsZoomOpen(false);
+        handleResetZoom();
+      } else if (e.key === 'ArrowRight') {
+        handlePrevImage(); // RTL layout
+      } else if (e.key === 'ArrowLeft') {
+        handleNextImage();
+      } else if (e.key === '+' || e.key === '=') {
+        handleZoomIn();
+      } else if (e.key === '-') {
+        handleZoomOut();
+      } else if (e.key === '0') {
+        handleResetZoom();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isZoomOpen, handleNextImage, handlePrevImage]);
+
+  // Drag to Pan when zoomed
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (zoomScale <= 1) return;
+    e.preventDefault();
+    setIsDragging(true);
+    setDragStart({ x: e.clientX - panPosition.x, y: e.clientY - panPosition.y });
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging || zoomScale <= 1) return;
+    setPanPosition({
+      x: e.clientX - dragStart.x,
+      y: e.clientY - dragStart.y
+    });
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+  };
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -164,7 +265,11 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
             
             {/* Image Showcase & Multi-Angle Gallery */}
             <div className="space-y-3">
-              <div className="relative aspect-square rounded-2xl overflow-hidden bg-[#F5EFE6] border-2 border-[#E5DAC8] group shadow-inner flex items-center justify-center">
+              <div 
+                onClick={() => setIsZoomOpen(true)}
+                className="relative aspect-square rounded-2xl overflow-hidden bg-[#F5EFE6] border-2 border-[#E5DAC8] group shadow-inner flex items-center justify-center cursor-zoom-in"
+                title="انقر لتكبير الصورة وفحص تفاصيل الخامة والخرز"
+              >
                 {activeImage ? (
                   <img
                     src={activeImage}
@@ -179,41 +284,105 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                 )}
 
                 {/* Status Pill */}
-                <div className="absolute top-3 right-3 bg-white/95 backdrop-blur-xs px-3 py-1 rounded-full text-xs font-bold text-[#9A6817] border border-[#E0D7C6] shadow-xs flex items-center gap-1.5">
+                <div className="absolute top-3 right-3 bg-white/95 backdrop-blur-xs px-3 py-1 rounded-full text-xs font-bold text-[#9A6817] border border-[#E0D7C6] shadow-xs flex items-center gap-1.5 pointer-events-none">
                   <BadgeCheck className="w-4 h-4 text-[#C9972B]" />
                   <span>قطعة معتمدة</span>
                 </div>
 
-                {/* Serial Watermark */}
-                <div className="absolute bottom-3 left-3 bg-[#1C1814]/80 backdrop-blur-xs text-white/90 px-3 py-1 rounded-lg text-[11px] font-mono border border-white/10">
-                  {product.sku}
+                {/* Zoom Badge on hover / top left */}
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsZoomOpen(true);
+                  }}
+                  className="absolute top-3 left-3 bg-[#1C1814]/85 hover:bg-[#1C1814] text-[#F4E3BA] px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 border border-[#C9972B]/50 shadow-md transition cursor-pointer backdrop-blur-xs"
+                >
+                  <ZoomIn className="w-3.5 h-3.5 text-[#E2B84B]" />
+                  <span>تكبير الصورة</span>
+                </button>
+
+                {/* Navigation Arrows on image when multiple images */}
+                {productImages.length > 1 && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handlePrevImage();
+                      }}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/60 hover:bg-[#C9972B] text-white flex items-center justify-center border border-white/20 transition shadow-lg cursor-pointer opacity-85 hover:opacity-100"
+                      title="الصورة السابقة"
+                    >
+                      <ChevronRight className="w-5 h-5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleNextImage();
+                      }}
+                      className="absolute left-2.5 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/60 hover:bg-[#C9972B] text-white flex items-center justify-center border border-white/20 transition shadow-lg cursor-pointer opacity-85 hover:opacity-100"
+                      title="الصورة التالية"
+                    >
+                      <ChevronLeft className="w-5 h-5" />
+                    </button>
+                  </>
+                )}
+
+                {/* Image Counter & Serial Watermark */}
+                <div className="absolute bottom-3 inset-x-3 flex items-center justify-between pointer-events-none">
+                  <div className="bg-[#1C1814]/85 backdrop-blur-xs text-white/90 px-2.5 py-1 rounded-lg text-[11px] font-mono border border-white/10">
+                    {product.sku}
+                  </div>
+                  {productImages.length > 1 && (
+                    <div className="bg-black/75 backdrop-blur-xs text-[#E2B84B] px-2.5 py-1 rounded-lg text-[11px] font-bold border border-[#C9972B]/40">
+                      صورة {activeImageIndex + 1} من {productImages.length}
+                    </div>
+                  )}
                 </div>
               </div>
 
-              {/* Multi-Image Thumbnails (Up to 3 images) */}
+              {/* Multi-Image Thumbnails (Up to 3 images or more) */}
               {productImages.length > 1 && (
-                <div className="flex items-center justify-center gap-2.5 pt-1">
-                  {productImages.map((img, idx) => (
-                    <button
-                      key={idx}
-                      type="button"
-                      onClick={() => setActiveImageIndex(idx)}
-                      className={`relative w-16 h-16 rounded-xl overflow-hidden border-2 transition cursor-pointer ${
-                        activeImageIndex === idx
-                          ? 'border-[#C9972B] shadow-md ring-2 ring-[#C9972B]/40 scale-105'
-                          : 'border-[#E0D7C6] opacity-70 hover:opacity-100 hover:border-[#C9972B]'
-                      }`}
-                    >
-                      <img src={img} alt={`صورة ${idx + 1}`} className="w-full h-full object-cover" />
-                      {idx === 0 && (
-                        <span className="absolute bottom-0 inset-x-0 bg-[#C9972B] text-white text-[8px] font-bold py-0.5 text-center leading-none">
-                          الغلاف
+                <div className="space-y-2">
+                  <div className="flex items-center justify-center gap-2.5 pt-1">
+                    {productImages.map((img, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => {
+                          setActiveImageIndex(idx);
+                          setZoomScale(1);
+                        }}
+                        className={`relative w-20 h-20 rounded-xl overflow-hidden border-2 transition cursor-pointer group/thumb ${
+                          activeImageIndex === idx
+                            ? 'border-[#C9972B] shadow-md ring-2 ring-[#C9972B]/50 scale-105'
+                            : 'border-[#E0D7C6] opacity-75 hover:opacity-100 hover:border-[#C9972B]'
+                        }`}
+                      >
+                        <img src={img} alt={`صورة ${idx + 1}`} className="w-full h-full object-cover" />
+                        <span className="absolute bottom-0 inset-x-0 bg-black/70 text-white text-[9px] font-bold py-0.5 text-center leading-none">
+                          {idx === 0 ? 'الغلاف ⭐' : idx === 1 ? 'تفاصيل 🔍' : 'كركوشة 📿'}
                         </span>
-                      )}
-                    </button>
-                  ))}
+                      </button>
+                    ))}
+                  </div>
+                  <p className="text-[11px] text-center text-[#8C8275]">
+                    انقر على أي صورة لمعاينتها أو انقر على الصورة الرئيسية لتكبيرها وفحص الخامة
+                  </p>
                 </div>
               )}
+
+              {/* Dedicated Zoom Inspection Button */}
+              <button
+                type="button"
+                onClick={() => setIsZoomOpen(true)}
+                className="w-full py-2.5 px-4 bg-[#FAF4E8] hover:bg-[#F2ECE1] text-[#9A6817] border border-[#C9972B]/40 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 shadow-2xs cursor-pointer"
+              >
+                <ZoomIn className="w-4 h-4 text-[#C9972B]" />
+                <span>فتح معرض الصور التفاعلي وتكبير التفاصيل (HD Zoom)</span>
+              </button>
             </div>
 
             {/* Product Identity & Valuation */}
@@ -412,6 +581,184 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
         </div>
 
       </div>
+
+      {/* 8. Luxury Fullscreen Zoom & Image Gallery Lightbox Modal */}
+      {isZoomOpen && (
+        <div 
+          className="fixed inset-0 z-[999999] bg-black/95 backdrop-blur-md flex flex-col justify-between animate-in fade-in duration-200 select-none"
+          dir="rtl"
+        >
+          {/* Top Control Bar */}
+          <div className="p-4 sm:p-5 flex items-center justify-between bg-gradient-to-b from-black/80 to-transparent border-b border-white/10 z-20">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-[#26221C] text-[#E2B84B] border border-[#C9972B]/40 flex items-center justify-center shadow-md">
+                <Sparkles className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-white tracking-wide flex items-center gap-2">
+                  <span>{product.name_ar}</span>
+                  <span className="text-xs font-mono font-bold text-[#E2B84B] bg-white/10 px-2 py-0.5 rounded">
+                    {product.sku}
+                  </span>
+                </h3>
+                <p className="text-xs text-white/60">
+                  معاينة مجهرية مكبرة للأصالة وتفاصيل الخرز • صورة {activeImageIndex + 1} من {productImages.length}
+                </p>
+              </div>
+            </div>
+
+            {/* Zoom & Action Controls */}
+            <div className="flex items-center gap-2">
+              <div className="hidden sm:flex items-center gap-1 bg-white/10 p-1 rounded-xl border border-white/15">
+                <button
+                  type="button"
+                  onClick={handleZoomOut}
+                  disabled={zoomScale <= 1}
+                  className="p-1.5 text-white/80 hover:text-white disabled:opacity-30 rounded-lg hover:bg-white/10 transition cursor-pointer"
+                  title="تصغير (-)"
+                >
+                  <ZoomOut className="w-4 h-4" />
+                </button>
+
+                <span className="text-xs font-mono font-bold text-[#E2B84B] px-2 min-w-[50px] text-center">
+                  {Math.round(zoomScale * 100)}%
+                </span>
+
+                <button
+                  type="button"
+                  onClick={handleZoomIn}
+                  disabled={zoomScale >= 3.5}
+                  className="p-1.5 text-white/80 hover:text-white disabled:opacity-30 rounded-lg hover:bg-white/10 transition cursor-pointer"
+                  title="تكبير (+)"
+                >
+                  <ZoomIn className="w-4 h-4" />
+                </button>
+
+                {zoomScale > 1 && (
+                  <button
+                    type="button"
+                    onClick={handleResetZoom}
+                    className="p-1.5 text-amber-300 hover:text-white rounded-lg hover:bg-white/10 transition cursor-pointer"
+                    title="إعادة ضبط الحجم (0)"
+                  >
+                    <RotateCcw className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setIsZoomOpen(false);
+                  handleResetZoom();
+                }}
+                className="p-2 rounded-xl bg-white/10 hover:bg-rose-600/80 text-white transition border border-white/20 cursor-pointer shadow-md"
+                title="إغلاق (Esc)"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+
+          {/* Central Interactive Image Stage */}
+          <div 
+            className="flex-1 relative overflow-hidden flex items-center justify-center p-4"
+            onMouseDown={handleMouseDown}
+            onMouseMove={handleMouseMove}
+            onMouseUp={handleMouseUp}
+            onMouseLeave={handleMouseUp}
+            onClick={handleToggleZoom}
+            style={{
+              cursor: zoomScale > 1 ? (isDragging ? 'grabbing' : 'grab') : 'zoom-in'
+            }}
+          >
+            {/* Previous Image Side Button */}
+            {productImages.length > 1 && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handlePrevImage();
+                }}
+                className="absolute right-4 sm:right-8 z-30 w-12 h-12 rounded-2xl bg-black/70 hover:bg-[#C9972B] text-white flex items-center justify-center border border-white/20 transition shadow-2xl cursor-pointer"
+                title="الصورة السابقة (سهم يمين)"
+              >
+                <ChevronRight className="w-6 h-6" />
+              </button>
+            )}
+
+            {/* Next Image Side Button */}
+            {productImages.length > 1 && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleNextImage();
+                }}
+                className="absolute left-4 sm:left-8 z-30 w-12 h-12 rounded-2xl bg-black/70 hover:bg-[#C9972B] text-white flex items-center justify-center border border-white/20 transition shadow-2xl cursor-pointer"
+                title="الصورة التالية (سهم يسار)"
+              >
+                <ChevronLeft className="w-6 h-6" />
+              </button>
+            )}
+
+            {/* Zoomed Image */}
+            <div 
+              className="transition-transform duration-100 ease-out flex items-center justify-center max-w-full max-h-full"
+              style={{
+                transform: `scale(${zoomScale}) translate(${panPosition.x / zoomScale}px, ${panPosition.y / zoomScale}px)`
+              }}
+            >
+              <img
+                src={activeImage}
+                alt={product.name_ar}
+                draggable={false}
+                className="max-h-[75vh] max-w-[90vw] object-contain rounded-xl shadow-2xl pointer-events-auto"
+              />
+            </div>
+          </div>
+
+          {/* Bottom Thumbnails Strip & Help Instructions */}
+          <div className="p-4 bg-gradient-to-t from-black via-black/80 to-transparent border-t border-white/10 z-20 space-y-3">
+            {/* Thumbnails */}
+            {productImages.length > 1 && (
+              <div className="flex items-center justify-center gap-3 overflow-x-auto py-1">
+                {productImages.map((img, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setActiveImageIndex(idx);
+                      handleResetZoom();
+                    }}
+                    className={`relative w-16 h-16 sm:w-20 sm:h-20 rounded-xl overflow-hidden border-2 transition cursor-pointer shrink-0 ${
+                      activeImageIndex === idx
+                        ? 'border-[#C9972B] ring-2 ring-[#C9972B] scale-105 opacity-100'
+                        : 'border-white/20 opacity-50 hover:opacity-90'
+                    }`}
+                  >
+                    <img src={img} alt="" className="w-full h-full object-cover" />
+                    <span className="absolute bottom-0 inset-x-0 bg-black/80 text-white text-[9px] font-bold py-0.5 text-center leading-none">
+                      {idx === 0 ? 'الغلاف ⭐' : idx === 1 ? 'تفاصيل 🔍' : 'كركوشة 📿'}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
+
+            <div className="text-center text-xs text-white/60 flex items-center justify-center gap-4">
+              <span>💡 انقر على الصورة للتبديل بين درجات التكبير (1x / 2x / 3x)</span>
+              {zoomScale > 1 && (
+                <span className="text-[#E2B84B] font-bold flex items-center gap-1">
+                  <Move className="w-3.5 h-3.5" />
+                  اسحب بالماوس لتحريك الصورة وفحص أدق التفاصيل
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

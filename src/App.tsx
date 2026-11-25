@@ -309,6 +309,7 @@ export const App: React.FC = () => {
                 onOpenCustodyModal={(p) => setCustodyModalItem({ open: true, item: p })}
                 onOpenBeadModal={(p) => setBeadModalItem({ open: true, item: p })}
                 onOpenQuickSaleModal={(p) => setQuickSaleModalItem({ open: true, item: p })}
+                onViewProduct={(p) => handleViewProduct(p)}
               />
             )}
 
@@ -348,6 +349,7 @@ export const App: React.FC = () => {
                 onOpenCheckout={(p) => setCheckoutProduct(p)}
                 onOpenCustomerAuth={() => setIsCustomerAuthOpen(true)}
                 onOpenCustomerOrders={() => setIsCustomerOrdersOpen(true)}
+                onViewProduct={(p) => handleViewProduct(p)}
                 customerUser={customerUser}
                 cartItem={cartItem}
                 setCartItem={setCartItem}

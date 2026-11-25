@@ -483,16 +483,24 @@ export const StorefrontPage: React.FC<StorefrontPageProps> = ({
                   {/* Image Container with Badges */}
                   <div
                     onClick={() => onViewProduct && onViewProduct(p)}
-                    className="relative aspect-square overflow-hidden bg-[#FBF8F2] cursor-pointer"
-                    title="انقر لعرض تفاصيل وقصة المسبحة ومواصفاتها الفنية"
+                    className="relative aspect-square overflow-hidden bg-[#FBF8F2] cursor-pointer group/img"
+                    title="انقر لعرض تفاصيل وقصة المسبحة ومواصفاتها الفنية وتكبير الصور"
                   >
                     <img
                       src={p.image_url || '/branding/hero-amber.jpg'}
                       alt={p.name_ar}
                       loading="lazy"
                       decoding="async"
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                      className="w-full h-full object-cover group-hover/img:scale-108 transition-transform duration-700"
                     />
+
+                    {/* Hover Zoom & Inspection Overlay */}
+                    <div className="absolute inset-0 bg-black/25 opacity-0 group-hover/img:opacity-100 transition-opacity duration-300 flex items-center justify-center pointer-events-none">
+                      <span className="bg-[#1C1814]/90 text-[#F4E3BA] text-xs font-bold px-3.5 py-1.5 rounded-xl border border-[#C9972B]/60 shadow-xl flex items-center gap-1.5 backdrop-blur-xs scale-95 group-hover/img:scale-100 transition-transform">
+                        <Sparkles className="w-3.5 h-3.5 text-[#C9972B]" />
+                        <span>عرض التفاصيل وتكبير الصور</span>
+                      </span>
+                    </div>
 
                     {/* SKU Pill */}
                     <div className="absolute top-3 right-3 bg-white/95 backdrop-blur px-3 py-1 rounded-full text-[11px] font-bold text-[#9A6817] border border-[#E8DEC8] shadow-xs">
