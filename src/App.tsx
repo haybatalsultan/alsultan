@@ -29,6 +29,7 @@ import { CustomerOrdersModal } from './components/CustomerOrdersModal';
 import { CheckoutModal } from './components/CheckoutModal';
 import { RoyalNotifications } from './components/RoyalNotifications';
 import { toast } from './utils/toast';
+import { Clock, ShoppingBag, MessageCircle, X } from 'lucide-react';
 
 import { Product, Order, Category, Material, User } from './types';
 import { api, socket } from './lib/api';
@@ -103,9 +104,103 @@ export const App: React.FC = () => {
   const [isCustomerAuthOpen, setIsCustomerAuthOpen] = useState(false);
   const [isCustomerOrdersOpen, setIsCustomerOrdersOpen] = useState(false);
   const [checkoutProduct, setCheckoutProduct] = useState<Product | null>(null);
-  const [cartItem, setCartItem] = useState<Product | null>(null);
+
+  // Cart & 15-Minute Reservation State (Persisted across pages and navigation)
+  const [cartItem, setCartItem] = useState<Product | null>(() => {
+    try {
+      const savedExpiry = localStorage.getItem('haybat_reservation_expiry');
+      const savedItem = localStorage.getItem('haybat_reserved_item');
+      if (savedExpiry && savedItem) {
+        const remaining = Math.floor((Number(savedExpiry) - Date.now()) / 1000);
+        if (remaining > 0) {
+          return JSON.parse(savedItem);
+        }
+      }
+    } catch {}
+    return null;
+  });
+
+  const [reservationRemaining, setReservationRemaining] = useState<number>(() => {
+    try {
+      const savedExpiry = localStorage.getItem('haybat_reservation_expiry');
+      if (savedExpiry) {
+        const remaining = Math.floor((Number(savedExpiry) - Date.now()) / 1000);
+        if (remaining > 0) return remaining;
+      }
+    } catch {}
+    return 0;
+  });
 
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+
+  // Global 15-Minute Reservation Countdown Timer
+  useEffect(() => {
+    let interval: any = null;
+    if (cartItem && reservationRemaining > 0) {
+      interval = setInterval(() => {
+        setReservationRemaining((prev) => {
+          if (prev <= 1) {
+            // Reservation expired after 15 minutes!
+            if (cartItem?.id) {
+              api.unreserveProduct(cartItem.id).catch(() => {});
+            }
+            localStorage.removeItem('haybat_reservation_expiry');
+            localStorage.removeItem('haybat_reserved_item');
+            setCartItem(null);
+            toast.warning(
+              'انتهت مهلة حجز المسبحة (15 دقيقة) وتمت إعادتها للمخزون العام حمايةً للحصرية ومنعاً للاحتكار.',
+              'انتهاء مهلة الحجز'
+            );
+            setRefreshTrigger((n) => n + 1);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [cartItem, reservationRemaining]);
+
+  const handleReserveProduct = async (product: Product, durationMinutes = 15) => {
+    try {
+      await api.reserveProduct(product.id, 'client_cart_session', durationMinutes);
+      const totalSeconds = durationMinutes * 60;
+      const expiry = Date.now() + totalSeconds * 1000;
+      localStorage.setItem('haybat_reservation_expiry', String(expiry));
+      localStorage.setItem('haybat_reserved_item', JSON.stringify(product));
+      setCartItem(product);
+      setReservationRemaining(totalSeconds);
+      toast.success(
+        `تم حجز المسبحة (${product.name_ar}) باسمك لمدة 15 دقيقة حصرياً! لن يتمكن أي عميل أو معرض آخر من شرائها.`,
+        'حجز مسبحة حصرية'
+      );
+      setRefreshTrigger((n) => n + 1);
+    } catch (err: any) {
+      toast.error(err.response?.data?.error || 'تعذر حجز المسبحة');
+    }
+  };
+
+  const handleCancelReservation = async () => {
+    if (!cartItem) return;
+    const confirmed = await toast.confirm({
+      title: 'إلغاء حجز المسبحة',
+      message: `هل ترغب بإلغاء حجز (${cartItem.name_ar}) وإتاحتها فوراً لعملاء وزوار المتجر الآخرين؟`,
+      confirmText: 'نعم، إلغاء الحجز',
+      cancelText: 'تراجع',
+      type: 'warning'
+    });
+    if (!confirmed) return;
+
+    try {
+      await api.unreserveProduct(cartItem.id);
+    } catch {}
+    localStorage.removeItem('haybat_reservation_expiry');
+    localStorage.removeItem('haybat_reserved_item');
+    setCartItem(null);
+    setReservationRemaining(0);
+    toast.info('تم إلغاء الحجز بنجاح وأصبحت القطعة متاحة للجميع');
+    setRefreshTrigger((n) => n + 1);
+  };
 
   // Helper: Resolve product by unpredictable UUID, SKU, Reference or ID
   const resolveProductFromPath = async (pathname: string, prods: Product[]) => {
@@ -485,6 +580,67 @@ export const App: React.FC = () => {
         onNavigatePortal={navigatePortal}
       />
 
+      {/* Global 15-Minute Reservation Countdown Bar */}
+      {cartItem && reservationRemaining > 0 && (
+        <div className="sticky top-0 z-40 bg-gradient-to-r from-[#17140F] via-[#26221C] to-[#17140F] text-white px-4 py-3 shadow-2xl border-b-2 border-[#C9972B] animate-in slide-in-from-top-4 duration-300">
+          <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-3 text-xs sm:text-sm">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-[#C9972B]/20 border border-[#C9972B]/50 flex items-center justify-center shrink-0">
+                <Clock className="w-5 h-5 text-[#E2B84B] animate-pulse" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-extrabold text-[#F8F4EB]">
+                    القطعة محجوزة حصرياً باسمك لمدة 15 دقيقة:
+                  </span>
+                  <span className="text-[#E2B84B] font-bold">
+                    {cartItem.name_ar}
+                  </span>
+                  <span className="text-[11px] font-mono bg-white/10 px-2 py-0.5 rounded border border-white/15">
+                    #{cartItem.sku}
+                  </span>
+                </div>
+                <p className="text-[11px] text-[#C8BCAB] mt-0.5">
+                  لن يتمكن أي عميل أو معرض آخر من حجزها أو شرائها حتى انتهاء المهلة وتصبح حرة.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2.5 w-full md:w-auto justify-between md:justify-end">
+              {/* Live Countdown Badge */}
+              <div className="flex items-center gap-1.5 bg-[#0E0D0B] border border-[#C9972B]/60 px-3.5 py-1.5 rounded-xl shadow-inner">
+                <span className="text-[11px] text-[#A69B8D]">الوقت المتبقي:</span>
+                <span className="text-base font-black font-mono text-[#E2B84B] tracking-wider min-w-[50px] text-center">
+                  {Math.floor(reservationRemaining / 60)}:
+                  {String(reservationRemaining % 60).padStart(2, '0')}
+                </span>
+                <span className="text-[10px] text-[#A69B8D]">دقيقة</span>
+              </div>
+
+              {/* Checkout Button */}
+              <button
+                type="button"
+                onClick={() => setCheckoutProduct(cartItem)}
+                className="px-4 py-2 bg-gradient-to-r from-[#9A6817] via-[#C9972B] to-[#E2B84B] hover:brightness-110 text-[#12100D] font-black rounded-xl text-xs transition shadow-md flex items-center gap-1.5 active:scale-95 cursor-pointer"
+              >
+                <ShoppingBag className="w-4 h-4 text-[#12100D]" />
+                <span>إتمام الاقتناء</span>
+              </button>
+
+              {/* Cancel Reservation Button */}
+              <button
+                type="button"
+                onClick={handleCancelReservation}
+                className="px-3 py-2 bg-white/10 hover:bg-rose-950/40 hover:border-rose-400/50 text-[#C8BCAB] hover:text-rose-300 border border-white/15 rounded-xl text-xs font-semibold transition cursor-pointer"
+                title="إلغاء الحجز وإتاحة القطعة فوراً للآخرين"
+              >
+                إلغاء الحجز
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Main Storefront Body / Dedicated Product Detail Page */}
       <main className="flex-1">
         {portal === 'product' && viewingProduct ? (
@@ -494,6 +650,10 @@ export const App: React.FC = () => {
             allProducts={allStoreProducts}
             onBackToStore={() => navigatePortal('storefront')}
             currentUser={staffUser || customerUser}
+            onOpenCheckout={(product) => setCheckoutProduct(product)}
+            onReserveProduct={handleReserveProduct}
+            cartItem={cartItem}
+            reservationRemaining={reservationRemaining}
           />
         ) : (
           <StorefrontPage
@@ -504,7 +664,8 @@ export const App: React.FC = () => {
             onViewProduct={(product) => handleViewProduct(product)}
             customerUser={customerUser}
             cartItem={cartItem}
-            setCartItem={setCartItem}
+            reservationRemaining={reservationRemaining}
+            onReserveProduct={handleReserveProduct}
           />
         )}
       </main>
@@ -529,8 +690,11 @@ export const App: React.FC = () => {
         customerUser={customerUser}
         onClose={() => setCheckoutProduct(null)}
         onSuccess={(ord) => {
+          localStorage.removeItem('haybat_reservation_expiry');
+          localStorage.removeItem('haybat_reserved_item');
           setCheckoutProduct(null);
           setCartItem(null);
+          setReservationRemaining(0);
           setInvoiceModalItem({ open: true, order: ord });
           setRefreshTrigger(n => n + 1);
         }}

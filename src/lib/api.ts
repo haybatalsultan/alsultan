@@ -116,6 +116,10 @@ export const api = {
     const res = await axios.post(`${API_BASE}/products/${id}/reserve`, { cart_id, minutes });
     return res.data;
   },
+  unreserveProduct: async (id: number) => {
+    const res = await axios.post(`${API_BASE}/products/${id}/unreserve`);
+    return res.data;
+  },
   uploadImage: async (dataUrl: string, filename?: string): Promise<{ success: boolean; url: string; size: number; filename: string }> => {
     const res = await axios.post(`${API_BASE}/upload`, { dataUrl, filename });
     return res.data;

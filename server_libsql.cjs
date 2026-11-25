@@ -1318,6 +1318,13 @@ app.post('/api/orders/checkout', async (req, res) => {
 // 3. Products & Luxury Rosary Catalog (B2C & General)
 app.get('/api/products', async (req, res) => {
   try {
+    // Real-time Anti-Hoarding: Release any reservations that passed their 15-minute expiry
+    await query(`
+      UPDATE products
+      SET status = 'AVAILABLE', reserved_until = NULL, reserved_by_cart = NULL, updated_at = datetime('now', 'localtime')
+      WHERE status = 'RESERVED' AND reserved_until IS NOT NULL AND reserved_until <= datetime('now', 'localtime')
+    `);
+
     const { status, category, material, search, channel, min_price, max_price } = req.query;
     let sql = `
       SELECT p.*, c.name_ar as category_name_ar, c.name_en as category_name_en,
@@ -2117,6 +2124,27 @@ app.post('/api/products/:id/reserve', async (req, res) => {
     res.json({ success: true, product: updated });
   } catch (err) {
     releaseProductLock(productId);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Release / Cancel reservation manually or upon 15-minute countdown expiry
+app.post('/api/products/:id/unreserve', async (req, res) => {
+  const productId = req.params.id;
+  try {
+    await query(`
+      UPDATE products SET
+        status = 'AVAILABLE',
+        reserved_until = NULL,
+        reserved_by_cart = NULL,
+        updated_at = datetime('now', 'localtime')
+      WHERE id = ?
+    `, [productId]);
+
+    const updated = await queryOne('SELECT * FROM products WHERE id = ?', [productId]);
+    io.emit('product:status_changed', { id: productId, status: 'AVAILABLE' });
+    res.json({ success: true, product: updated });
+  } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });

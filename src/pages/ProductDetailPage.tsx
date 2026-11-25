@@ -23,7 +23,9 @@ import {
   RotateCcw,
   X,
   Maximize2,
-  Move
+  Move,
+  Clock,
+  ShoppingCart
 } from 'lucide-react';
 import { Product } from '../types';
 import { BoxQRLabelModal } from '../components/BoxQRLabelModal';
@@ -33,13 +35,21 @@ interface ProductDetailPageProps {
   allProducts?: Product[];
   onBackToStore: () => void;
   currentUser?: any;
+  onOpenCheckout?: (product: Product) => void;
+  onReserveProduct?: (product: Product, durationMinutes?: number) => void;
+  cartItem?: Product | null;
+  reservationRemaining?: number;
 }
 
 export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
   product,
   allProducts = [],
   onBackToStore,
-  currentUser
+  currentUser,
+  onOpenCheckout,
+  onReserveProduct,
+  cartItem,
+  reservationRemaining = 0
 }) => {
   const [copiedLink, setCopiedLink] = useState(false);
   const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
@@ -432,6 +442,75 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                   <span className="block text-[11px] text-[#8C8275] mb-0.5">الوزن الصافي</span>
                   <span className="font-black text-[#26221C] text-sm">{product.weight_g} g</span>
                 </div>
+              </div>
+
+              {/* Acquisition & 15-Minute Reservation Action Bar */}
+              <div className="pt-2 border-t border-[#F2ECE1] space-y-2.5">
+                {cartItem && cartItem.id === product.id ? (
+                  <div className="bg-[#FAF4E8] border border-[#C9972B]/50 p-3.5 rounded-2xl space-y-2">
+                    <div className="flex items-center justify-between text-xs font-bold text-[#9A6817]">
+                      <span className="flex items-center gap-1.5">
+                        <Clock className="w-4 h-4 animate-spin text-[#C9972B]" />
+                        <span>محجوزة باسمك حصرياً (حماية من الشراء المتزامن)</span>
+                      </span>
+                      <span className="font-mono text-sm font-black bg-white px-2.5 py-0.5 rounded-lg border border-[#C9972B]/40">
+                        {Math.floor((reservationRemaining || 0) / 60)}:
+                        {String((reservationRemaining || 0) % 60).padStart(2, '0')}
+                      </span>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => onOpenCheckout && onOpenCheckout(product)}
+                      className="w-full py-3 bg-gradient-to-r from-[#9A6817] via-[#C9972B] to-[#E2B84B] hover:brightness-110 text-[#12100D] font-black rounded-xl text-xs transition shadow-md flex items-center justify-center gap-2 cursor-pointer"
+                    >
+                      <ShoppingCart className="w-4 h-4 text-[#12100D]" />
+                      <span>إتمام الاقتناء الرسمي أونلاين الآن</span>
+                    </button>
+                  </div>
+                ) : product.status === 'RESERVED' ? (
+                  <div className="bg-[#F8F4EE] border border-[#DDD3C1] p-3.5 rounded-2xl text-center space-y-1">
+                    <div className="flex items-center justify-center gap-2 text-xs font-bold text-[#746A5D]">
+                      <Clock className="w-4 h-4 text-[#9A6817]" />
+                      <span>القطعة محجوزة مؤقتاً لعميل آخر</span>
+                    </div>
+                    <p className="text-[11px] text-[#8C8275]">
+                      ستصبح القطعة حرة ومتاحة تلقائياً للجميع فور انتهاء مدة الحجز (15 دقيقة) إذا لم تكتمل عملية الشراء.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <button
+                      type="button"
+                      onClick={() => onOpenCheckout && onOpenCheckout(product)}
+                      className="w-full py-3 bg-[#C9972B] hover:bg-[#B8851E] text-white font-black rounded-xl text-xs transition shadow-md flex items-center justify-center gap-2 cursor-pointer"
+                    >
+                      <ShoppingCart className="w-4 h-4" />
+                      <span>اقتناء فوري أونلاين</span>
+                    </button>
+
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => onReserveProduct && onReserveProduct(product, 15)}
+                        className="py-2.5 px-3 bg-[#FAF4E8] hover:bg-[#F3E7CE] text-[#9A6817] border border-[#E4D5B8] text-xs font-bold rounded-xl transition flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
+                        title="حجز مؤقت يمنع أي شخص آخر من شرائها لمدة 15 دقيقة"
+                      >
+                        <Clock className="w-3.5 h-3.5 text-[#C9972B]" />
+                        <span>حجز حصري (15 دقيقة)</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={handleWhatsAppContact}
+                        className="py-2.5 px-3 bg-[#25D366] hover:bg-[#1EBE5D] text-white text-xs font-bold rounded-xl transition flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
+                      >
+                        <MessageCircle className="w-3.5 h-3.5" />
+                        <span>استفسار واتساب</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <p className="text-xs text-[#746A5D] leading-relaxed pt-1">
