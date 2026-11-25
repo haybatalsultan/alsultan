@@ -74,7 +74,7 @@ if "%CHOICE%"=="6" (
 
 if "%CHOICE%"=="7" (
     cls
-    call push-to-github.bat
+    call push_to_github.bat
     goto MENU
 )
 
