@@ -14,6 +14,7 @@ import {
 import { api } from '../lib/api';
 import { Product, Category, Material, VerificationStatus } from '../types';
 import { compressImageFile, formatBytes, CompressionResult } from '../lib/imageCompressor';
+import { toast } from '../utils/toast';
 
 interface ProductModalProps {
   product: Product | null;
@@ -120,7 +121,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({
         )
       );
     } catch (err: any) {
-      alert(err?.message || 'تعذر معالجة ورفع الصورة، يرجى المحاولة مرة أخرى');
+      toast.error(err?.message || 'تعذر معالجة ورفع الصورة، يرجى المحاولة مرة أخرى');
       setImageSlots((prev) =>
         prev.map((slot, i) => (i === slotIndex ? { ...slot, isUploading: false } : slot))
       );
@@ -155,7 +156,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!nameAr.trim() || !sellingPrice) {
-      alert('يرجى كتابة اسم المسبحة وسعر البيع');
+      toast.warning('يرجى كتابة اسم المسبحة وسعر البيع');
       return;
     }
 
@@ -193,10 +194,11 @@ export const ProductModal: React.FC<ProductModalProps> = ({
         await api.createProduct(payload);
       }
 
+      toast.success(product ? 'تم تحديث بيانات المسبحة بنجاح' : 'تم إضافة المسبحة الجديدة بنجاح للمخزون');
       onSuccess();
       onClose();
     } catch (err: any) {
-      alert(err.response?.data?.error || 'حدث خطأ أثناء حفظ المسبحة');
+      toast.error(err.response?.data?.error || 'حدث خطأ أثناء حفظ المسبحة');
     } finally {
       setSubmitting(false);
     }

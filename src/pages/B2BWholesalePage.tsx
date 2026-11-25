@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { api } from '../lib/api';
 import { Product, User, Order } from '../types';
+import { toast } from '../utils/toast';
 import { B2BQuickOrderTable, B2BQuickOrderItem } from '../components/B2BQuickOrderTable';
 import { B2BRegisterModal } from '../components/B2BRegisterModal';
 import { B2BCheckoutModal } from '../components/B2BCheckoutModal';
@@ -135,7 +136,7 @@ export const B2BWholesalePage: React.FC<B2BWholesalePageProps> = ({
               <B2BQuickOrderTable
                 products={products}
                 onAddToCartBulk={(items) => {
-                  alert(`✅ تم تأكيد واختيار ${items.length} أصناف في قائمة الشراء.`);
+                  toast.success(`تم تأكيد واختيار ${items.length} أصناف في قائمة الشراء.`, 'قائمة الشراء بالجملة');
                 }}
                 onProceedToB2BCheckout={handleProceedToCheckout}
               />

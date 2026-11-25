@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import { api } from '../lib/api';
 import { Product } from '../types';
+import { toast } from '../utils/toast';
 
 interface StorefrontPageProps {
   onOpenCheckout: (product: Product) => void;
@@ -109,7 +110,7 @@ export const StorefrontPage: React.FC<StorefrontPageProps> = ({
         setReservationRemaining((prev) => {
           if (prev <= 1) {
             setCartItem(null);
-            alert('انتهت مهلة حجز المسبحة وتمت إعادتها للمخزون العام حمايةً للحصرية ومنعاً للاحتكار.');
+            toast.warning('انتهت مهلة حجز المسبحة وتمت إعادتها للمخزون العام حمايةً للحصرية ومنعاً للاحتكار.');
             loadStore();
             return 0;
           }
@@ -137,10 +138,10 @@ export const StorefrontPage: React.FC<StorefrontPageProps> = ({
       await api.reserveProduct(product.id, 'client_cart_session', 15);
       setCartItem(product);
       setReservationRemaining(15 * 60); // 15 minutes in seconds
-      alert(`🔒 تم حجز المسبحة (${product.name_ar}) باسمك لمدة 15 دقيقة حصرياً! لن يتمكن أي عميل أو معرض آخر من شرائها.`);
+      toast.success(`تم حجز المسبحة (${product.name_ar}) باسمك لمدة 15 دقيقة حصرياً! لن يتمكن أي عميل أو معرض آخر من شرائها.`, 'حجز مسبحة حصرية');
       await loadStore();
     } catch (err: any) {
-      alert(err.response?.data?.error || 'تعذر حجز المسبحة');
+      toast.error(err.response?.data?.error || 'تعذر حجز المسبحة');
     }
   };
 

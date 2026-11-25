@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Users, Award, Plus, Search, ShieldCheck, Share2, Copy } from 'lucide-react';
 import { api } from '../lib/api';
 import { Ambassador } from '../types';
+import { toast } from '../utils/toast';
 
 export const AmbassadorsPage: React.FC = () => {
   const [ambassadors, setAmbassadors] = useState<Ambassador[]>([]);
@@ -38,20 +39,20 @@ export const AmbassadorsPage: React.FC = () => {
         phone: phone.trim(),
         email: email.trim()
       });
-      alert(`✅ تم تسجيل السفير بنجاح وتوليد كود الإحالة: ${res.code}`);
+      toast.success(`تم تسجيل السفير بنجاح وتوليد كود الإحالة: ${res.code}`, 'تسجيل سفير');
       setShowAddModal(false);
       setName('');
       setPhone('');
       setEmail('');
       await loadAmbassadors();
     } catch (err: any) {
-      alert(err.response?.data?.error || 'حدث خطأ أثناء تسجيل السفير');
+      toast.error(err.response?.data?.error || 'حدث خطأ أثناء تسجيل السفير');
     }
   };
 
   const copyCode = (code: string) => {
     navigator.clipboard.writeText(code);
-    alert(`تم نسخ كود السفير (${code}) إلى الحافظة.`);
+    toast.info(`تم نسخ كود السفير (${code}) إلى الحافظة.`);
   };
 
   const filtered = ambassadors.filter(a =>

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ShieldCheck, X, Plus, Calendar, MapPin, User, FileText } from 'lucide-react';
 import { api } from '../lib/api';
 import { Product, CustodyRecord } from '../types';
+import { toast } from '../utils/toast';
 
 interface CustodyModalProps {
   product: Product | null;
@@ -51,10 +52,11 @@ export const CustodyModal: React.FC<CustodyModalProps> = ({ product, onClose, on
       });
       setHolderName('');
       setNote('');
+      toast.success('تم قيد العهدة ونقل حيازة المسبحة بنجاح');
       await loadHistory();
       onSuccess();
     } catch (err: any) {
-      alert(err.response?.data?.error || 'حدث خطأ أثناء قيد العهدة');
+      toast.error(err.response?.data?.error || 'حدث خطأ أثناء قيد العهدة');
     } finally {
       setSubmitting(false);
     }

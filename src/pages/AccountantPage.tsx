@@ -13,6 +13,7 @@ import {
   Banknote
 } from 'lucide-react';
 import { api } from '../lib/api';
+import { toast } from '../utils/toast';
 import { AccountantReport, Expense, Order } from '../types';
 
 export const AccountantPage: React.FC = () => {
@@ -70,9 +71,10 @@ export const AccountantPage: React.FC = () => {
       setExpDesc('');
       setExpAmount('');
       setExpSupplier('');
+      toast.success('تم قيد المصروف بنجاح');
       await loadAccountantData();
     } catch (err: any) {
-      alert(err.response?.data?.error || 'حدث خطأ أثناء إضافة المصروف');
+      toast.error(err.response?.data?.error || 'حدث خطأ أثناء إضافة المصروف');
     }
   };
 
@@ -82,9 +84,10 @@ export const AccountantPage: React.FC = () => {
 
     try {
       await api.voidExpense(id, reason.trim());
+      toast.info('تم إلغاء قيد المصروف محاسبياً');
       await loadAccountantData();
     } catch (err: any) {
-      alert(err.response?.data?.error || 'فشل إلغاء المصروف');
+      toast.error(err.response?.data?.error || 'فشل إلغاء المصروف');
     }
   };
 
@@ -98,12 +101,12 @@ export const AccountantPage: React.FC = () => {
         payment_method: 'CASH',
         note: 'سداد دفعة للمستحق الآجل'
       });
-      alert('✅ تم قيد سداد الدفعة وتحديث الرصيد المتبقي بنجاح');
+      toast.success('تم قيد سداد الدفعة وتحديث الرصيد المتبقي بنجاح');
       setSelectedReceivable(null);
       setPayAmount('');
       await loadAccountantData();
     } catch (err: any) {
-      alert(err.response?.data?.error || 'فشلت عملية السداد');
+      toast.error(err.response?.data?.error || 'فشلت عملية السداد');
     }
   };
 

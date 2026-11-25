@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { api } from '../lib/api';
 import { User } from '../types';
+import { toast } from '../utils/toast';
 import { UserModal } from '../components/UserModal';
 import { hasPermission } from '../lib/permissions';
 
@@ -80,32 +81,46 @@ export const UsersPage: React.FC<UsersPageProps> = ({ currentUser }) => {
   };
 
   const handleApproveMerchant = async (merchantId: number, companyName: string) => {
-    if (!confirm(`هل أنت متأكد من اعتماد ترقية حساب تاجر الجملة (${companyName}) وتمكينه من استعراض أسعار الجملة والطلب بالحد الأدنى؟`)) {
+    const confirmed = await toast.confirm({
+      title: 'اعتماد تاجر جملة',
+      message: `هل أنت متأكد من اعتماد ترقية حساب تاجر الجملة (${companyName}) وتمكينه من استعراض أسعار الجملة والطلب بالحد الأدنى؟`,
+      confirmText: 'اعتماد التاجر',
+      cancelText: 'إلغاء',
+      type: 'info'
+    });
+    if (!confirmed) {
       return;
     }
     setActionLoadingId(merchantId);
     try {
       await api.approveB2BMerchant(merchantId);
-      alert(`✅ تم اعتماد التاجر (${companyName}) بنجاح! يمكنه الآن الوصول لبوابة الجملة.`);
+      toast.success(`تم اعتماد التاجر (${companyName}) بنجاح! يمكنه الآن الوصول لبوابة الجملة.`, 'اعتماد تاجر جملة');
       await loadB2BMerchants();
     } catch (err: any) {
-      alert(err.response?.data?.error || 'فشل اعتماد التاجر');
+      toast.error(err.response?.data?.error || 'فشل اعتماد التاجر');
     } finally {
       setActionLoadingId(null);
     }
   };
 
   const handleRejectMerchant = async (merchantId: number, companyName: string) => {
-    if (!confirm(`هل أنت متأكد من رفض أو تعليق طلب تاجر الجملة (${companyName})؟ سيتم سحب صلاحيات الشراء بالجملة فوراً.`)) {
+    const confirmed = await toast.confirm({
+      title: 'تعليق / رفض تاجر جملة',
+      message: `هل أنت متأكد من رفض أو تعليق طلب تاجر الجملة (${companyName})؟ سيتم سحب صلاحيات الشراء بالجملة فوراً.`,
+      confirmText: 'تعليق الصلاحيات',
+      cancelText: 'إلغاء',
+      type: 'warning'
+    });
+    if (!confirmed) {
       return;
     }
     setActionLoadingId(merchantId);
     try {
       await api.rejectB2BMerchant(merchantId);
-      alert(`⚠️ تم رفض/تعليق حساب التاجر (${companyName}) وتحويله إلى عميل عادي.`);
+      toast.warning(`تم رفض/تعليق حساب التاجر (${companyName}) وتحويله إلى عميل عادي.`);
       await loadB2BMerchants();
     } catch (err: any) {
-      alert(err.response?.data?.error || 'فشل رفض التاجر');
+      toast.error(err.response?.data?.error || 'فشل رفض التاجر');
     } finally {
       setActionLoadingId(null);
     }
@@ -125,31 +140,38 @@ export const UsersPage: React.FC<UsersPageProps> = ({ currentUser }) => {
     if (selectedUser) {
       // Update
       await api.updateUser(selectedUser.id, userData);
-      alert('✅ تم تحديث بيانات وصلاحيات المستخدم بنجاح');
+      toast.success('تم تحديث بيانات وصلاحيات المستخدم بنجاح');
     } else {
       // Create
       await api.createUser(userData);
-      alert('🎉 تم إنشاء حساب المستخدم وتعيين الصلاحيات بنجاح');
+      toast.success('تم إنشاء حساب المستخدم وتعيين الصلاحيات بنجاح');
     }
     await loadUsers();
   };
 
   const handleDeleteUser = async (user: User) => {
     if (user.username === 'owner' || user.id === 1) {
-      alert('⛔ حظر أمني: لا يمكن حذف الحساب الرئيسي للمالك (owner)');
+      toast.error('حظر أمني: لا يمكن حذف الحساب الرئيسي للمالك (owner)');
       return;
     }
 
-    if (!confirm(`هل أنت متأكد من حذف المستخدم (${user.full_name} - @${user.username})؟ سيتم إلغاء وصوله للنظام نهائياً.`)) {
+    const confirmed = await toast.confirm({
+      title: 'حذف مستخدم',
+      message: `هل أنت متأكد من حذف المستخدم (${user.full_name} - @${user.username})؟ سيتم إلغاء وصوله للنظام نهائياً.`,
+      confirmText: 'حذف نهائي',
+      cancelText: 'إلغاء',
+      type: 'danger'
+    });
+    if (!confirmed) {
       return;
     }
 
     try {
       await api.deleteUser(user.id, currentUser.full_name);
-      alert('✅ تم حذف المستخدم بنجاح');
+      toast.success('تم حذف المستخدم بنجاح');
       loadUsers();
     } catch (err: any) {
-      alert(err.response?.data?.error || 'فشل حذف المستخدم');
+      toast.error(err.response?.data?.error || 'فشل حذف المستخدم');
     }
   };
 

@@ -3,6 +3,7 @@ import { ShoppingBag, Search, Barcode, CheckCircle, Clock, Banknote, CreditCard,
 import { api } from '../lib/api';
 import { Product, PaymentMethod, User } from '../types';
 import { hasPermission } from '../lib/permissions';
+import { toast } from '../utils/toast';
 
 interface QuickSalePOSPageProps {
   onSaleComplete: (order: any) => void;
@@ -57,15 +58,15 @@ export const QuickSalePOSPage: React.FC<QuickSalePOSPageProps> = ({ onSaleComple
   const handleCheckout = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedProduct) {
-      alert('يرجى اختيار مسبحة للبيع');
+      toast.warning('يرجى اختيار مسبحة للبيع');
       return;
     }
     if (discount >= basePrice) {
-      alert('قيمة الخصم يجب أن تكون أقل من سعر البيع');
+      toast.warning('قيمة الخصم يجب أن تكون أقل من سعر البيع');
       return;
     }
     if (paymentMethod === 'DEFERRED' && !dueDate) {
-      alert('يرجى تحديد تاريخ استحقاق السداد الآجل');
+      toast.warning('يرجى تحديد تاريخ استحقاق السداد الآجل');
       return;
     }
 
@@ -82,7 +83,7 @@ export const QuickSalePOSPage: React.FC<QuickSalePOSPageProps> = ({ onSaleComple
         actor_name: userName || 'الكاشير'
       });
 
-      alert(`✅ تم إتمام البيع بنجاح وتوثيق الفاتورة رقم: ${res.order.reference}`);
+      toast.success(`تم إتمام البيع بنجاح وتوثيق الفاتورة رقم: ${res.order.reference}`, 'تم إتمام البيع');
       const orderToEmit = {
         ...res.order,
         items: (res.order?.items && res.order.items.length > 0) ? res.order.items : [{
@@ -106,7 +107,7 @@ export const QuickSalePOSPage: React.FC<QuickSalePOSPageProps> = ({ onSaleComple
       setNotes('');
       await loadAvailableProducts();
     } catch (err: any) {
-      alert(err.response?.data?.error || 'فشلت عملية البيع - تأكد من حصرية القطعة وتوفرها');
+      toast.error(err.response?.data?.error || 'فشلت عملية البيع - تأكد من حصرية القطعة وتوفرها');
     } finally {
       setSubmitting(false);
     }

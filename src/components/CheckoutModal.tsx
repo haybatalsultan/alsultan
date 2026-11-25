@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ShoppingBag, X, Check, Truck, CreditCard, Banknote, ShieldCheck, Globe, MapPin } from 'lucide-react';
 import { api } from '../lib/api';
 import { Product, Country } from '../types';
+import { toast } from '../utils/toast';
 
 interface CheckoutModalProps {
   product: Product | null;
@@ -72,17 +73,17 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!customerName.trim() || !customerPhone.trim()) {
-      alert('يرجى كتابة الاسم ورقم الهاتف للتوصيل');
+      toast.warning('يرجى كتابة الاسم ورقم الهاتف للتوصيل');
       return;
     }
 
     if (!country.trim()) {
-      alert('يرجى تحديد دولة الشحن والتوصيل');
+      toast.warning('يرجى تحديد دولة الشحن والتوصيل');
       return;
     }
 
     if (!address.trim()) {
-      alert('يرجى كتابة العنوان بالتفصيل لضمان دقة التوصيل');
+      toast.warning('يرجى كتابة العنوان بالتفصيل لضمان دقة التوصيل');
       return;
     }
 
@@ -100,11 +101,11 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
         payment_method: paymentMethod
       });
 
-      alert(`🎉 ${res.message}\nرقم الطلب المرجعي: ${res.order.reference}`);
+      toast.success(`${res.message}\nرقم الطلب المرجعي: ${res.order.reference}`, 'تم إتمام الطلب بنجاح');
       onSuccess(res.order);
       onClose();
     } catch (err: any) {
-      alert(err.response?.data?.error || 'تعذر إتمام الطلب، يرجى المحاولة لاحقاً');
+      toast.error(err.response?.data?.error || 'تعذر إتمام الطلب، يرجى المحاولة لاحقاً');
     } finally {
       setSubmitting(false);
     }

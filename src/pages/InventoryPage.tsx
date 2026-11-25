@@ -18,6 +18,7 @@ import {
   FolderTree
 } from 'lucide-react';
 import { api } from '../lib/api';
+import { toast } from '../utils/toast';
 import { Product, Category, Material, ProductStatus, User } from '../types';
 import { hasPermission } from '../lib/permissions';
 import { BoxQRLabelModal } from '../components/BoxQRLabelModal';
@@ -81,16 +82,23 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({
 
   const handleDeleteProduct = async (product: Product) => {
     if (!canDelete) return;
-    if (!confirm(`هل أنت متأكد من حذف المسبحة (${product.name_ar} - ${product.sku})؟`)) {
+    const confirmed = await toast.confirm({
+      title: 'حذف مسبحة من المخزون',
+      message: `هل أنت متأكد من حذف المسبحة (${product.name_ar} - ${product.sku})؟\nسيتم حذفها نهائياً من الكتالوج والمخزون.`,
+      confirmText: 'حذف نهائي',
+      cancelText: 'إلغاء',
+      type: 'danger'
+    });
+    if (!confirmed) {
       return;
     }
 
     try {
       const res = await api.deleteProduct(product.id, currentUser?.full_name);
-      alert(res.message || '✅ تم حذف المسبحة بنجاح');
+      toast.success(res.message || 'تم حذف المسبحة بنجاح');
       loadCatalog();
     } catch (err: any) {
-      alert(err.response?.data?.error || 'تعذر حذف المسبحة');
+      toast.error(err.response?.data?.error || 'تعذر حذف المسبحة');
     }
   };
 

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { User, Lock, Phone, Mail, X, ArrowLeft, CheckCircle2, AlertCircle, Globe, MapPin } from 'lucide-react';
 import { api } from '../lib/api';
+import { toast } from '../utils/toast';
 
 const DEFAULT_ARAB_COUNTRIES = [
   'الإمارات العربية المتحدة',
@@ -83,7 +84,7 @@ export const CustomerAuthModal: React.FC<CustomerAuthModalProps> = ({ isOpen, on
         });
         localStorage.setItem('haybat_customer_token', res.token);
         localStorage.setItem('haybat_customer_user', JSON.stringify(res.user));
-        alert('🎉 مرحباً بك في هيبة السلطان! تم إنشاء حسابك بنجاح.');
+        toast.success('مرحباً بك في هيبة السلطان! تم إنشاء حسابك بنجاح.', 'أهلاً وسهلاً');
         onSuccess(res.user);
         onClose();
       }

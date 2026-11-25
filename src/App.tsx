@@ -27,6 +27,8 @@ import { InvoiceModal } from './components/InvoiceModal';
 import { CustomerAuthModal } from './components/CustomerAuthModal';
 import { CustomerOrdersModal } from './components/CustomerOrdersModal';
 import { CheckoutModal } from './components/CheckoutModal';
+import { RoyalNotifications } from './components/RoyalNotifications';
+import { toast } from './utils/toast';
 
 import { Product, Order, Category, Material, User } from './types';
 import { api, socket } from './lib/api';
@@ -219,11 +221,19 @@ export const App: React.FC = () => {
     setRefreshTrigger(n => n + 1);
   };
 
-  const handleStaffLogout = () => {
-    if (confirm('هل ترغب بتسجيل الخروج من لوحة الإدارة؟')) {
+  const handleStaffLogout = async () => {
+    const confirmed = await toast.confirm({
+      title: 'تسجيل الخروج',
+      message: 'هل ترغب بتسجيل الخروج من لوحة الإدارة؟',
+      confirmText: 'تسجيل الخروج',
+      cancelText: 'إلغاء',
+      type: 'warning'
+    });
+    if (confirmed) {
       localStorage.removeItem('haybat_staff_token');
       localStorage.removeItem('haybat_staff_user');
       setStaffUser(null);
+      toast.info('تم تسجيل الخروج بنجاح');
     }
   };
 
@@ -531,6 +541,9 @@ export const App: React.FC = () => {
           onClose={() => setInvoiceModalItem({ open: false, order: null })}
         />
       )}
+
+      {/* Royal Toast & Confirm Notifications */}
+      <RoyalNotifications />
     </div>
   );
 };

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { X, Plus, Edit2, Trash2, FolderTree, Check, AlertCircle, Save, Sparkles } from 'lucide-react';
 import { api } from '../lib/api';
 import { Category, Product } from '../types';
+import { toast } from '../utils/toast';
 
 interface CategoryManagerModalProps {
   isOpen: boolean;
@@ -92,11 +93,18 @@ export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({
   const handleDelete = async (cat: Category) => {
     const linkedCount = products.filter(p => p.category_id === cat.id).length;
     if (linkedCount > 0) {
-      alert(`⚠️ لا يمكن حذف التصنيف (${cat.name_ar}) لوجود ${linkedCount} مسبحة مرتبطة به حالياً. يرجى نقل أو تغيير تصنيف هذه المسابيح أولاً.`);
+      toast.warning(`لا يمكن حذف التصنيف (${cat.name_ar}) لوجود ${linkedCount} مسبحة مرتبطة به حالياً. يرجى نقل أو تغيير تصنيف هذه المسابيح أولاً.`);
       return;
     }
 
-    if (!confirm(`هل أنت متأكد من حذف التصنيف (${cat.name_ar})؟`)) {
+    const confirmed = await toast.confirm({
+      title: 'حذف التصنيف',
+      message: `هل أنت متأكد من حذف التصنيف (${cat.name_ar})؟`,
+      confirmText: 'حذف التصنيف',
+      cancelText: 'إلغاء',
+      type: 'danger'
+    });
+    if (!confirmed) {
       return;
     }
 

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Scissors, CheckCircle, Clock, PackageCheck, AlertCircle, RefreshCw } from 'lucide-react';
 import { api } from '../lib/api';
 import { BeadAdjustment } from '../types';
+import { toast } from '../utils/toast';
 
 export const WorkshopPage: React.FC = () => {
   const [adjustments, setAdjustments] = useState<BeadAdjustment[]>([]);
@@ -26,9 +27,10 @@ export const WorkshopPage: React.FC = () => {
   const updateStatus = async (id: number, status: string) => {
     try {
       await api.updateBeadStatus(id, status, 'فني الورشة');
+      toast.success('تم تحديث حالة الورشة بنجاح');
       await loadAdjustments();
     } catch (e: any) {
-      alert(e.response?.data?.error || 'حدث خطأ أثناء تحديث حالة الورشة');
+      toast.error(e.response?.data?.error || 'حدث خطأ أثناء تحديث حالة الورشة');
     }
   };
 

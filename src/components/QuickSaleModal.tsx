@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ShoppingBag, X, Check, CreditCard, Banknote, Clock, ArrowRight } from 'lucide-react';
 import { api } from '../lib/api';
 import { Product, PaymentMethod } from '../types';
+import { toast } from '../utils/toast';
 
 interface QuickSaleModalProps {
   product: Product | null;
@@ -28,11 +29,11 @@ export const QuickSaleModal: React.FC<QuickSaleModalProps> = ({ product, onClose
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (discount >= basePrice) {
-      alert('قيمة الخصم يجب أن تكون أقل من سعر البيع');
+      toast.warning('قيمة الخصم يجب أن تكون أقل من سعر البيع');
       return;
     }
     if (paymentMethod === 'DEFERRED' && !dueDate) {
-      alert('يرجى تحديد تاريخ استحقاق الدفع الآجل');
+      toast.warning('يرجى تحديد تاريخ استحقاق الدفع الآجل');
       return;
     }
 
@@ -49,11 +50,11 @@ export const QuickSaleModal: React.FC<QuickSaleModalProps> = ({ product, onClose
         actor_name: userName || 'الكاشير'
       });
 
-      alert(`✅ تم إتمام البيع بنجاح وتوثيق الفاتورة رقم: ${res.order.reference}`);
+      toast.success(`تم إتمام البيع بنجاح وتوثيق الفاتورة رقم: ${res.order.reference}`, 'تم توثيق البيع');
       onSuccess(res.order);
       onClose();
     } catch (err: any) {
-      alert(err.response?.data?.error || 'فشلت عملية البيع - تأكد من توفر القطعة');
+      toast.error(err.response?.data?.error || 'فشلت عملية البيع - تأكد من توفر القطعة');
     } finally {
       setSubmitting(false);
     }

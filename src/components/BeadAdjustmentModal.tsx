@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Scissors, X, CheckCircle, AlertTriangle } from 'lucide-react';
 import { api } from '../lib/api';
 import { Product } from '../types';
+import { toast } from '../utils/toast';
 
 interface BeadAdjustmentModalProps {
   product: Product | null;
@@ -25,7 +26,7 @@ export const BeadAdjustmentModal: React.FC<BeadAdjustmentModalProps> = ({ produc
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (requestedCount >= originalCount) {
-      alert('عدد الخرز المطلوب يجب أن يكون أقل من العدد الأصلي لتصغير المسبحة');
+      toast.warning('عدد الخرز المطلوب يجب أن يكون أقل من العدد الأصلي لتصغير المسبحة');
       return;
     }
 
@@ -39,11 +40,11 @@ export const BeadAdjustmentModal: React.FC<BeadAdjustmentModalProps> = ({ produc
         notes: notes.trim(),
         actor_name: userName || 'الفني'
       });
-      alert(`تم إرسال أمر الورشة بنجاح وتجهيز كيس حفظ لعدد (${removedCount}) خرزات مفكوكة.`);
+      toast.success(`تم إرسال أمر الورشة بنجاح وتجهيز كيس حفظ لعدد (${removedCount}) خرزات مفكوكة.`);
       onSuccess();
       onClose();
     } catch (err: any) {
-      alert(err.response?.data?.error || 'حدث خطأ أثناء قيد أمر الورشة');
+      toast.error(err.response?.data?.error || 'حدث خطأ أثناء قيد أمر الورشة');
     } finally {
       setSubmitting(false);
     }

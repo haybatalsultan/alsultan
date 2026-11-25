@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { api } from '../lib/api';
 import { StoreSettings, Country } from '../types';
+import { toast } from '../utils/toast';
 
 export const SettingsPage: React.FC = () => {
   const [settings, setSettings] = useState<StoreSettings>({
@@ -91,9 +92,9 @@ export const SettingsPage: React.FC = () => {
     setSaving(true);
     try {
       await api.updateSettings(settings);
-      alert('✅ تم حفظ إعدادات المتجر بنجاح');
+      toast.success('تم حفظ إعدادات المتجر بنجاح');
     } catch (err: any) {
-      alert('فشل حفظ الإعدادات');
+      toast.error('فشل حفظ الإعدادات');
     } finally {
       setSaving(false);
     }
@@ -105,13 +106,13 @@ export const SettingsPage: React.FC = () => {
     try {
       const res = await api.activateLicense(licenseKeyInput.trim());
       if (res.success) {
-        alert('🎉 ' + res.message);
+        toast.success(res.message, 'تفعيل الترخيص');
         loadAll();
       } else {
-        alert('❌ ' + res.message);
+        toast.error(res.message, 'تنبيه الترخيص');
       }
     } catch (err: any) {
-      alert('فشل تفعيل الترخيص');
+      toast.error('فشل تفعيل الترخيص');
     }
   };
 
@@ -123,20 +124,28 @@ export const SettingsPage: React.FC = () => {
       setCountries((prev) =>
         prev.map((c) => (c.id === country.id ? { ...c, is_active: newStatus } : c))
       );
+      toast.info(`تم ${newStatus ? 'تفعيل' : 'تعطيل'} الشحن إلى (${country.name_ar})`);
     } catch (err: any) {
-      alert(err.response?.data?.error || 'تعذر تعديل حالة تفعيل الدولة');
+      toast.error(err.response?.data?.error || 'تعذر تعديل حالة تفعيل الدولة');
     }
   };
 
   // Delete Country (Allowed for non-system custom countries)
   const handleDeleteCountry = async (country: Country) => {
-    if (!confirm(`هل أنت متأكد من حذف الدولة (${country.name_ar})؟`)) return;
+    const confirmed = await toast.confirm({
+      title: 'حذف دولة شحن',
+      message: `هل أنت متأكد من حذف الدولة (${country.name_ar})؟`,
+      confirmText: 'حذف الدولة',
+      cancelText: 'إلغاء',
+      type: 'danger'
+    });
+    if (!confirmed) return;
     try {
       await api.deleteCountry(country.id);
       setCountries((prev) => prev.filter((c) => c.id !== country.id));
-      alert('✅ تم حذف الدولة بنجاح');
+      toast.success('تم حذف الدولة بنجاح');
     } catch (err: any) {
-      alert(err.response?.data?.error || 'تعذر حذف الدولة');
+      toast.error(err.response?.data?.error || 'تعذر حذف الدولة');
     }
   };
 
@@ -144,7 +153,7 @@ export const SettingsPage: React.FC = () => {
   const handleCreateCountry = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newCountry.name_ar.trim()) {
-      alert('يرجى كتابة اسم الدولة بالعربية');
+      toast.warning('يرجى كتابة اسم الدولة بالعربية');
       return;
     }
 
@@ -161,9 +170,9 @@ export const SettingsPage: React.FC = () => {
         currency: 'AED',
         sort_order: 50
       });
-      alert('🎉 تم إضافة الدولة بنجاح إلى قائمة وجهات الشحن وتظهر للعملاء الآن');
+      toast.success('تم إضافة الدولة بنجاح إلى قائمة وجهات الشحن وتظهر للعملاء الآن');
     } catch (err: any) {
-      alert(err.response?.data?.error || 'تعذر إضافة الدولة');
+      toast.error(err.response?.data?.error || 'تعذر إضافة الدولة');
     } finally {
       setAddingCountry(false);
     }

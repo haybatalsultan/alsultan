@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Package, X, Clock, CheckCircle2, Eye, Receipt, Phone, User, ShoppingBag } from 'lucide-react';
 import { api } from '../lib/api';
 import { Order } from '../types';
+import { toast } from '../utils/toast';
 
 interface CustomerOrdersModalProps {
   isOpen: boolean;
@@ -61,10 +62,18 @@ export const CustomerOrdersModal: React.FC<CustomerOrdersModalProps> = ({
 
           <div className="flex items-center gap-2">
             <button
-              onClick={() => {
-                if (confirm('هل ترغب بتسجيل الخروج من حسابك؟')) {
+              onClick={async () => {
+                const confirmed = await toast.confirm({
+                  title: 'تسجيل الخروج',
+                  message: 'هل ترغب بتسجيل الخروج من حسابك في هيبة السلطان؟',
+                  confirmText: 'تسجيل الخروج',
+                  cancelText: 'إلغاء',
+                  type: 'warning'
+                });
+                if (confirmed) {
                   onLogoutCustomer();
                   onClose();
+                  toast.info('تم تسجيل الخروج بنجاح');
                 }
               }}
               className="text-[11px] font-bold text-rose-600 hover:text-rose-700 bg-rose-50 px-2.5 py-1 rounded-lg border border-rose-200 transition cursor-pointer"
