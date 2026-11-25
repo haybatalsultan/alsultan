@@ -1301,15 +1301,13 @@ app.post('/api/orders/checkout', async (req, res) => {
     io.emit('order:created', { id: order.id, reference: order.reference });
     io.emit('product:status_changed', { id: product.id, status: 'SOLD' });
 
+    const items = await query('SELECT * FROM order_items WHERE order_id = ?', [order.id]);
+    const fullOrder = { ...order, items };
+
     res.status(201).json({
       success: true,
       message: 'تم استلام طلب الاقتناء بنجاح وتوثيق الحصرية',
-      order: {
-        id: order.id,
-        reference: order.reference,
-        grand_total: order.grand_total,
-        customer_name: order.customer_name
-      }
+      order: fullOrder
     });
   } catch (err) {
     releaseProductLock(product_id);
@@ -1567,20 +1565,18 @@ app.post('/api/b2b/checkout', async (req, res) => {
 
     io.emit('order:created', { id: order.id, reference: poReference, type: 'B2B' });
 
+    const b2bItems = await query('SELECT * FROM order_items WHERE order_id = ?', [order.id]);
+    const fullOrder = {
+      ...order,
+      items: b2bItems,
+      order_number: poReference,
+      items_count: b2bItems.length
+    };
+
     res.status(201).json({
       success: true,
       message: 'تم إصدار أمر الشراء والفاتورة المبدئية للجملة بنجاح.',
-      order: {
-        id: order.id,
-        reference: poReference,
-        order_number: poReference,
-        company_name,
-        grand_total: grandTotal,
-        total_amount: grandTotal,
-        items_count: verifiedItems.length,
-        payment_method: payment_method || 'BANK_TRANSFER',
-        status: 'CONFIRMED'
-      }
+      order: fullOrder
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -2235,12 +2231,15 @@ app.post('/api/quick-sale', async (req, res) => {
     );
 
     releaseProductLock(product_id);
-    io.emit('order:created', order);
+    const items = await query('SELECT * FROM order_items WHERE order_id = ?', [order.id]);
+    const fullOrder = { ...order, items };
+
+    io.emit('order:created', fullOrder);
     io.emit('product:status_changed', { id: product.id, status: 'SOLD' });
 
     res.status(201).json({
       success: true,
-      order,
+      order: fullOrder,
       product_reference: product.product_reference,
       sku: product.sku
     });
@@ -2394,6 +2393,22 @@ app.get('/api/orders', async (req, res) => {
 
     sql += ' ORDER BY id DESC';
     const orders = await query(sql, args);
+
+    // Attach items to each order so any list/invoice view has full line items immediately
+    if (orders.length > 0) {
+      const orderIds = orders.map(o => o.id);
+      const placeholders = orderIds.map(() => '?').join(',');
+      const allItems = await query(`SELECT * FROM order_items WHERE order_id IN (${placeholders})`, orderIds);
+      const itemsByOrderId = {};
+      for (const item of allItems) {
+        if (!itemsByOrderId[item.order_id]) itemsByOrderId[item.order_id] = [];
+        itemsByOrderId[item.order_id].push(item);
+      }
+      for (const ord of orders) {
+        ord.items = itemsByOrderId[ord.id] || [];
+      }
+    }
+
     res.json(orders);
   } catch (err) {
     res.status(500).json({ error: err.message });

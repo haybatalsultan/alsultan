@@ -1,14 +1,39 @@
-import React from 'react';
-import { X, Printer, CheckCircle, Shield, Award } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, Printer, CheckCircle, Shield, Award, Loader2 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { Order } from '../types';
+import { api } from '../lib/api';
 
 interface InvoiceModalProps {
   order: Order | null;
   onClose: () => void;
 }
 
-export const InvoiceModal: React.FC<InvoiceModalProps> = ({ order, onClose }) => {
+export const InvoiceModal: React.FC<InvoiceModalProps> = ({ order: initialOrder, onClose }) => {
+  const [order, setOrder] = useState<Order | null>(initialOrder);
+  const [loadingItems, setLoadingItems] = useState(false);
+
+  useEffect(() => {
+    setOrder(initialOrder);
+
+    // If order has no items populated, fetch full order details from API
+    if (initialOrder && (!initialOrder.items || initialOrder.items.length === 0)) {
+      setLoadingItems(true);
+      api.getOrder(initialOrder.id || (initialOrder as any).reference)
+        .then((fullOrder) => {
+          if (fullOrder) {
+            setOrder((prev) => ({
+              ...(prev || initialOrder),
+              ...fullOrder,
+              items: (fullOrder.items && fullOrder.items.length > 0) ? fullOrder.items : (prev?.items || [])
+            }));
+          }
+        })
+        .catch((err) => console.error('Failed to load invoice items:', err))
+        .finally(() => setLoadingItems(false));
+    }
+  }, [initialOrder]);
+
   if (!order) return null;
 
   const handlePrint = () => {
@@ -74,8 +99,13 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({ order, onClose }) =>
           <div className="grid grid-cols-2 gap-4 text-xs bg-[#FAF7F2] p-4 rounded-2xl border border-[#EEE6D8]">
             <div>
               <span className="text-[#8C8275] block mb-0.5">بيانات العميل:</span>
-              <p className="font-bold text-[#26221C] text-sm">{order.customer_name}</p>
-              <p className="text-[#746A5D]">{order.customer_phone}</p>
+              <p className="font-bold text-[#26221C] text-sm">{order.customer_name || 'عميل المعرض'}</p>
+              {order.customer_phone && <p className="text-[#746A5D] font-mono">{order.customer_phone}</p>}
+              {order.country && (
+                <p className="text-[11px] text-[#9A6817] mt-0.5 font-medium">
+                  {order.country} {order.city ? `• ${order.city}` : ''} {order.area ? `(${order.area})` : ''}
+                </p>
+              )}
             </div>
             <div className="text-left">
               <span className="text-[#8C8275] block mb-0.5">تفاصيل الفاتورة:</span>
@@ -99,23 +129,50 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({ order, onClose }) =>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#F2ECE1] text-[#26221C]">
-                {order.items?.map((item) => (
-                  <tr key={item.id} className="hover:bg-[#FAF7F2]/40">
-                    <td className="p-3 font-medium">
-                      <div className="flex items-center gap-2">
-                        <span>{item.name_ar}</span>
-                        {item.requested_bead_count && (
-                          <span className="text-[10px] px-2 py-0.5 bg-[#FAF4E8] text-[#9A6817] border border-[#EADBCE] rounded-full font-bold">
-                            تم تعديل الخرز إلى {item.requested_bead_count}
-                          </span>
-                        )}
+                {loadingItems ? (
+                  <tr>
+                    <td colSpan={4} className="p-6 text-center text-[#9A6817]">
+                      <div className="flex items-center justify-center gap-2">
+                        <Loader2 className="w-4 h-4 animate-spin text-[#C9972B]" />
+                        <span className="text-xs font-semibold">جارِ استرجاع سطور وتفاصيل الفاتورة...</span>
                       </div>
                     </td>
-                    <td className="p-3 font-mono text-[#8C8275]">{item.sku}</td>
-                    <td className="p-3 text-center">1 (قطعة فريدة)</td>
-                    <td className="p-3 text-left font-black text-[#9A6817]">{item.line_total.toLocaleString()} AED</td>
                   </tr>
-                ))}
+                ) : order.items && order.items.length > 0 ? (
+                  order.items.map((item, idx) => (
+                    <tr key={item.id || idx} className="hover:bg-[#FAF7F2]/40">
+                      <td className="p-3 font-medium">
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold">{item.name_ar}</span>
+                          {item.requested_bead_count && (
+                            <span className="text-[10px] px-2 py-0.5 bg-[#FAF4E8] text-[#9A6817] border border-[#EADBCE] rounded-full font-bold">
+                              تم تعديل الخرز إلى {item.requested_bead_count}
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="p-3 font-mono text-[#8C8275]">{item.sku || order.reference}</td>
+                      <td className="p-3 text-center">
+                        {item.quantity && item.quantity > 1 ? `${item.quantity} قطع` : '1 (قطعة فريدة)'}
+                      </td>
+                      <td className="p-3 text-left font-black text-[#9A6817]">
+                        {Number(item.line_total || item.unit_price || order.grand_total).toLocaleString()} AED
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  // Fallback row for legacy orders so invoice is NEVER blank
+                  <tr className="hover:bg-[#FAF7F2]/40">
+                    <td className="p-3 font-medium">
+                      <span className="font-bold">مسبحة فاخرة مقتناة (توثيق أصالة هيبة السلطان)</span>
+                    </td>
+                    <td className="p-3 font-mono text-[#8C8275]">{order.reference}</td>
+                    <td className="p-3 text-center">1 (قطعة فريدة)</td>
+                    <td className="p-3 text-left font-black text-[#9A6817]">
+                      {Number(order.grand_total || order.subtotal).toLocaleString()} AED
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
@@ -135,7 +192,7 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({ order, onClose }) =>
             <div className="w-64 space-y-1.5 text-xs">
               <div className="flex justify-between text-[#746A5D]">
                 <span>المجموع الفرعي:</span>
-                <span className="font-semibold text-[#26221C]">{order.subtotal.toLocaleString()} AED</span>
+                <span className="font-semibold text-[#26221C]">{order.subtotal?.toLocaleString() || order.grand_total?.toLocaleString()} AED</span>
               </div>
               {order.discount_total > 0 && (
                 <div className="flex justify-between text-rose-600">

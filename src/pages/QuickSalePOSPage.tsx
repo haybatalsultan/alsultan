@@ -83,7 +83,20 @@ export const QuickSalePOSPage: React.FC<QuickSalePOSPageProps> = ({ onSaleComple
       });
 
       alert(`✅ تم إتمام البيع بنجاح وتوثيق الفاتورة رقم: ${res.order.reference}`);
-      onSaleComplete(res.order);
+      const orderToEmit = {
+        ...res.order,
+        items: (res.order?.items && res.order.items.length > 0) ? res.order.items : [{
+          id: selectedProduct.id,
+          product_id: selectedProduct.id,
+          name_ar: selectedProduct.name_ar,
+          sku: selectedProduct.sku,
+          unit_price: Number(selectedProduct.selling_price),
+          line_total: grandTotal,
+          quantity: 1,
+          requested_bead_count: isCustomBeads ? customBeadCount : undefined
+        }]
+      };
+      onSaleComplete(orderToEmit);
 
       // Reload products list to exclude sold item
       setSelectedProduct(null);
