@@ -116,8 +116,14 @@ export const StorefrontPage: React.FC<StorefrontPageProps> = ({
       onReserveProduct(product, 15);
       return;
     }
+    if (!customerUser) {
+      if (onOpenCustomerAuth) onOpenCustomerAuth();
+      toast.warning('لحجز هذه القطعة الحصرية، يجب تسجيل الدخول أو إنشاء حساب أولاً.', 'تسجيل الدخول مطلوب للحجز');
+      return;
+    }
     try {
-      await api.reserveProduct(product.id, 'client_cart_session', 15);
+      const userIdentifier = customerUser.phone || customerUser.username || `user_${customerUser.id}`;
+      await api.reserveProduct(product.id, userIdentifier, 15);
       toast.success(`تم حجز المسبحة (${product.name_ar}) باسمك لمدة 15 دقيقة حصرياً! لن يتمكن أي عميل أو معرض آخر من شرائها.`, 'حجز مسبحة حصرية');
       await loadStore();
     } catch (err: any) {

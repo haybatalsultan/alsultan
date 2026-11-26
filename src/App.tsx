@@ -104,6 +104,7 @@ export const App: React.FC = () => {
   const [isCustomerAuthOpen, setIsCustomerAuthOpen] = useState(false);
   const [isCustomerOrdersOpen, setIsCustomerOrdersOpen] = useState(false);
   const [checkoutProduct, setCheckoutProduct] = useState<Product | null>(null);
+  const [pendingReserveProduct, setPendingReserveProduct] = useState<Product | null>(null);
 
   // Cart & 15-Minute Reservation State (Persisted across pages and navigation)
   const [cartItem, setCartItem] = useState<Product | null>(() => {
@@ -161,9 +162,21 @@ export const App: React.FC = () => {
     return () => clearInterval(interval);
   }, [cartItem, reservationRemaining]);
 
-  const handleReserveProduct = async (product: Product, durationMinutes = 15) => {
+  const handleReserveProduct = async (product: Product, durationMinutes = 15, userOverride?: any) => {
+    const userToUse = userOverride || customerUser;
+    if (!userToUse) {
+      setPendingReserveProduct(product);
+      setIsCustomerAuthOpen(true);
+      toast.warning(
+        'لحجز هذه القطعة الحصرية وتوثيق مهلة الـ 15 دقيقة حصرياً باسمك، يجب تسجيل الدخول أو إنشاء حساب أولاً.',
+        'تسجيل الدخول مطلوب للحجز'
+      );
+      return;
+    }
+
     try {
-      await api.reserveProduct(product.id, 'client_cart_session', durationMinutes);
+      const userIdentifier = userToUse.phone || userToUse.username || `user_${userToUse.id}`;
+      await api.reserveProduct(product.id, userIdentifier, durationMinutes);
       const totalSeconds = durationMinutes * 60;
       const expiry = Date.now() + totalSeconds * 1000;
       localStorage.setItem('haybat_reservation_expiry', String(expiry));
@@ -171,7 +184,7 @@ export const App: React.FC = () => {
       setCartItem(product);
       setReservationRemaining(totalSeconds);
       toast.success(
-        `تم حجز المسبحة (${product.name_ar}) باسمك لمدة 15 دقيقة حصرياً! لن يتمكن أي عميل أو معرض آخر من شرائها.`,
+        `تم توثيق حجز المسبحة (${product.name_ar}) باسمك (${userToUse.full_name || userToUse.username}) لمدة 15 دقيقة حصرياً! لن يتمكن أي عميل أو معرض آخر من شرائها.`,
         'حجز مسبحة حصرية'
       );
       setRefreshTrigger((n) => n + 1);
@@ -336,6 +349,13 @@ export const App: React.FC = () => {
     localStorage.removeItem('haybat_customer_token');
     localStorage.removeItem('haybat_customer_user');
     setCustomerUser(null);
+    if (cartItem?.id) {
+      api.unreserveProduct(cartItem.id).catch(() => {});
+      localStorage.removeItem('haybat_reservation_expiry');
+      localStorage.removeItem('haybat_reserved_item');
+      setCartItem(null);
+      setReservationRemaining(0);
+    }
   };
 
   // -------------------------------------------------------------
@@ -673,8 +693,18 @@ export const App: React.FC = () => {
       {/* Customer Modals */}
       <CustomerAuthModal
         isOpen={isCustomerAuthOpen}
-        onClose={() => setIsCustomerAuthOpen(false)}
-        onSuccess={(u) => setCustomerUser(u)}
+        onClose={() => {
+          setIsCustomerAuthOpen(false);
+          setPendingReserveProduct(null);
+        }}
+        onSuccess={(u) => {
+          setCustomerUser(u);
+          if (pendingReserveProduct) {
+            const prod = pendingReserveProduct;
+            setPendingReserveProduct(null);
+            handleReserveProduct(prod, 15, u);
+          }
+        }}
       />
 
       <CustomerOrdersModal
