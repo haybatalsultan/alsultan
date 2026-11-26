@@ -37,6 +37,8 @@ interface StorefrontPageProps {
   cartItem?: Product | null;
   reservationRemaining?: number;
   onReserveProduct?: (product: Product, durationMinutes?: number) => void;
+  activeCategoryFilter?: string;
+  onCategoryFilterChange?: (cat: string) => void;
 }
 
 export const StorefrontPage: React.FC<StorefrontPageProps> = ({
@@ -47,7 +49,9 @@ export const StorefrontPage: React.FC<StorefrontPageProps> = ({
   customerUser,
   cartItem,
   reservationRemaining = 0,
-  onReserveProduct
+  onReserveProduct,
+  activeCategoryFilter = 'all',
+  onCategoryFilterChange
 }) => {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -89,10 +93,11 @@ export const StorefrontPage: React.FC<StorefrontPageProps> = ({
     setMaxPrice('');
     setSelectedPreset('all');
     setSortBy('featured');
+    if (onCategoryFilterChange) onCategoryFilterChange('all');
   };
 
   const hasActiveFilter = Boolean(
-    searchQuery.trim() || minPrice !== '' || maxPrice !== '' || sortBy !== 'featured'
+    searchQuery.trim() || minPrice !== '' || maxPrice !== '' || sortBy !== 'featured' || (activeCategoryFilter && activeCategoryFilter !== 'all')
   );
 
   useEffect(() => {
@@ -139,7 +144,38 @@ export const StorefrontPage: React.FC<StorefrontPageProps> = ({
   };
 
   const filteredProducts = products.filter((p) => {
-    // 1. Keyword search (Name, SKU, Reference, Shape, Origin)
+    // 0. Active category filter (النوادر / الأحجار الكريمة / الهدايا / الكل)
+    if (activeCategoryFilter === 'rare') {
+      const isRare =
+        Boolean((p as any).is_rare) ||
+        p.name_ar.includes('نادر') ||
+        p.name_ar.includes('نوادر') ||
+        p.name_ar.includes('أنتيك') ||
+        p.name_ar.includes('ملكي') ||
+        p.name_ar.includes('فاتوران') ||
+        p.name_ar.includes('كهرمان') ||
+        Number(p.selling_price) >= 4000 ||
+        (p.category_name_ar && (p.category_name_ar.includes('نادر') || p.category_name_ar.includes('أنتيك') || p.category_name_ar.includes('فاتوران')));
+      if (!isRare) return false;
+    } else if (activeCategoryFilter === 'gemstones') {
+      const isGem =
+        (p.category_name_ar && p.category_name_ar.includes('أحجار')) ||
+        p.name_ar.includes('فيروز') ||
+        p.name_ar.includes('عقيق') ||
+        p.name_ar.includes('حجر') ||
+        p.name_ar.includes('نيشابوري') ||
+        (p.material_name_ar && (p.material_name_ar.includes('فيروز') || p.material_name_ar.includes('عقيق')));
+      if (!isGem) return false;
+    } else if (activeCategoryFilter === 'gifts') {
+      const isGift =
+        (p.category_name_ar && p.category_name_ar.includes('هدايا')) ||
+        p.name_ar.includes('هدية') ||
+        p.name_ar.includes('تحف') ||
+        p.name_ar.includes('طقم');
+      if (!isGift) return false;
+    }
+
+    // 1. Keyword search (Name, SKU, Reference, Shape, Origin, Category, Material)
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       const match =
@@ -147,7 +183,9 @@ export const StorefrontPage: React.FC<StorefrontPageProps> = ({
         p.sku.toLowerCase().includes(q) ||
         p.product_reference.toLowerCase().includes(q) ||
         (p.shape && p.shape.toLowerCase().includes(q)) ||
-        (p.origin && p.origin.toLowerCase().includes(q));
+        (p.origin && p.origin.toLowerCase().includes(q)) ||
+        (p.category_name_ar && p.category_name_ar.toLowerCase().includes(q)) ||
+        (p.material_name_ar && p.material_name_ar.toLowerCase().includes(q));
       if (!match) return false;
     }
 
@@ -286,6 +324,33 @@ export const StorefrontPage: React.FC<StorefrontPageProps> = ({
           </div>
         </div>
 
+        {/* Active Category Banner (النوادر / الأحجار الكريمة / الهدايا) */}
+        {activeCategoryFilter === 'rare' && (
+          <div className="bg-gradient-to-r from-[#1E1912] via-[#2F261B] to-[#1E1912] text-white p-4 sm:p-5 rounded-3xl border border-[#C9972B]/60 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xl animate-in fade-in">
+            <div className="flex items-center gap-3.5">
+              <div className="w-11 h-11 rounded-2xl bg-[#C9972B]/20 border border-[#C9972B]/50 flex items-center justify-center shrink-0 text-xl shadow-inner">
+                🏺
+              </div>
+              <div>
+                <h3 className="font-black text-sm sm:text-base text-[#F7E7CE] flex items-center gap-2">
+                  <span>جناح النوادر والمقتنيات الملكية الحصرية</span>
+                  <span className="text-[10px] bg-[#C9972B] text-black px-2 py-0.5 rounded-full font-bold">VIP Rare</span>
+                </h3>
+                <p className="text-xs text-[#C8BCAB] mt-0.5">
+                  قطع متحفية نادرة وفريدة مخصصة لعشاق الأصالة وأصحاب المجموعات الخاصة
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => onCategoryFilterChange && onCategoryFilterChange('all')}
+              className="text-xs px-4 py-2 bg-white/10 hover:bg-white/20 text-[#F7E7CE] rounded-xl font-bold transition cursor-pointer border border-[#C9972B]/40 shrink-0"
+            >
+              عرض كافة المعروضات ✕
+            </button>
+          </div>
+        )}
+
         {/* 4. Luxury Search & Price Range Filter Control Panel */}
         <div className="bg-white border border-[#EBE3D5] rounded-3xl p-5 shadow-xs space-y-4">
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
@@ -369,6 +434,19 @@ export const StorefrontPage: React.FC<StorefrontPageProps> = ({
             </span>
 
             <div className="flex flex-wrap items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => onCategoryFilterChange && onCategoryFilterChange(activeCategoryFilter === 'rare' ? 'all' : 'rare')}
+                className={`text-xs px-3 py-1 rounded-full font-bold transition cursor-pointer border flex items-center gap-1 ${
+                  activeCategoryFilter === 'rare'
+                    ? 'bg-gradient-to-r from-[#9A6817] via-[#C9972B] to-[#E2B84B] text-black border-[#C9972B] font-black shadow-xs'
+                    : 'bg-[#FAF4E8] hover:bg-[#F3E7CE] text-[#9A6817] border-[#E4D5B8]'
+                }`}
+              >
+                <span>🏺</span>
+                <span>النوادر الملكية</span>
+              </button>
+
               {pricePresets.map((preset) => {
                 const isSelected = selectedPreset === preset.id;
                 return (

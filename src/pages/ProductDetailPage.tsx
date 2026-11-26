@@ -34,6 +34,8 @@ interface ProductDetailPageProps {
   product: Product;
   allProducts?: Product[];
   onBackToStore: () => void;
+  onNavigateHome?: () => void;
+  onNavigateRare?: () => void;
   currentUser?: any;
   onOpenCheckout?: (product: Product) => void;
   onReserveProduct?: (product: Product, durationMinutes?: number) => void;
@@ -45,6 +47,8 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
   product,
   allProducts = [],
   onBackToStore,
+  onNavigateHome,
+  onNavigateRare,
   currentUser,
   onOpenCheckout,
   onReserveProduct,
@@ -204,14 +208,27 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
 
         {/* 1. Royal Top Bar & Verification Header */}
         <div className="flex flex-wrap items-center justify-between gap-3 pb-5 border-b border-[#EBE3D5]">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <button
-              onClick={onBackToStore}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-[#FAF4E8] text-[#26221C] hover:text-[#9A6817] border border-[#DDD3C1] hover:border-[#C9972B] rounded-xl text-xs font-bold transition cursor-pointer"
+              onClick={onNavigateHome || onBackToStore}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-[#FAF4E8] text-[#26221C] hover:text-[#9A6817] border border-[#DDD3C1] hover:border-[#C9972B] rounded-xl text-xs font-bold transition cursor-pointer shadow-2xs"
+              title="العودة للصفحة الرئيسية للمتجر"
             >
               <ArrowRight className="w-3.5 h-3.5" />
-              <span>المتجر الرئيسي</span>
+              <span>الرئيسية / المتجر</span>
             </button>
+
+            {onNavigateRare && (
+              <button
+                onClick={onNavigateRare}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#FAF4E8] hover:bg-[#F3E7CE] text-[#9A6817] border border-[#E4D5B8] hover:border-[#C9972B] rounded-xl text-xs font-bold transition cursor-pointer shadow-2xs"
+                title="استعراض قسم النوادر والقطع الملكية"
+              >
+                <span>🏺</span>
+                <span>قسم النوادر</span>
+              </button>
+            )}
+
             <span className="text-[#C8BCAB]">/</span>
             <span className="text-xs text-[#8C8275] font-mono">وثيقة التحقق #{product.sku}</span>
           </div>

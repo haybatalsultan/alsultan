@@ -32,6 +32,8 @@ interface HeaderProps {
   onOpenCheckout?: () => void;
   onNavigatePortal: (portal: 'storefront' | 'admin' | 'wholesale') => void;
   cartCount?: number;
+  onSelectMenuItem?: (itemId: string) => void;
+  activeMenuItem?: string;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -47,7 +49,9 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenCustomerOrders,
   onOpenCheckout,
   onNavigatePortal,
-  cartCount = 0
+  cartCount = 0,
+  onSelectMenuItem,
+  activeMenuItem = 'all'
 }) => {
   const [isSocketConnected, setIsSocketConnected] = useState(socket.connected);
   const [customerMenuOpen, setCustomerMenuOpen] = useState(false);
@@ -73,6 +77,29 @@ export const Header: React.FC<HeaderProps> = ({
     { id: 'b2b', label: 'مبيعات الجملة B2B', icon: '🏛️', action: () => onNavigatePortal('wholesale') },
     { id: 'contact', label: 'تواصل معنا', icon: '📞', action: () => window.open('https://wa.me/971504084006', '_blank') },
   ];
+
+  const handleMenuItemClick = (item: typeof storefrontMenuItems[0]) => {
+    if (item.action) {
+      item.action();
+      return;
+    }
+
+    if (onSelectMenuItem) {
+      onSelectMenuItem(item.id);
+      return;
+    }
+
+    // Fallback: Return to storefront and scroll
+    onNavigatePortal('storefront');
+    if (item.id === 'home') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else {
+      setTimeout(() => {
+        const el = document.getElementById(item.targetSection || 'products-section') || document.getElementById('products');
+        if (el) el.scrollIntoView({ behavior: 'smooth' });
+      }, 100);
+    }
+  };
 
   return (
     <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-[#EBE3D5] shadow-[0_2px_15px_rgba(70,45,15,0.04)] selection:bg-[#C9972B]/20">
@@ -174,30 +201,32 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Center: Nav Links based on portal */}
         {portalMode === 'storefront' ? (
-          <nav className="hidden lg:flex items-center gap-4 text-[13px] font-semibold text-[#3D352E]">
-            {storefrontMenuItems.map((item) => (
-              <button
-                key={item.id}
-                onClick={() => {
-                  if (item.action) {
-                    item.action();
-                  } else if (item.targetSection) {
-                    const el = document.getElementById(item.targetSection);
-                    if (el) el.scrollIntoView({ behavior: 'smooth' });
-                  }
-                }}
-                className={`flex items-center gap-1.5 py-1.5 px-2.5 rounded-full transition group ${
-                  item.id === 'b2b'
-                    ? 'text-[#9A6817] bg-[#FAF4E8] hover:bg-[#F3E7CE] border border-[#E4D5B8] font-bold'
-                    : 'text-[#4B4338] hover:text-[#C9972B] hover:bg-[#FBF8F2]'
-                }`}
-              >
-                <span className="w-5 h-5 rounded-full bg-[#F4EEE3] text-[11px] flex items-center justify-center border border-[#EADBCE] group-hover:border-[#C9972B] transition">
-                  {item.icon}
-                </span>
-                <span>{item.label}</span>
-              </button>
-            ))}
+          <nav className="hidden lg:flex items-center gap-3 text-[13px] font-semibold text-[#3D352E]">
+            {storefrontMenuItems.map((item) => {
+              const isActive = activeMenuItem === item.id;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => handleMenuItemClick(item)}
+                  className={`flex items-center gap-1.5 py-1.5 px-3 rounded-full transition group cursor-pointer ${
+                    isActive
+                      ? 'bg-[#26221C] text-[#E2B84B] shadow-xs font-bold'
+                      : item.id === 'b2b'
+                      ? 'text-[#9A6817] bg-[#FAF4E8] hover:bg-[#F3E7CE] border border-[#E4D5B8] font-bold'
+                      : 'text-[#4B4338] hover:text-[#C9972B] hover:bg-[#FBF8F2]'
+                  }`}
+                >
+                  <span className={`w-5 h-5 rounded-full text-[11px] flex items-center justify-center border transition ${
+                    isActive
+                      ? 'bg-[#1C1814] border-[#E2B84B]/40'
+                      : 'bg-[#F4EEE3] border-[#EADBCE] group-hover:border-[#C9972B]'
+                  }`}>
+                    {item.icon}
+                  </span>
+                  <span>{item.label}</span>
+                </button>
+              );
+            })}
           </nav>
         ) : portalMode === 'wholesale' ? (
           <div className="hidden md:flex items-center gap-2 text-xs font-bold text-[#9A6817] bg-[#FAF4E8] px-4 py-2 rounded-2xl border border-[#E4D5B8]">
@@ -374,6 +403,31 @@ export const Header: React.FC<HeaderProps> = ({
           )}
         </div>
       </div>
+
+      {/* Mobile & Tablet Quick Navigation Strip */}
+      {portalMode === 'storefront' && (
+        <div className="lg:hidden flex items-center gap-2 px-3 py-1.5 border-t border-[#F5EFE6] bg-[#FAF7F2] overflow-x-auto no-scrollbar scroll-smooth">
+          {storefrontMenuItems.map((item) => {
+            const isActive = activeMenuItem === item.id;
+            return (
+              <button
+                key={item.id}
+                onClick={() => handleMenuItemClick(item)}
+                className={`flex items-center gap-1.5 py-1 px-3 rounded-full text-xs font-bold shrink-0 transition cursor-pointer ${
+                  isActive
+                    ? 'bg-[#26221C] text-[#E2B84B] shadow-xs'
+                    : item.id === 'b2b'
+                    ? 'text-[#9A6817] bg-[#FAF4E8] border border-[#E4D5B8]'
+                    : 'text-[#4B4338] hover:text-[#C9972B] bg-white border border-[#EBE3D5]'
+                }`}
+              >
+                <span className="text-[11px]">{item.icon}</span>
+                <span>{item.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
     </header>
   );
 };

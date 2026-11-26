@@ -105,6 +105,7 @@ export const App: React.FC = () => {
   const [isCustomerOrdersOpen, setIsCustomerOrdersOpen] = useState(false);
   const [checkoutProduct, setCheckoutProduct] = useState<Product | null>(null);
   const [pendingReserveProduct, setPendingReserveProduct] = useState<Product | null>(null);
+  const [storefrontFilterCategory, setStorefrontFilterCategory] = useState<string>('all');
 
   // Cart & 15-Minute Reservation State (Persisted across pages and navigation)
   const [cartItem, setCartItem] = useState<Product | null>(() => {
@@ -283,6 +284,43 @@ export const App: React.FC = () => {
     const targetPath = `/p/${prod.public_id || prod.id}`;
     if (window.location.pathname !== targetPath) {
       window.history.pushState({}, '', targetPath);
+    }
+  };
+
+  const handleSelectStorefrontMenuItem = (itemId: string) => {
+    // 1. If currently viewing a product detail page or other portal, switch to storefront immediately!
+    if (portal !== 'storefront') {
+      navigatePortal('storefront');
+    }
+
+    // 2. Set the category filter and scroll appropriately
+    if (itemId === 'home') {
+      setStorefrontFilterCategory('all');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else if (itemId === 'rare') {
+      setStorefrontFilterCategory('rare');
+      setTimeout(() => {
+        const el = document.getElementById('products-section') || document.getElementById('products');
+        if (el) el.scrollIntoView({ behavior: 'smooth' });
+      }, 120);
+    } else if (itemId === 'rosaries') {
+      setStorefrontFilterCategory('all');
+      setTimeout(() => {
+        const el = document.getElementById('products-section') || document.getElementById('products');
+        if (el) el.scrollIntoView({ behavior: 'smooth' });
+      }, 120);
+    } else if (itemId === 'gemstones') {
+      setStorefrontFilterCategory('gemstones');
+      setTimeout(() => {
+        const el = document.getElementById('products-section') || document.getElementById('products');
+        if (el) el.scrollIntoView({ behavior: 'smooth' });
+      }, 120);
+    } else if (itemId === 'gifts') {
+      setStorefrontFilterCategory('gifts');
+      setTimeout(() => {
+        const el = document.getElementById('products-section') || document.getElementById('products');
+        if (el) el.scrollIntoView({ behavior: 'smooth' });
+      }, 120);
     }
   };
 
@@ -598,6 +636,8 @@ export const App: React.FC = () => {
         }}
         onCustomerLogout={handleCustomerLogout}
         onNavigatePortal={navigatePortal}
+        onSelectMenuItem={handleSelectStorefrontMenuItem}
+        activeMenuItem={storefrontFilterCategory}
       />
 
       {/* Global 15-Minute Reservation Countdown Bar */}
@@ -668,7 +708,9 @@ export const App: React.FC = () => {
             key={viewingProduct.id}
             product={viewingProduct}
             allProducts={allStoreProducts}
-            onBackToStore={() => navigatePortal('storefront')}
+            onBackToStore={() => handleSelectStorefrontMenuItem('home')}
+            onNavigateHome={() => handleSelectStorefrontMenuItem('home')}
+            onNavigateRare={() => handleSelectStorefrontMenuItem('rare')}
             currentUser={staffUser || customerUser}
             onOpenCheckout={(product) => setCheckoutProduct(product)}
             onReserveProduct={handleReserveProduct}
@@ -686,6 +728,8 @@ export const App: React.FC = () => {
             cartItem={cartItem}
             reservationRemaining={reservationRemaining}
             onReserveProduct={handleReserveProduct}
+            activeCategoryFilter={storefrontFilterCategory}
+            onCategoryFilterChange={setStorefrontFilterCategory}
           />
         )}
       </main>
