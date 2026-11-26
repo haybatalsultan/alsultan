@@ -14,7 +14,9 @@ import {
   ExternalLink,
   ChevronDown,
   Building2,
-  ArrowRight
+  ArrowRight,
+  Menu,
+  X
 } from 'lucide-react';
 import { socket } from '../lib/api';
 
@@ -55,6 +57,7 @@ export const Header: React.FC<HeaderProps> = ({
 }) => {
   const [isSocketConnected, setIsSocketConnected] = useState(socket.connected);
   const [customerMenuOpen, setCustomerMenuOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     function onConnect() { setIsSocketConnected(true); }
@@ -242,6 +245,28 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Left: Customer/Admin Actions */}
         <div className="flex items-center gap-2 sm:gap-3">
+          {/* Mobile Menu Compact Button (Visible on screens < lg) */}
+          {portalMode === 'storefront' && (
+            <button
+              type="button"
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className="lg:hidden flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#FAF4E8] text-[#9A6817] hover:bg-[#F3E7CE] border border-[#E4D5B8] transition text-xs font-bold active:scale-95 cursor-pointer shadow-2xs"
+              aria-label="قائمة التنقل المدمجة"
+            >
+              {isMobileMenuOpen ? (
+                <>
+                  <X className="w-4 h-4 text-[#9A6817]" />
+                  <span>إغلاق</span>
+                </>
+              ) : (
+                <>
+                  <Menu className="w-4 h-4 text-[#C9972B]" />
+                  <span>القائمة</span>
+                </>
+              )}
+            </button>
+          )}
+
           {portalMode !== 'admin' ? (
             <>
               {portalMode === 'storefront' && (
@@ -404,28 +429,62 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
       </div>
 
-      {/* Mobile & Tablet Quick Navigation Strip */}
-      {portalMode === 'storefront' && (
-        <div className="lg:hidden flex items-center gap-2 px-3 py-1.5 border-t border-[#F5EFE6] bg-[#FAF7F2] overflow-x-auto no-scrollbar scroll-smooth">
-          {storefrontMenuItems.map((item) => {
-            const isActive = activeMenuItem === item.id;
-            return (
+      {/* Collapsible Mobile Dropdown Navigation Menu */}
+      {portalMode === 'storefront' && isMobileMenuOpen && (
+        <div className="lg:hidden border-t border-[#EBE3D5] bg-gradient-to-b from-white via-[#FCFAF7] to-[#F7F2E9] shadow-xl animate-in slide-in-from-top-2 duration-200">
+          <div className="max-w-7xl mx-auto px-4 py-3.5 space-y-2.5">
+            <div className="grid grid-cols-2 gap-2 pb-2.5 border-b border-[#EADBCE]/70">
+              {storefrontMenuItems.map((item) => {
+                const isActive = activeMenuItem === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => {
+                      handleMenuItemClick(item);
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className={`flex items-center gap-2 py-2.5 px-3 rounded-2xl text-xs font-bold transition text-right cursor-pointer ${
+                      isActive
+                        ? 'bg-[#26221C] text-[#E2B84B] shadow-sm'
+                        : item.id === 'b2b'
+                        ? 'text-[#9A6817] bg-[#FAF4E8] hover:bg-[#F3E7CE] border border-[#E4D5B8]'
+                        : 'text-[#3D352E] hover:text-[#C9972B] hover:bg-white bg-white/80 border border-[#EBE3D5]'
+                    }`}
+                  >
+                    <span className="w-6 h-6 rounded-xl bg-[#F4EEE3] text-xs flex items-center justify-center shrink-0 border border-[#E8DEC8]">
+                      {item.icon}
+                    </span>
+                    <span className="truncate">{item.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Quick Mobile Shortcuts */}
+            <div className="flex items-center justify-between text-xs pt-1 px-1 text-[#746A5D]">
               <button
-                key={item.id}
-                onClick={() => handleMenuItemClick(item)}
-                className={`flex items-center gap-1.5 py-1 px-3 rounded-full text-xs font-bold shrink-0 transition cursor-pointer ${
-                  isActive
-                    ? 'bg-[#26221C] text-[#E2B84B] shadow-xs'
-                    : item.id === 'b2b'
-                    ? 'text-[#9A6817] bg-[#FAF4E8] border border-[#E4D5B8]'
-                    : 'text-[#4B4338] hover:text-[#C9972B] bg-white border border-[#EBE3D5]'
-                }`}
+                onClick={() => {
+                  onNavigatePortal('wholesale');
+                  setIsMobileMenuOpen(false);
+                }}
+                className="flex items-center gap-1 font-bold text-[#9A6817] hover:underline cursor-pointer"
               >
-                <span className="text-[11px]">{item.icon}</span>
-                <span>{item.label}</span>
+                <Building2 className="w-3.5 h-3.5 text-[#C9972B]" />
+                <span>بوابة تجار الجملة B2B</span>
               </button>
-            );
-          })}
+
+              <button
+                onClick={() => {
+                  window.open('https://wa.me/971504084006', '_blank');
+                  setIsMobileMenuOpen(false);
+                }}
+                className="flex items-center gap-1 font-bold text-emerald-700 hover:underline cursor-pointer"
+              >
+                <span>خدمة العملاء VIP</span>
+                <ArrowRight className="w-3 h-3 rotate-180 text-emerald-600" />
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </header>
