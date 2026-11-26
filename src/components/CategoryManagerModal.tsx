@@ -8,17 +8,18 @@ interface CategoryManagerModalProps {
   isOpen: boolean;
   onClose: () => void;
   categories: Category[];
-  products: Product[];
-  onCategoryChanged: () => void;
+  products?: Product[];
+  onCategoryChanged: (createdId?: number) => void;
 }
 
 export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({
   isOpen,
   onClose,
   categories,
-  products,
+  products = [],
   onCategoryChanged
 }) => {
+  const [catList, setCatList] = useState<Category[]>(categories);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [nameAr, setNameAr] = useState('');
   const [nameEn, setNameEn] = useState('');
@@ -28,6 +29,27 @@ export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
+  React.useEffect(() => {
+    if (categories && categories.length > 0) {
+      setCatList(categories);
+    }
+  }, [categories]);
+
+  React.useEffect(() => {
+    if (isOpen) {
+      refreshLocalCategories();
+    }
+  }, [isOpen]);
+
+  const refreshLocalCategories = async () => {
+    try {
+      const list = await api.getCategories();
+      if (Array.isArray(list)) {
+        setCatList(list);
+      }
+    } catch {}
+  };
+
   if (!isOpen) return null;
 
   const resetForm = () => {
@@ -35,7 +57,7 @@ export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({
     setNameAr('');
     setNameEn('');
     setSlug('');
-    setSortOrder(categories.length + 1);
+    setSortOrder((catList.length || categories.length) + 1);
     setError(null);
   };
 
@@ -61,27 +83,31 @@ export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({
     setSuccess(null);
 
     try {
+      let createdOrUpdatedId: number | undefined;
       if (editingId) {
         // Update existing category
-        await api.updateCategory(editingId, {
+        const res = await api.updateCategory(editingId, {
           name_ar: nameAr.trim(),
           name_en: nameEn.trim(),
           slug: slug.trim(),
           sort_order: Number(sortOrder)
         });
+        createdOrUpdatedId = editingId;
         setSuccess('✅ تم تحديث التصنيف بنجاح');
       } else {
         // Create new category
-        await api.createCategory({
+        const res = await api.createCategory({
           name_ar: nameAr.trim(),
           name_en: nameEn.trim(),
           slug: slug.trim(),
           sort_order: Number(sortOrder)
         });
+        createdOrUpdatedId = res?.id;
         setSuccess('✅ تم إضافة التصنيف الجديد بنجاح');
       }
       resetForm();
-      onCategoryChanged();
+      await refreshLocalCategories();
+      onCategoryChanged(createdOrUpdatedId);
       setTimeout(() => setSuccess(null), 3000);
     } catch (err: any) {
       setError(err.response?.data?.error || 'حدث خطأ أثناء حفظ التصنيف');
@@ -116,6 +142,7 @@ export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({
       await api.deleteCategory(cat.id);
       setSuccess('✅ تم حذف التصنيف بنجاح');
       if (editingId === cat.id) resetForm();
+      await refreshLocalCategories();
       onCategoryChanged();
       setTimeout(() => setSuccess(null), 3000);
     } catch (err: any) {
@@ -233,7 +260,7 @@ export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({
         <div className="mt-5 flex-1 overflow-y-auto">
           <div className="flex items-center justify-between mb-2">
             <span className="text-xs font-bold text-[#746A5D]">
-              التصنيفات الحالية ({categories.length})
+              التصنيفات الحالية ({catList.length})
             </span>
           </div>
 
@@ -249,14 +276,14 @@ export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#F2ECE1]">
-                {categories.length === 0 ? (
+                {catList.length === 0 ? (
                   <tr>
                     <td colSpan={5} className="py-6 text-center text-xs text-[#8C8275]">
                       لا توجد تصنيفات معرفة حتى الآن.
                     </td>
                   </tr>
                 ) : (
-                  categories.map((cat) => {
+                  catList.map((cat) => {
                     const linkedCount = products.filter(p => p.category_id === cat.id).length;
                     const isEditing = editingId === cat.id;
 

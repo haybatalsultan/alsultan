@@ -332,6 +332,12 @@ export const App: React.FC = () => {
     socket.on('product:reserved', () => setRefreshTrigger(n => n + 1));
     socket.on('product:status_changed', () => setRefreshTrigger(n => n + 1));
     socket.on('order:created', () => setRefreshTrigger(n => n + 1));
+    socket.on('category:created', () => { loadBaseData(); setRefreshTrigger(n => n + 1); });
+    socket.on('category:updated', () => { loadBaseData(); setRefreshTrigger(n => n + 1); });
+    socket.on('category:deleted', () => { loadBaseData(); setRefreshTrigger(n => n + 1); });
+    socket.on('material:created', () => { loadBaseData(); setRefreshTrigger(n => n + 1); });
+    socket.on('material:updated', () => { loadBaseData(); setRefreshTrigger(n => n + 1); });
+    socket.on('material:deleted', () => { loadBaseData(); setRefreshTrigger(n => n + 1); });
 
     return () => {
       socket.off('product:created');
@@ -339,6 +345,12 @@ export const App: React.FC = () => {
       socket.off('product:reserved');
       socket.off('product:status_changed');
       socket.off('order:created');
+      socket.off('category:created');
+      socket.off('category:updated');
+      socket.off('category:deleted');
+      socket.off('material:created');
+      socket.off('material:updated');
+      socket.off('material:deleted');
     };
   }, [refreshTrigger]);
 

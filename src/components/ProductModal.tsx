@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   Gem,
   X,
@@ -9,12 +9,14 @@ import {
   Loader2,
   Image as ImageIcon,
   CheckCircle2,
-  Zap
+  Zap,
+  Plus
 } from 'lucide-react';
 import { api } from '../lib/api';
 import { Product, Category, Material, VerificationStatus } from '../types';
 import { compressImageFile, formatBytes, CompressionResult } from '../lib/imageCompressor';
 import { toast } from '../utils/toast';
+import { CategoryManagerModal } from './CategoryManagerModal';
 
 interface ProductModalProps {
   product: Product | null;
@@ -43,6 +45,43 @@ export const ProductModal: React.FC<ProductModalProps> = ({
   onSuccess,
   userName
 }) => {
+  const [categoryList, setCategoryList] = useState<Category[]>(categories || []);
+  const [materialList, setMaterialList] = useState<Material[]>(materials || []);
+  const [isCategoryManagerOpen, setIsCategoryManagerOpen] = useState(false);
+
+  useEffect(() => {
+    if (categories && categories.length > 0) {
+      setCategoryList(categories);
+    }
+  }, [categories]);
+
+  useEffect(() => {
+    if (materials && materials.length > 0) {
+      setMaterialList(materials);
+    }
+  }, [materials]);
+
+  useEffect(() => {
+    // Automatically fetch latest categories and materials whenever ProductModal opens
+    api.getCategories().then((cats) => {
+      if (Array.isArray(cats) && cats.length > 0) {
+        setCategoryList(cats);
+        if (!product && (!categoryId || !cats.some(c => c.id === categoryId))) {
+          setCategoryId(cats[0].id);
+        }
+      }
+    }).catch(() => {});
+
+    api.getMaterials().then((mats) => {
+      if (Array.isArray(mats) && mats.length > 0) {
+        setMaterialList(mats);
+        if (!product && (!materialId || !mats.some(m => m.id === materialId))) {
+          setMaterialId(mats[0].id);
+        }
+      }
+    }).catch(() => {});
+  }, []);
+
   const [nameAr, setNameAr] = useState(product?.name_ar || '');
   const [nameEn, setNameEn] = useState(product?.name_en || '');
   const [categoryId, setCategoryId] = useState(product?.category_id || categories[0]?.id || 1);
@@ -263,13 +302,24 @@ export const ProductModal: React.FC<ProductModalProps> = ({
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-semibold text-[#4B4338] mb-1">التصنيف *</label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-xs font-semibold text-[#4B4338]">التصنيف *</label>
+                <button
+                  type="button"
+                  onClick={() => setIsCategoryManagerOpen(true)}
+                  className="text-[11px] font-bold text-[#9A6817] hover:text-[#C9972B] hover:underline flex items-center gap-1 cursor-pointer"
+                  title="إدارة أو إضافة تصنيفات جديدة فوراً"
+                >
+                  <Plus className="w-3 h-3" />
+                  <span>إدارة / إضافة تصنيف</span>
+                </button>
+              </div>
               <select
                 value={categoryId}
                 onChange={(e) => setCategoryId(Number(e.target.value))}
                 className="w-full bg-[#FAF7F2] border border-[#D8CCA8] rounded-xl px-3 py-2 text-sm text-[#26221C] focus:outline-none focus:border-[#C9972B]"
               >
-                {categories.map((c) => (
+                {categoryList.map((c) => (
                   <option key={c.id} value={c.id}>{c.name_ar}</option>
                 ))}
               </select>
@@ -281,7 +331,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({
                 onChange={(e) => setMaterialId(Number(e.target.value))}
                 className="w-full bg-[#FAF7F2] border border-[#D8CCA8] rounded-xl px-3 py-2 text-sm text-[#26221C] focus:outline-none focus:border-[#C9972B]"
               >
-                {materials.map((m) => (
+                {materialList.map((m) => (
                   <option key={m.id} value={m.id}>{m.name_ar}</option>
                 ))}
               </select>
@@ -604,6 +654,27 @@ export const ProductModal: React.FC<ProductModalProps> = ({
           </div>
         </form>
       </div>
+
+      {/* Quick Category Manager Modal inside Product Registration */}
+      {isCategoryManagerOpen && (
+        <CategoryManagerModal
+          isOpen={isCategoryManagerOpen}
+          onClose={() => setIsCategoryManagerOpen(false)}
+          categories={categoryList}
+          products={[]}
+          onCategoryChanged={async (createdCatId) => {
+            try {
+              const freshCats = await api.getCategories();
+              if (Array.isArray(freshCats) && freshCats.length > 0) {
+                setCategoryList(freshCats);
+                if (createdCatId) {
+                  setCategoryId(createdCatId);
+                }
+              }
+            } catch {}
+          }}
+        />
+      )}
     </div>
   );
 };
