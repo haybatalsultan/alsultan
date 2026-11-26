@@ -264,7 +264,7 @@ async function initDatabase() {
       quantity INTEGER DEFAULT 1,
       reserved_until TEXT DEFAULT NULL,
       reserved_by_cart TEXT DEFAULT NULL,
-      verification_status TEXT DEFAULT 'CERTIFIED', -- NONE, INSPECTED, CERTIFIED
+      verification_status TEXT DEFAULT 'NONE', -- NONE, INSPECTED, CERTIFIED
       certificate_number TEXT DEFAULT '',
       image_url TEXT DEFAULT '',
       secondary_images TEXT DEFAULT '[]',
@@ -1759,7 +1759,7 @@ app.post('/api/products', async (req, res) => {
       b.category_id || null, b.material_id || null, b.origin || '', b.color || '', b.bead_count || 33,
       b.bead_size_mm !== undefined && b.bead_size_mm !== null ? String(b.bead_size_mm).trim() : '10.0', b.weight_g || 40.0, b.shape || 'برميلي', b.tassel_type || 'فضة',
       b.condition || 'جديد فاخر', Number(b.cost_price || 0), Number(b.selling_price), b.discount_price ? Number(b.discount_price) : null,
-      b.status || 'AVAILABLE', b.is_unique !== undefined ? b.is_unique : 1, b.verification_status || 'CERTIFIED',
+      b.status || 'AVAILABLE', b.is_unique !== undefined ? b.is_unique : 1, b.verification_status || 'NONE',
       b.certificate_number || '', b.image_url || '', secImagesJson
     ]);
 

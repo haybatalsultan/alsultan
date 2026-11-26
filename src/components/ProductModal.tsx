@@ -56,7 +56,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({
   const [tasselType, setTasselType] = useState(product?.tassel_type || 'فضة كازازية عيار 1000');
   const [costPrice, setCostPrice] = useState(product?.cost_price || 1200);
   const [sellingPrice, setSellingPrice] = useState(product?.selling_price || 2400);
-  const [verificationStatus, setVerificationStatus] = useState<VerificationStatus>(product?.verification_status || 'CERTIFIED');
+  const [verificationStatus, setVerificationStatus] = useState<VerificationStatus>(product?.verification_status || 'NONE');
   const [certificateNumber, setCertificateNumber] = useState(product?.certificate_number || '');
 
   // 3 Images Slots State (Primary + 2 Secondary)
@@ -393,24 +393,38 @@ export const ProductModal: React.FC<ProductModalProps> = ({
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-[#4B4338] mb-1">حالة الفحص والأصالة</label>
+              <label className="block text-xs font-semibold text-[#4B4338] mb-1">شهادة الفحص والأصالة</label>
               <select
                 value={verificationStatus}
-                onChange={(e) => setVerificationStatus(e.target.value as VerificationStatus)}
+                onChange={(e) => {
+                  const val = e.target.value as VerificationStatus;
+                  setVerificationStatus(val);
+                  if (val === 'NONE') {
+                    setCertificateNumber('');
+                  }
+                }}
                 className="w-full bg-[#FAF7F2] border border-[#D8CCA8] rounded-xl px-3 py-2 text-sm text-[#26221C] focus:outline-none focus:border-[#C9972B]"
               >
+                <option value="NONE">بدون شهادة فحص (الافتراضي)</option>
                 <option value="CERTIFIED">معتمد بشهادة فحص (Certified)</option>
                 <option value="INSPECTED">مفحوص خبير (Inspected)</option>
-                <option value="NONE">بدون شهادة فحص</option>
               </select>
             </div>
             <div>
-              <label className="block text-xs font-semibold text-[#4B4338] mb-1">رقم شهادة الفحص</label>
+              <label className="block text-xs font-semibold text-[#4B4338] mb-1">
+                رقم شهادة الفحص {verificationStatus === 'NONE' ? '(اختياري)' : '*'}
+              </label>
               <input
                 type="text"
-                placeholder="AMB-2026-901"
+                placeholder={verificationStatus === 'NONE' ? 'بدون شهادة فحص' : 'AMB-2026-901'}
                 value={certificateNumber}
-                onChange={(e) => setCertificateNumber(e.target.value)}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setCertificateNumber(val);
+                  if (val.trim().length > 0 && verificationStatus === 'NONE') {
+                    setVerificationStatus('CERTIFIED');
+                  }
+                }}
                 className="w-full bg-[#FAF7F2] border border-[#D8CCA8] rounded-xl px-3 py-2 text-sm text-[#26221C] focus:outline-none focus:border-[#C9972B]"
               />
             </div>

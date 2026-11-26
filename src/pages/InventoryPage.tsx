@@ -259,10 +259,14 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({
                     <div className="absolute top-2.5 right-2.5 flex items-center gap-1.5">
                       {getStatusBadge(p.status)}
                     </div>
-                    {p.verification_status === 'CERTIFIED' && (
-                      <div className="absolute bottom-2.5 right-2.5 bg-white/90 backdrop-blur px-2.5 py-1 rounded-md text-[10px] text-[#9A6817] font-bold flex items-center gap-1 border border-[#E0D7C6] shadow-xs">
-                        <Award className="w-3.5 h-3.5 text-[#C9972B]" />
-                        <span>شهادة أصالة</span>
+                    {p.verification_status === 'CERTIFIED' ? (
+                      <div className="absolute bottom-2.5 right-2.5 bg-emerald-700/90 backdrop-blur px-2 py-0.5 rounded-md text-[10px] text-white font-bold flex items-center gap-1 shadow-xs">
+                        <Award className="w-3 h-3 text-white" />
+                        <span>شهادة فحص معتمدة</span>
+                      </div>
+                    ) : (
+                      <div className="absolute bottom-2.5 right-2.5 bg-black/60 backdrop-blur px-2 py-0.5 rounded-md text-[10px] text-[#E5DAC8] font-medium flex items-center gap-1 shadow-xs border border-white/10">
+                        <span>بدون شهادة فحص</span>
                       </div>
                     )}
                   </div>

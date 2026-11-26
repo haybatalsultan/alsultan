@@ -538,10 +538,14 @@ export const StorefrontPage: React.FC<StorefrontPageProps> = ({
                     </div>
 
                     {/* Certification Badge */}
-                    {p.verification_status === 'CERTIFIED' && (
-                      <div className="absolute bottom-3 right-3 bg-emerald-600/95 backdrop-blur px-2.5 py-1 rounded-lg text-[10px] font-bold text-white flex items-center gap-1 shadow-xs">
+                    {p.verification_status === 'CERTIFIED' ? (
+                      <div className="absolute bottom-3 right-3 bg-emerald-700/95 backdrop-blur px-2.5 py-1 rounded-lg text-[10px] font-bold text-white flex items-center gap-1 shadow-xs">
                         <Award className="w-3.5 h-3.5" />
                         <span>شهادة فحص معتمدة</span>
+                      </div>
+                    ) : (
+                      <div className="absolute bottom-3 right-3 bg-black/60 backdrop-blur px-2.5 py-1 rounded-lg text-[10px] font-bold text-[#E5DAC8] flex items-center gap-1 shadow-xs border border-white/10">
+                        <span>بدون شهادة فحص</span>
                       </div>
                     )}
                   </div>

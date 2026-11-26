@@ -191,7 +191,10 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
     window.open(`https://wa.me/971504084006?text=${text}`, '_blank');
   };
 
-  const fallbackStory = `تحفة ملكية نادرة صيغت بحرفية يدوية رفيعة المستوى على يد أمهر خراطي المسابيح التقليديين. تم استخراج خاماتها الطبيعية وعنايتها بدقة للحفاظ على نقائها التاريخي وملمسها الفريد، وتأتي مصحوبة بفحص مخبري رسمي يثبت أصالتها المطلقة وخلوها من أي معالجات صناعية. قطعة فريدة تليق بالمجموعات الخاصة وأصحاب الذوق الرفيع.`;
+  const hasCertificate = product.verification_status === 'CERTIFIED' && Boolean(product.certificate_number);
+  const fallbackStory = hasCertificate
+    ? `تحفة ملكية نادرة صيغت بحرفية يدوية رفيعة المستوى على يد أمهر خراطي المسابيح التقليديين. تم استخراج خاماتها الطبيعية وعنايتها بدقة للحفاظ على نقائها التاريخي وملمسها الفريد، وتأتي مصحوبة بفحص مخبري رسمي برقم (${product.certificate_number}) يثبت أصالتها المطلقة وخلوها من أي معالجات صناعية. قطعة فريدة تليق بالمجموعات الخاصة وأصحاب الذوق الرفيع.`
+    : `تحفة ملكية نادرة صيغت بحرفية يدوية رفيعة المستوى على يد أمهر خراطي المسابيح التقليديين. تم استخراج خاماتها الطبيعية وعنايتها بدقة للحفاظ على نقائها وملمسها التاريخي الفريد. قطعة فريدة تليق بالمجموعات الخاصة والذوق الرفيع (بدون شهادة فحص مخبري مسجلة).`;
 
   return (
     <div className="min-h-screen bg-[#FAF7F2] text-[#26221C] py-6 sm:py-10 selection:bg-[#C9972B]/20" dir="rtl">
@@ -280,9 +283,23 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
             </div>
           </div>
 
-          <div className="flex items-center gap-2 bg-white/10 px-3.5 py-1.5 rounded-full border border-[#C9972B]/30 text-xs font-mono text-[#F4E3BA]">
-            <ShieldCheck className="w-4 h-4 text-emerald-400" />
-            <span>AUTHENTIC GUARANTEED</span>
+          <div className="flex items-center gap-2">
+            {product.verification_status === 'CERTIFIED' ? (
+              <div className="flex items-center gap-1.5 bg-emerald-950/70 text-emerald-300 border border-emerald-500/50 px-3.5 py-1.5 rounded-full text-xs font-bold shadow-xs">
+                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                <span>شهادة فحص معتمدة {product.certificate_number ? `(${product.certificate_number})` : ''}</span>
+              </div>
+            ) : product.verification_status === 'INSPECTED' ? (
+              <div className="flex items-center gap-1.5 bg-amber-950/70 text-amber-300 border border-amber-500/50 px-3.5 py-1.5 rounded-full text-xs font-bold shadow-xs">
+                <Award className="w-4 h-4 text-amber-400" />
+                <span>مفحوصة خبير</span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-1.5 bg-white/10 text-[#C8BCAB] border border-white/20 px-3.5 py-1.5 rounded-full text-xs font-bold">
+                <span className="w-2 h-2 rounded-full bg-gray-400" />
+                <span>بدون شهادة فحص</span>
+              </div>
+            )}
           </div>
         </div>
 
@@ -605,9 +622,23 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                 </tr>
                 <tr className="bg-[#FAF7F2]">
                   <td className="py-3 px-4 sm:px-6 font-bold text-[#746A5D]">شهادة الفحص المخبري</td>
-                  <td className="py-3 px-4 sm:px-6 font-bold text-emerald-800 flex items-center gap-1.5">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                    <span>مفحوصة ومطابقة لأعلى معايير الأصالة الدولية</span>
+                  <td className="py-3 px-4 sm:px-6 font-bold">
+                    {product.verification_status === 'CERTIFIED' ? (
+                      <span className="text-emerald-800 flex items-center gap-1.5 font-bold">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                        <span>معتمدة ومفحوصة بشهادة رسمية {product.certificate_number ? `(#${product.certificate_number})` : ''}</span>
+                      </span>
+                    ) : product.verification_status === 'INSPECTED' ? (
+                      <span className="text-amber-800 flex items-center gap-1.5 font-bold">
+                        <Award className="w-4 h-4 text-amber-600 shrink-0" />
+                        <span>مفحوصة ومعاينة بواسطة خبير هيبة السلطان {product.certificate_number ? `(#${product.certificate_number})` : ''}</span>
+                      </span>
+                    ) : (
+                      <span className="text-[#8C8275] flex items-center gap-1.5 font-semibold bg-[#EFE8DC] px-2.5 py-0.5 rounded-md w-fit">
+                        <span className="w-2 h-2 rounded-full bg-gray-400 shrink-0" />
+                        <span>بدون شهادة فحص</span>
+                      </span>
+                    )}
                   </td>
                 </tr>
               </tbody>
