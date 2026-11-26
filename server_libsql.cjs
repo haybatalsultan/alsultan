@@ -251,7 +251,7 @@ async function initDatabase() {
       origin TEXT DEFAULT '',
       color TEXT DEFAULT '',
       bead_count INTEGER DEFAULT 33,
-      bead_size_mm REAL DEFAULT 10.0,
+      bead_size_mm TEXT DEFAULT '10.0',
       weight_g REAL DEFAULT 45.0,
       shape TEXT DEFAULT 'برميلي',
       tassel_type TEXT DEFAULT 'فضة كازازية عيار 1000',
@@ -1757,7 +1757,7 @@ app.post('/api/products', async (req, res) => {
     `, [
       publicId, productReference, sku, b.name_ar, b.name_en || '', b.description_ar || '', b.description_en || '',
       b.category_id || null, b.material_id || null, b.origin || '', b.color || '', b.bead_count || 33,
-      b.bead_size_mm || 10.0, b.weight_g || 40.0, b.shape || 'برميلي', b.tassel_type || 'فضة',
+      b.bead_size_mm !== undefined && b.bead_size_mm !== null ? String(b.bead_size_mm).trim() : '10.0', b.weight_g || 40.0, b.shape || 'برميلي', b.tassel_type || 'فضة',
       b.condition || 'جديد فاخر', Number(b.cost_price || 0), Number(b.selling_price), b.discount_price ? Number(b.discount_price) : null,
       b.status || 'AVAILABLE', b.is_unique !== undefined ? b.is_unique : 1, b.verification_status || 'CERTIFIED',
       b.certificate_number || '', b.image_url || '', secImagesJson
@@ -1802,7 +1802,7 @@ app.put('/api/products/:id', async (req, res) => {
       b.description_ar ?? existing.description_ar, b.description_en ?? existing.description_en,
       b.category_id ?? existing.category_id, b.material_id ?? existing.material_id,
       b.origin ?? existing.origin, b.color ?? existing.color,
-      b.bead_count ?? existing.bead_count, b.bead_size_mm ?? existing.bead_size_mm,
+      b.bead_count ?? existing.bead_count, (b.bead_size_mm !== undefined && b.bead_size_mm !== null) ? String(b.bead_size_mm).trim() : existing.bead_size_mm,
       b.weight_g ?? existing.weight_g, b.shape ?? existing.shape,
       b.tassel_type ?? existing.tassel_type, b.condition ?? existing.condition,
       b.cost_price ?? existing.cost_price, b.selling_price ?? existing.selling_price,

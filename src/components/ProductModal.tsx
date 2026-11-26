@@ -50,7 +50,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({
   const [origin, setOrigin] = useState(product?.origin || 'بولندا / بحر البلطيق');
   const [color, setColor] = useState(product?.color || 'أصفر معرق');
   const [beadCount, setBeadCount] = useState(product?.bead_count || 33);
-  const [beadSizeMm, setBeadSizeMm] = useState(product?.bead_size_mm || 11.0);
+  const [beadSizeMm, setBeadSizeMm] = useState<string>(product?.bead_size_mm !== undefined && product?.bead_size_mm !== null ? String(product.bead_size_mm) : '11×13');
   const [weightG, setWeightG] = useState(product?.weight_g || 45.0);
   const [shape, setShape] = useState(product?.shape || 'برميلي');
   const [tasselType, setTasselType] = useState(product?.tassel_type || 'فضة كازازية عيار 1000');
@@ -175,7 +175,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({
         origin: origin.trim(),
         color: color.trim(),
         bead_count: Number(beadCount),
-        bead_size_mm: Number(beadSizeMm),
+        bead_size_mm: String(beadSizeMm).trim() || '11×13',
         weight_g: Number(weightG),
         shape: shape.trim(),
         tassel_type: tasselType.trim(),
@@ -306,13 +306,13 @@ export const ProductModal: React.FC<ProductModalProps> = ({
                 />
               </div>
               <div>
-                <label className="block text-[11px] font-semibold text-[#4B4338] mb-1">قياس الخرز (ملم)</label>
+                <label className="block text-[11px] font-semibold text-[#4B4338] mb-1">قياس الخرز (ملم أو أبعاد)</label>
                 <input
-                  type="number"
-                  step="0.1"
+                  type="text"
+                  placeholder="مثال: 11×13 أو 10.5"
                   value={beadSizeMm}
-                  onChange={(e) => setBeadSizeMm(Number(e.target.value))}
-                  className="w-full bg-white border border-[#D8CCA8] rounded-lg px-2.5 py-1.5 text-xs text-[#26221C]"
+                  onChange={(e) => setBeadSizeMm(e.target.value)}
+                  className="w-full bg-white border border-[#D8CCA8] rounded-lg px-2.5 py-1.5 text-xs text-[#26221C] focus:border-[#C9972B] focus:outline-none"
                 />
               </div>
               <div>
