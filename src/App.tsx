@@ -135,6 +135,23 @@ export const App: React.FC = () => {
 
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
+  // Collapsible Admin Sidebar State (Persisted)
+  const [isAdminSidebarOpen, setIsAdminSidebarOpen] = useState<boolean>(() => {
+    try {
+      const saved = localStorage.getItem('haybat_admin_sidebar_open');
+      if (saved !== null) return saved === 'true';
+      return typeof window !== 'undefined' ? window.innerWidth >= 768 : true;
+    } catch {
+      return true;
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('haybat_admin_sidebar_open', String(isAdminSidebarOpen));
+    } catch {}
+  }, [isAdminSidebarOpen]);
+
   // Global 15-Minute Reservation Countdown Timer
   useEffect(() => {
     let interval: any = null;
@@ -437,12 +454,20 @@ export const App: React.FC = () => {
 
     // Authenticated Staff Dashboard View
     return (
-      <div className="flex h-screen bg-[#FAF7F2] text-[#26221C] overflow-hidden font-sans" dir="rtl">
+      <div className="flex h-screen bg-[#FAF7F2] text-[#26221C] overflow-hidden font-sans relative" dir="rtl">
         {/* Staff Sidebar Navigation */}
         <Sidebar
           currentTab={currentTab}
-          setCurrentTab={setCurrentTab}
+          setCurrentTab={(tab) => {
+            setCurrentTab(tab);
+            if (typeof window !== 'undefined' && window.innerWidth < 768) {
+              setIsAdminSidebarOpen(false);
+            }
+          }}
           currentUser={staffUser}
+          isOpen={isAdminSidebarOpen}
+          onToggle={() => setIsAdminSidebarOpen((prev) => !prev)}
+          onClose={() => setIsAdminSidebarOpen(false)}
         />
 
         {/* Main App Content Viewport */}
@@ -455,6 +480,8 @@ export const App: React.FC = () => {
             staffUser={staffUser}
             onStaffLogout={handleStaffLogout}
             onNavigatePortal={navigatePortal}
+            isSidebarOpen={isAdminSidebarOpen}
+            onToggleSidebar={() => setIsAdminSidebarOpen((prev) => !prev)}
           />
 
           <main className="flex-1 overflow-y-auto">

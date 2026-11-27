@@ -16,7 +16,9 @@ import {
   Building2,
   ArrowRight,
   Menu,
-  X
+  X,
+  PanelRightClose,
+  PanelRightOpen
 } from 'lucide-react';
 import { socket } from '../lib/api';
 
@@ -36,6 +38,8 @@ interface HeaderProps {
   cartCount?: number;
   onSelectMenuItem?: (itemId: string) => void;
   activeMenuItem?: string;
+  isSidebarOpen?: boolean;
+  onToggleSidebar?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -53,7 +57,9 @@ export const Header: React.FC<HeaderProps> = ({
   onNavigatePortal,
   cartCount = 0,
   onSelectMenuItem,
-  activeMenuItem = 'all'
+  activeMenuItem = 'all',
+  isSidebarOpen = true,
+  onToggleSidebar
 }) => {
   const [isSocketConnected, setIsSocketConnected] = useState(socket.connected);
   const [customerMenuOpen, setCustomerMenuOpen] = useState(false);
@@ -177,29 +183,56 @@ export const Header: React.FC<HeaderProps> = ({
 
       {/* 3. Main Header Navigation */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-2.5 flex items-center justify-between gap-4">
-        {/* Right: Golden Logo */}
-        <div
-          onClick={() => {
-            if (portalMode === 'admin' && setCurrentTab) {
-              setCurrentTab('dashboard');
-            } else {
-              onNavigatePortal('storefront');
-              window.scrollTo({ top: 0, behavior: 'smooth' });
-            }
-          }}
-          className="cursor-pointer flex items-center shrink-0"
-        >
-          <img
-            src="/branding/logo-header.png"
-            alt="هيبة السلطان - HAYBAT ALSULTAN"
-            width={200}
-            height={64}
-            decoding="async"
-            className="h-12 sm:h-16 w-auto object-contain hover:opacity-95 transition"
-            onError={(e) => {
-              e.currentTarget.style.display = 'none';
+        {/* Right: Golden Logo and Admin Sidebar Toggle */}
+        <div className="flex items-center gap-3">
+          {portalMode === 'admin' && onToggleSidebar && (
+            <button
+              type="button"
+              onClick={onToggleSidebar}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold transition shadow-2xs cursor-pointer active:scale-95 ${
+                isSidebarOpen
+                  ? 'bg-[#FAF4E8] text-[#9A6817] hover:bg-[#F2ECE1] border border-[#E4D5B8]'
+                  : 'bg-gradient-to-r from-[#9A6817] via-[#C9972B] to-[#E2B84B] text-white hover:brightness-105 border border-[#C9972B] shadow-md'
+              }`}
+              title={isSidebarOpen ? 'إخفاء القائمة الجانبية لتوسيع مساحة الشاشة' : 'إظهار القائمة الجانبية'}
+            >
+              {isSidebarOpen ? (
+                <>
+                  <PanelRightClose className="w-4 h-4 text-[#C9972B]" />
+                  <span className="hidden sm:inline">إخفاء القائمة</span>
+                </>
+              ) : (
+                <>
+                  <PanelRightOpen className="w-4 h-4 text-white" />
+                  <span className="font-extrabold">إظهار القائمة</span>
+                </>
+              )}
+            </button>
+          )}
+
+          <div
+            onClick={() => {
+              if (portalMode === 'admin' && setCurrentTab) {
+                setCurrentTab('dashboard');
+              } else {
+                onNavigatePortal('storefront');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }
             }}
-          />
+            className="cursor-pointer flex items-center shrink-0"
+          >
+            <img
+              src="/branding/logo-header.png"
+              alt="هيبة السلطان - HAYBAT ALSULTAN"
+              width={200}
+              height={64}
+              decoding="async"
+              className="h-12 sm:h-16 w-auto object-contain hover:opacity-95 transition"
+              onError={(e) => {
+                e.currentTarget.style.display = 'none';
+              }}
+            />
+          </div>
         </div>
 
         {/* Center: Nav Links based on portal */}
