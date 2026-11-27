@@ -181,7 +181,9 @@ export const QuickSalePOSPage: React.FC<QuickSalePOSPageProps> = ({ onSaleComple
                       <div className="flex items-center gap-2 text-[10px] text-[#746A5D] mt-2.5 pt-2 border-t border-[#F2ECE1]">
                         <span>{p.bead_count} خرزة</span>
                         <span>•</span>
-                        <span>{p.bead_size_mm}mm</span>
+                        <span>
+                          {p.bead_size_mm ? (String(p.bead_size_mm).toLowerCase().includes('mm') || String(p.bead_size_mm).includes('ملم') ? p.bead_size_mm : `${p.bead_size_mm}mm`) : '-'}
+                        </span>
                         <span>•</span>
                         <span>{p.weight_g}g</span>
                       </div>

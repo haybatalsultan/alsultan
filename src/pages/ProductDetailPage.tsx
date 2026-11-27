@@ -526,7 +526,10 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                 </div>
                 <div className="p-3 bg-white rounded-xl border border-[#EADBCE]">
                   <span className="block text-[11px] text-[#8C8275] mb-0.5">مقاس الخرزة</span>
-                  <span className="font-black text-[#26221C] text-sm">{product.bead_size_mm} mm</span>
+                  <span className="font-black text-[#26221C] text-sm">
+                  {product.bead_size_mm}
+                  {String(product.bead_size_mm).toLowerCase().includes('mm') || String(product.bead_size_mm).includes('ملم') ? '' : ' mm'}
+                </span>
                 </div>
                 <div className="p-3 bg-white rounded-xl border border-[#EADBCE]">
                   <span className="block text-[11px] text-[#8C8275] mb-0.5">الوزن الصافي</span>
@@ -675,7 +678,10 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                 </tr>
                 <tr className="bg-[#FAF7F2]">
                   <td className="py-3 px-4 sm:px-6 font-bold text-[#746A5D]">قياس قطر الخرزة (Size mm)</td>
-                  <td className="py-3 px-4 sm:px-6 font-bold text-[#26221C] font-mono">{product.bead_size_mm} مليمتر</td>
+                  <td className="py-3 px-4 sm:px-6 font-bold text-[#26221C] font-mono">
+                    {product.bead_size_mm}
+                    {String(product.bead_size_mm).toLowerCase().includes('mm') || String(product.bead_size_mm).includes('ملم') || String(product.bead_size_mm).includes('مليمتر') ? '' : ' مليمتر'}
+                  </td>
                 </tr>
                 <tr className="bg-white">
                   <td className="py-3 px-4 sm:px-6 font-bold text-[#746A5D]">الوزن الصافي الإجمالي (Weight)</td>

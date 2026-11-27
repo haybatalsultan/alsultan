@@ -211,7 +211,9 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate, onOpen
                     <span>•</span>
                     <span>{p.bead_count} خرزة</span>
                     <span>•</span>
-                    <span>{p.bead_size_mm}mm</span>
+                    <span>
+                      {p.bead_size_mm ? (String(p.bead_size_mm).toLowerCase().includes('mm') || String(p.bead_size_mm).includes('ملم') ? p.bead_size_mm : `${p.bead_size_mm}mm`) : '-'}
+                    </span>
                   </div>
                 </div>
 

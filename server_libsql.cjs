@@ -850,6 +850,30 @@ async function initDatabase() {
 
     const prodCols = await query('PRAGMA table_info(products)');
     const prodColNames = prodCols.map(c => c.name);
+
+    // Database Migration: Ensure bead_size_mm column type is TEXT for letters, numbers and symbols
+    const beadCol = prodCols.find(c => c.name === 'bead_size_mm');
+    if (beadCol && beadCol.type && beadCol.type.toUpperCase() !== 'TEXT') {
+      try {
+        await query('PRAGMA foreign_keys = OFF');
+        const masterRow = await queryOne("SELECT sql FROM sqlite_master WHERE type='table' AND name='products'");
+        if (masterRow && masterRow.sql) {
+          const newSql = masterRow.sql.replace(/bead_size_mm\s+REAL/i, 'bead_size_mm TEXT');
+          if (newSql !== masterRow.sql) {
+            await query("CREATE TABLE IF NOT EXISTS products_temp_migration AS SELECT * FROM products");
+            await query("DROP TABLE products");
+            await query(newSql);
+            await query("INSERT INTO products SELECT * FROM products_temp_migration");
+            await query("DROP TABLE products_temp_migration");
+            console.log('✅ [Migration] Migrated products.bead_size_mm column type to TEXT in database.');
+          }
+        }
+        await query('PRAGMA foreign_keys = ON');
+      } catch (colErr) {
+        console.warn('⚠️ bead_size_mm migration warning:', colErr.message);
+      }
+    }
+
     if (!prodColNames.includes('sales_channel')) await query("ALTER TABLE products ADD COLUMN sales_channel TEXT DEFAULT 'both'");
     if (!prodColNames.includes('price_b2c')) {
       await query("ALTER TABLE products ADD COLUMN price_b2c REAL DEFAULT 0.0");

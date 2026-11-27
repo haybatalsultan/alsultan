@@ -568,7 +568,9 @@ export const StorefrontPage: React.FC<StorefrontPageProps> = ({
                       </div>
                       <div className="border-r border-l border-[#E2D8C6]">
                         <span className="block text-[10px] text-[#8C8275]">القياس</span>
-                        <span className="font-bold text-[#26221C]">{p.bead_size_mm}mm</span>
+                        <span className="font-bold text-[#26221C]">
+                          {p.bead_size_mm ? (String(p.bead_size_mm).toLowerCase().includes('mm') || String(p.bead_size_mm).includes('ملم') ? p.bead_size_mm : `${p.bead_size_mm}mm`) : '-'}
+                        </span>
                       </div>
                       <div>
                         <span className="block text-[10px] text-[#8C8275]">الوزن</span>

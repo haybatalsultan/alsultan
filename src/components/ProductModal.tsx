@@ -356,10 +356,11 @@ export const ProductModal: React.FC<ProductModalProps> = ({
                 />
               </div>
               <div>
-                <label className="block text-[11px] font-semibold text-[#4B4338] mb-1">قياس الخرز (ملم أو أبعاد)</label>
+                <label className="block text-[11px] font-semibold text-[#4B4338] mb-1">قياس الخرز (نص وأبعاد ورموز)</label>
                 <input
                   type="text"
-                  placeholder="مثال: 11×13 أو 10.5"
+                  dir="auto"
+                  placeholder="مثال: 11×13 أو 12x14 أو 10.5 ملم"
                   value={beadSizeMm}
                   onChange={(e) => setBeadSizeMm(e.target.value)}
                   className="w-full bg-white border border-[#D8CCA8] rounded-lg px-2.5 py-1.5 text-xs text-[#26221C] focus:border-[#C9972B] focus:outline-none"
