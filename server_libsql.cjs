@@ -1830,6 +1830,9 @@ app.get('/api/products', async (req, res) => {
       });
     }
 
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
     res.json(products);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -2112,7 +2115,8 @@ app.post('/api/admin/b2b/reject/:id', async (req, res) => {
 app.get('/api/products/:id', async (req, res) => {
   try {
     const product = await queryOne(`
-      SELECT p.*, c.name_ar as category_name_ar, m.name_ar as material_name_ar
+      SELECT p.*, c.name_ar as category_name_ar, c.name_en as category_name_en,
+             m.name_ar as material_name_ar, m.name_en as material_name_en
       FROM products p
       LEFT JOIN categories c ON p.category_id = c.id
       LEFT JOIN materials m ON p.material_id = m.id
@@ -2120,6 +2124,9 @@ app.get('/api/products/:id', async (req, res) => {
     `, [req.params.id, req.params.id, req.params.id, req.params.id]);
 
     if (!product) return res.status(404).json({ error: 'المسبحة غير موجودة' });
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
     res.json(product);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -2269,26 +2276,45 @@ app.put('/api/products/:id', requireAuth(['OWNER', 'ADMIN', 'SUPERVISOR', 'SALES
         image_url = ?, secondary_images = ?, updated_at = datetime('now', 'localtime')
       WHERE id = ?
     `, [
-      b.name_ar ?? existing.name_ar, b.name_en ?? existing.name_en,
-      b.description_ar ?? existing.description_ar, b.description_en ?? existing.description_en,
-      b.category_id ?? existing.category_id, b.material_id ?? existing.material_id,
-      b.origin ?? existing.origin, b.color ?? existing.color,
-      b.bead_count ?? existing.bead_count, (b.bead_size_mm !== undefined && b.bead_size_mm !== null) ? String(b.bead_size_mm).trim() : existing.bead_size_mm,
-      b.weight_g ?? existing.weight_g, b.shape ?? existing.shape,
-      b.tassel_type ?? existing.tassel_type, b.condition ?? existing.condition,
-      b.cost_price ?? existing.cost_price, b.selling_price ?? existing.selling_price,
+      b.name_ar !== undefined ? b.name_ar.trim() : existing.name_ar,
+      b.name_en !== undefined ? b.name_en.trim() : existing.name_en,
+      b.description_ar !== undefined ? b.description_ar : existing.description_ar,
+      b.description_en !== undefined ? b.description_en : existing.description_en,
+      b.category_id !== undefined ? (Number(b.category_id) || null) : existing.category_id,
+      b.material_id !== undefined ? (Number(b.material_id) || null) : existing.material_id,
+      b.origin !== undefined ? b.origin.trim() : existing.origin,
+      b.color !== undefined ? b.color.trim() : existing.color,
+      b.bead_count !== undefined ? Number(b.bead_count) : existing.bead_count,
+      (b.bead_size_mm !== undefined && b.bead_size_mm !== null) ? String(b.bead_size_mm).trim() : existing.bead_size_mm,
+      b.weight_g !== undefined ? Number(b.weight_g) : existing.weight_g,
+      b.shape !== undefined ? b.shape.trim() : existing.shape,
+      b.tassel_type !== undefined ? b.tassel_type.trim() : existing.tassel_type,
+      b.condition !== undefined ? b.condition : existing.condition,
+      b.cost_price !== undefined ? Number(b.cost_price) : existing.cost_price,
+      b.selling_price !== undefined ? Number(b.selling_price) : existing.selling_price,
       b.discount_price !== undefined ? b.discount_price : existing.discount_price,
-      b.status ?? existing.status, b.verification_status ?? existing.verification_status,
-      b.certificate_number ?? existing.certificate_number,
-      b.image_url ?? existing.image_url,
+      b.status !== undefined ? b.status : existing.status,
+      b.verification_status !== undefined ? b.verification_status : existing.verification_status,
+      b.certificate_number !== undefined ? String(b.certificate_number).trim() : existing.certificate_number,
+      b.image_url !== undefined ? b.image_url : existing.image_url,
       secImagesToSave,
       req.params.id
     ]);
 
-    const updated = await queryOne('SELECT * FROM products WHERE id = ?', [req.params.id]);
+    // Fetch the updated row fully joined with category and material names
+    const updated = await queryOne(`
+      SELECT p.*, c.name_ar as category_name_ar, c.name_en as category_name_en,
+             m.name_ar as material_name_ar, m.name_en as material_name_en
+      FROM products p
+      LEFT JOIN categories c ON p.category_id = c.id
+      LEFT JOIN materials m ON p.material_id = m.id
+      WHERE p.id = ?
+    `, [req.params.id]);
+
     await recordAudit(req.body.actor_name || 'Admin', 'OWNER', 'UPDATE_PRODUCT', 'CATALOG', { id: req.params.id });
     
     io.emit('product:updated', updated);
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
     res.json(updated);
   } catch (err) {
     res.status(500).json({ error: err.message });

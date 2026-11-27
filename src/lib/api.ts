@@ -116,11 +116,17 @@ export const api = {
 
   // Products
   getProducts: async (params?: Record<string, any>) => {
-    const res = await axios.get(`${API_BASE}/products`, { params });
+    const res = await axios.get(`${API_BASE}/products`, {
+      params: { ...(params || {}), _t: Date.now() },
+      headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' }
+    });
     return res.data;
   },
   getProduct: async (id: string | number) => {
-    const res = await axios.get(`${API_BASE}/products/${id}`);
+    const res = await axios.get(`${API_BASE}/products/${id}`, {
+      params: { _t: Date.now() },
+      headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' }
+    });
     return res.data;
   },
   createProduct: async (data: any) => {

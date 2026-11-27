@@ -328,7 +328,18 @@ export const App: React.FC = () => {
     loadBaseData();
 
     socket.on('product:created', () => setRefreshTrigger(n => n + 1));
-    socket.on('product:updated', () => setRefreshTrigger(n => n + 1));
+    socket.on('product:updated', (updatedProd: any) => {
+      setRefreshTrigger(n => n + 1);
+      if (updatedProd) {
+        setAllStoreProducts(prev => prev.map(p => (p.id === updatedProd.id || p.public_id === updatedProd.public_id) ? { ...p, ...updatedProd } : p));
+        setViewingProduct(prev => {
+          if (prev && (prev.id === updatedProd.id || prev.public_id === updatedProd.public_id || prev.sku === updatedProd.sku)) {
+            return { ...prev, ...updatedProd };
+          }
+          return prev;
+        });
+      }
+    });
     socket.on('product:reserved', () => setRefreshTrigger(n => n + 1));
     socket.on('product:status_changed', () => setRefreshTrigger(n => n + 1));
     socket.on('order:created', () => setRefreshTrigger(n => n + 1));
@@ -536,9 +547,19 @@ export const App: React.FC = () => {
             materials={materials}
             userName={staffUser.full_name}
             onClose={() => setProductModalItem({ open: false, item: null })}
-            onSuccess={() => {
+            onSuccess={async () => {
+              const editedId = productModalItem.item?.id;
               setProductModalItem({ open: false, item: null });
               setRefreshTrigger(n => n + 1);
+              if (editedId) {
+                try {
+                  const fresh = await api.getProduct(editedId);
+                  if (fresh) {
+                    setAllStoreProducts(prev => prev.map(p => p.id === fresh.id ? { ...p, ...fresh } : p));
+                    setViewingProduct(prev => (prev && (prev.id === fresh.id || prev.public_id === fresh.public_id)) ? { ...prev, ...fresh } : prev);
+                  }
+                } catch {}
+              }
             }}
           />
         )}
