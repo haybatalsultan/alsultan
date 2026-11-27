@@ -253,7 +253,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
     : `تحفة ملكية نادرة صيغت بحرفية يدوية رفيعة المستوى على يد أمهر خراطي المسابيح التقليديين. تم استخراج خاماتها الطبيعية وعنايتها بدقة للحفاظ على نقائها وملمسها التاريخي الفريد. قطعة فريدة تليق بالمجموعات الخاصة والذوق الرفيع (بدون شهادة فحص مخبري مسجلة).`;
 
   return (
-    <div className="min-h-screen bg-[#FAF7F2] text-[#26221C] py-6 sm:py-10 selection:bg-[#C9972B]/20" dir="rtl">
+    <div className="min-h-screen bg-[#FAF7F2] text-[#26221C] pt-4 pb-28 sm:py-10 selection:bg-[#C9972B]/20" dir="rtl">
       
       {/* Box QR Print Modal */}
       {isPrintModalOpen && (
@@ -790,6 +790,55 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
           </p>
         </div>
 
+      </div>
+
+      {/* Mobile App Bottom Sticky Action Bar (Direct Purchase & 15-Minute Reservation) */}
+      <div className="fixed bottom-0 inset-x-0 z-30 bg-white/95 backdrop-blur-xl border-t border-[#E8DEC9] p-3 shadow-[0_-5px_25px_rgba(38,34,28,0.12)] md:hidden pb-[max(0.6rem,env(safe-area-inset-bottom,0px))]">
+        <div className="max-w-md mx-auto flex items-center justify-between gap-3">
+          <div className="shrink-0 text-right">
+            <span className="text-[10px] text-[#8C8275] block font-bold leading-tight">القيمة المعتمدة</span>
+            <div className="flex items-baseline gap-1">
+              <span className="text-xl font-black text-[#9A6817] font-mono leading-none">
+                {product.selling_price.toLocaleString()}
+              </span>
+              <span className="text-[10px] font-bold text-[#746A5D]">د.إ</span>
+            </div>
+          </div>
+
+          <div className="flex-1">
+            {cartItem && cartItem.id === product.id ? (
+              <button
+                type="button"
+                onClick={() => onOpenCheckout && onOpenCheckout(product)}
+                className="w-full py-3 px-3 bg-gradient-to-r from-[#9A6817] via-[#C9972B] to-[#E2B84B] text-[#12100D] font-black rounded-xl text-xs shadow-md flex items-center justify-center gap-1.5 active:scale-95 transition cursor-pointer"
+              >
+                <ShoppingCart className="w-4 h-4" />
+                <span>إتمام الشراء</span>
+                <span className="text-[10px] font-mono bg-black/10 px-1.5 py-0.5 rounded">
+                  {Math.floor((reservationRemaining || 0) / 60)}:{String((reservationRemaining || 0) % 60).padStart(2, '0')}
+                </span>
+              </button>
+            ) : product.status === 'RESERVED' ? (
+              <button
+                type="button"
+                disabled
+                className="w-full py-3 px-3 bg-[#F2ECE1] text-[#8C8275] font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 cursor-not-allowed opacity-80"
+              >
+                <Clock className="w-4 h-4 text-[#9A6817]" />
+                <span>محجوزة لعميل آخر ⏳</span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => onReserveProduct ? onReserveProduct(product, 15) : onOpenCheckout && onOpenCheckout(product)}
+                className="w-full py-3 px-3 bg-gradient-to-r from-[#9A6817] via-[#C9972B] to-[#E2B84B] hover:brightness-105 text-[#12100D] font-black rounded-xl text-xs shadow-md flex items-center justify-center gap-1.5 active:scale-95 transition cursor-pointer"
+              >
+                <Sparkles className="w-4 h-4 text-[#12100D]" />
+                <span>حجز واقتناء (15 دقيقة)</span>
+              </button>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* 8. Luxury Fullscreen Zoom & Image Gallery Lightbox Modal */}

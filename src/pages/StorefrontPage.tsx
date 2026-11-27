@@ -22,7 +22,8 @@ import {
   RotateCcw,
   Coins,
   X,
-  Filter
+  Filter,
+  Check
 } from 'lucide-react';
 import { api } from '../lib/api';
 import { Product } from '../types';
@@ -207,8 +208,8 @@ export const StorefrontPage: React.FC<StorefrontPageProps> = ({
 
   return (
     <div className="min-h-full bg-[#FAF7F2] text-[#26221C] flex flex-col justify-between selection:bg-[#C9972B]/20">
-      {/* 1. Panoramic Hero Section (Exact Match to User Attached Screenshot) */}
-      <section id="hero" className="relative w-full bg-[#EFE8DC] overflow-hidden border-b border-[#EBE3D5]">
+      {/* 1. Panoramic Hero Section (Desktop Web: Exact Match) */}
+      <section id="hero" className="hidden md:block relative w-full bg-[#EFE8DC] overflow-hidden border-b border-[#EBE3D5]">
         {/* Main Banner Image Container */}
         <div className="relative w-full min-h-[380px] sm:min-h-[460px] md:min-h-[520px] flex items-center justify-center">
           <img
@@ -303,8 +304,63 @@ export const StorefrontPage: React.FC<StorefrontPageProps> = ({
         </div>
       </section>
 
+      {/* 1.B Mobile App Experience: Compact Hero & Category Stories Chips (Mobile App Only) */}
+      <section className="block md:hidden px-3 pt-3 space-y-3">
+        {/* Compact App Hero Card */}
+        <div className="relative rounded-2xl overflow-hidden min-h-[155px] flex items-center p-4 shadow-xs border border-[#EBE3D5]">
+          <img
+            src="/branding/hero-amber.jpg"
+            alt="هيبة الأصل... جمال الكهرمان"
+            className="absolute inset-0 w-full h-full object-cover object-center"
+          />
+          <div className="absolute inset-0 bg-gradient-to-l from-black/85 via-black/55 to-black/25 pointer-events-none" />
+
+          <div className="relative z-10 space-y-1 text-right max-w-[75%]">
+            <span className="inline-flex items-center gap-1 text-[9px] font-black bg-[#C9972B] text-black px-2 py-0.5 rounded-full shadow-xs">
+              <Sparkles className="w-2.5 h-2.5 text-black" />
+              <span>نوادر هيبة السلطان 2026</span>
+            </span>
+            <h1 className="text-lg font-black text-white leading-tight drop-shadow-sm">
+              هيبة الأصل... جمال الكهرمان
+            </h1>
+            <p className="text-[10px] text-white/90 leading-relaxed font-medium">
+              مسابيح كهرمان بلطيقي ونوادر مفحوصة مخبرياً
+            </p>
+          </div>
+        </div>
+
+        {/* Mobile Horizontal Category Stories Chips */}
+        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1 -mx-3 px-3">
+          {[
+            { id: 'all', label: 'الكل', icon: '📿' },
+            { id: 'rare', label: 'النوادر', icon: '🏺' },
+            { id: 'gemstones', label: 'الأحجار الكريمة', icon: '💎' },
+            { id: 'gifts', label: 'الهدايا', icon: '🎁' },
+          ].map((cat) => {
+            const isActive = activeCategoryFilter === cat.id;
+            return (
+              <button
+                key={cat.id}
+                type="button"
+                onClick={() => {
+                  if (onCategoryFilterChange) onCategoryFilterChange(cat.id);
+                }}
+                className={`shrink-0 flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all active:scale-95 cursor-pointer ${
+                  isActive
+                    ? 'bg-[#26221C] text-[#E2B84B] shadow-sm border border-[#26221C]'
+                    : 'bg-white text-[#554C41] border border-[#E8DEC9] hover:bg-[#FAF4E8]'
+                }`}
+              >
+                <span>{cat.icon}</span>
+                <span>{cat.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      </section>
+
       {/* 3. Showcase Grid of Luxury Rosaries */}
-      <section id="products-section" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 flex-1 w-full space-y-6">
+      <section id="products-section" className="max-w-7xl mx-auto px-2.5 sm:px-6 lg:px-8 py-5 sm:py-10 pb-28 md:pb-12 flex-1 w-full space-y-4 sm:space-y-6">
         {/* Section Heading Bar */}
         <div id="products" className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#EBE3D5]">
           <div>
@@ -357,6 +413,7 @@ export const StorefrontPage: React.FC<StorefrontPageProps> = ({
             {/* Search Input */}
             <div className="relative flex-1 max-w-md">
               <input
+                id="store-search-input"
                 type="text"
                 placeholder="بحث باسم المسبحة، الخامة، أو كود SKU..."
                 value={searchQuery}
@@ -503,11 +560,11 @@ export const StorefrontPage: React.FC<StorefrontPageProps> = ({
             )}
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-2.5 sm:gap-6 sm:gap-8">
             {filteredProducts.map((p) => (
               <div
                 key={p.id}
-                className="bg-white border border-[#EBE3D5] rounded-3xl overflow-hidden flex flex-col justify-between hover:shadow-[0_10px_30px_rgba(201,151,43,0.15)] hover:border-[#C9972B] transition-all duration-300 group"
+                className="bg-white border border-[#EBE3D5] rounded-2xl sm:rounded-3xl overflow-hidden flex flex-col justify-between hover:shadow-[0_10px_30px_rgba(201,151,43,0.15)] hover:border-[#C9972B] transition-all duration-300 group"
               >
                 <div>
                   {/* Image Container with Badges */}
@@ -524,8 +581,8 @@ export const StorefrontPage: React.FC<StorefrontPageProps> = ({
                       className="w-full h-full object-cover group-hover/img:scale-108 transition-transform duration-700"
                     />
 
-                    {/* Hover Zoom & Inspection Overlay */}
-                    <div className="absolute inset-0 bg-black/25 opacity-0 group-hover/img:opacity-100 transition-opacity duration-300 flex items-center justify-center pointer-events-none">
+                    {/* Hover Zoom & Inspection Overlay (desktop only) */}
+                    <div className="hidden sm:flex absolute inset-0 bg-black/25 opacity-0 group-hover/img:opacity-100 transition-opacity duration-300 items-center justify-center pointer-events-none">
                       <span className="bg-[#1C1814]/90 text-[#F4E3BA] text-xs font-bold px-3.5 py-1.5 rounded-xl border border-[#C9972B]/60 shadow-xl flex items-center gap-1.5 backdrop-blur-xs scale-95 group-hover/img:scale-100 transition-transform">
                         <Sparkles className="w-3.5 h-3.5 text-[#C9972B]" />
                         <span>عرض التفاصيل وتكبير الصور</span>
@@ -533,35 +590,48 @@ export const StorefrontPage: React.FC<StorefrontPageProps> = ({
                     </div>
 
                     {/* SKU Pill */}
-                    <div className="absolute top-3 right-3 bg-white/95 backdrop-blur px-3 py-1 rounded-full text-[11px] font-bold text-[#9A6817] border border-[#E8DEC8] shadow-xs">
+                    <div className="absolute top-2 right-2 sm:top-3 sm:right-3 bg-white/95 backdrop-blur px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-[9px] sm:text-[11px] font-bold text-[#9A6817] border border-[#E8DEC8] shadow-xs">
                       {p.sku}
                     </div>
 
                     {/* Certification Badge */}
                     {p.verification_status === 'CERTIFIED' ? (
-                      <div className="absolute bottom-3 right-3 bg-emerald-700/95 backdrop-blur px-2.5 py-1 rounded-lg text-[10px] font-bold text-white flex items-center gap-1 shadow-xs">
-                        <Award className="w-3.5 h-3.5" />
-                        <span>شهادة فحص معتمدة</span>
+                      <div className="absolute bottom-2 right-2 sm:bottom-3 sm:right-3 bg-emerald-700/95 backdrop-blur px-1.5 sm:px-2.5 py-0.5 sm:py-1 rounded-md sm:rounded-lg text-[8px] sm:text-[10px] font-bold text-white flex items-center gap-1 shadow-xs">
+                        <Award className="w-2.5 h-2.5 sm:w-3.5 sm:h-3.5" />
+                        <span className="hidden sm:inline">شهادة فحص معتمدة</span>
+                        <span className="sm:hidden">معتمدة</span>
                       </div>
                     ) : (
-                      <div className="absolute bottom-3 right-3 bg-black/60 backdrop-blur px-2.5 py-1 rounded-lg text-[10px] font-bold text-[#E5DAC8] flex items-center gap-1 shadow-xs border border-white/10">
-                        <span>بدون شهادة فحص</span>
+                      <div className="absolute bottom-2 right-2 sm:bottom-3 sm:right-3 bg-black/60 backdrop-blur px-1.5 sm:px-2.5 py-0.5 sm:py-1 rounded-md sm:rounded-lg text-[8px] sm:text-[10px] font-bold text-[#E5DAC8] flex items-center gap-1 shadow-xs border border-white/10">
+                        <span className="hidden sm:inline">بدون شهادة فحص</span>
+                        <span className="sm:hidden">أصلي</span>
                       </div>
                     )}
                   </div>
 
                   {/* Card Details */}
-                  <div className="p-5 space-y-3">
+                  <div className="p-2.5 sm:p-5 space-y-1.5 sm:space-y-3">
                     <h3
                       onClick={() => onViewProduct && onViewProduct(p)}
-                      className="font-extrabold text-base text-[#26221C] group-hover:text-[#9A6817] transition line-clamp-1 cursor-pointer"
+                      className="font-extrabold text-xs sm:text-base text-[#26221C] group-hover:text-[#9A6817] transition line-clamp-2 sm:line-clamp-1 cursor-pointer leading-tight sm:leading-normal"
                       title="انقر لعرض تفاصيل وقصة المسبحة"
                     >
                       {p.name_ar}
                     </h3>
 
-                    {/* Rosary Specs Grid */}
-                    <div className="grid grid-cols-3 gap-2 text-center text-xs bg-[#FAF7F2] p-2.5 rounded-xl border border-[#EEE4D4] text-[#4B4338]">
+                    {/* Mobile Compact Specs Pill (visible only on mobile) */}
+                    <div className="flex sm:hidden items-center justify-between text-[10px] text-[#746A5D] bg-[#FAF7F2] px-2 py-1 rounded-lg border border-[#EEE4D4]">
+                      <span>{p.bead_count} خرزة</span>
+                      <span className="text-[#C9972B]">•</span>
+                      <span>
+                        {p.bead_size_mm ? (String(p.bead_size_mm).toLowerCase().includes('mm') || String(p.bead_size_mm).includes('ملم') ? p.bead_size_mm : `${p.bead_size_mm}mm`) : '-'}
+                      </span>
+                      <span className="text-[#C9972B]">•</span>
+                      <span>{p.weight_g}g</span>
+                    </div>
+
+                    {/* Desktop Rosary Specs Grid (hidden on mobile) */}
+                    <div className="hidden sm:grid grid-cols-3 gap-2 text-center text-xs bg-[#FAF7F2] p-2.5 rounded-xl border border-[#EEE4D4] text-[#4B4338]">
                       <div>
                         <span className="block text-[10px] text-[#8C8275]">الخرز</span>
                         <span className="font-bold text-[#26221C]">{p.bead_count}</span>
@@ -578,18 +648,18 @@ export const StorefrontPage: React.FC<StorefrontPageProps> = ({
                       </div>
                     </div>
 
-                    {/* Attributes */}
-                    <div className="text-xs text-[#746A5D] space-y-1 pt-1">
+                    {/* Desktop Attributes (hidden on mobile) */}
+                    <div className="hidden sm:block text-xs text-[#746A5D] space-y-1 pt-1">
                       <p><span className="text-[#9E9485]">القصة:</span> <span className="font-medium text-[#3D352E]">{p.shape || 'برميلي'}</span></p>
                       <p><span className="text-[#9E9485]">الكركوشة:</span> <span className="font-medium text-[#3D352E]">{p.tassel_type || 'فضة عيار 925'}</span></p>
                       <p><span className="text-[#9E9485]">المنشأ:</span> <span className="font-medium text-[#3D352E]">{p.origin || 'ألمانيا / البلطيق'}</span></p>
                     </div>
 
-                    {/* View Details Link */}
+                    {/* Desktop View Details Link */}
                     {onViewProduct && (
                       <button
                         onClick={() => onViewProduct(p)}
-                        className="w-full pt-1 text-xs font-bold text-[#9A6817] hover:text-[#C9972B] flex items-center justify-center gap-1 transition cursor-pointer"
+                        className="hidden sm:flex w-full pt-1 text-xs font-bold text-[#9A6817] hover:text-[#C9972B] items-center justify-center gap-1 transition cursor-pointer"
                       >
                         <span>عرض القصة والمواصفات الكاملة</span>
                         <ChevronLeft className="w-3.5 h-3.5" />
@@ -599,73 +669,113 @@ export const StorefrontPage: React.FC<StorefrontPageProps> = ({
                 </div>
 
                 {/* Card Pricing & Action Buttons */}
-                <div className="p-5 pt-0 border-t border-[#F5EFE6] mt-3">
-                  <div className="flex items-baseline justify-between mb-3 pt-3">
-                    <span className="text-xs text-[#746A5D]">قيمة الاقتناء:</span>
-                    <span className="text-xl font-black text-[#9A6817]">
-                      {p.selling_price.toLocaleString()} <span className="text-xs font-bold text-[#746A5D]">AED</span>
+                <div className="p-2.5 sm:p-5 pt-0 border-t border-[#F5EFE6] mt-1 sm:mt-3">
+                  <div className="flex items-baseline justify-between mb-2 sm:mb-3 pt-2 sm:pt-3">
+                    <span className="text-[10px] sm:text-xs text-[#746A5D]">قيمة الاقتناء:</span>
+                    <span className="text-sm sm:text-xl font-black text-[#9A6817]">
+                      {p.selling_price.toLocaleString()} <span className="text-[10px] sm:text-xs font-bold text-[#746A5D]">AED</span>
                     </span>
                   </div>
 
-                  {/* Primary Checkout Button */}
-                  {cartItem && cartItem.id === p.id ? (
-                    <button
-                      onClick={() => onOpenCheckout(p)}
-                      className="w-full py-2.5 mb-2 bg-gradient-to-r from-[#9A6817] via-[#C9972B] to-[#E2B84B] hover:brightness-110 text-[#12100D] text-xs font-black rounded-xl transition flex items-center justify-center gap-2 shadow-md cursor-pointer animate-pulse"
-                    >
-                      <ShoppingCart className="w-3.5 h-3.5" />
-                      <span>إتمام الاقتناء (محجوزة باسمك)</span>
-                    </button>
-                  ) : p.status === 'RESERVED' ? (
-                    <button
-                      disabled
-                      className="w-full py-2.5 mb-2 bg-[#FAF4E8] text-[#9E9485] text-xs font-bold rounded-xl border border-[#EADBCE] flex items-center justify-center gap-2 cursor-not-allowed"
-                    >
-                      <Clock className="w-3.5 h-3.5 text-[#C9972B]" />
-                      <span>محجوزة مؤقتاً لعميل آخر</span>
-                    </button>
-                  ) : (
-                    <button
-                      onClick={() => onOpenCheckout(p)}
-                      className="w-full py-2.5 mb-2 bg-[#C9972B] hover:bg-[#B8851E] text-white text-xs font-black rounded-xl transition flex items-center justify-center gap-2 shadow-xs cursor-pointer"
-                    >
-                      <ShoppingCart className="w-3.5 h-3.5" />
-                      <span>اقتناء فوري أونلاين</span>
-                    </button>
-                  )}
-
-                  <div className="grid grid-cols-2 gap-2">
+                  {/* --- MOBILE ACTION BAR (App Style, 1-tap Thumb Friendly) --- */}
+                  <div className="flex sm:hidden items-center gap-1.5 pt-1">
                     {cartItem && cartItem.id === p.id ? (
-                      <div className="py-2 bg-emerald-50 text-emerald-800 border border-emerald-200 text-[11px] font-bold rounded-xl flex items-center justify-center gap-1">
-                        <Check className="w-3.5 h-3.5 text-emerald-600" />
-                        <span>محجوزة لك ✓</span>
-                      </div>
+                      <button
+                        onClick={() => onOpenCheckout(p)}
+                        className="flex-1 py-2 bg-gradient-to-r from-[#9A6817] to-[#C9972B] text-black text-[11px] font-black rounded-xl flex items-center justify-center gap-1 shadow-xs active:scale-98 transition"
+                      >
+                        <ShoppingCart className="w-3.5 h-3.5" />
+                        <span>محجوزة لك</span>
+                      </button>
                     ) : p.status === 'RESERVED' ? (
                       <button
                         disabled
-                        className="py-2 bg-[#F5EFE6] text-[#A89D8F] border border-[#E0D7C6] text-[11px] font-medium rounded-xl flex items-center justify-center gap-1 cursor-not-allowed"
-                        title="المسبحة محجوزة مؤقتاً لعميل آخر. ستصبح متاحة تلقائياً في حال انتهاء المهلة (15 دقيقة)."
+                        className="flex-1 py-2 bg-[#FAF4E8] text-[#9E9485] text-[10px] font-bold rounded-xl border border-[#EADBCE] flex items-center justify-center gap-1 cursor-not-allowed"
                       >
-                        <Clock className="w-3 h-3 text-[#B0A493]" />
-                        <span>محجوزة مؤقتاً</span>
+                        <Clock className="w-3 h-3 text-[#C9972B]" />
+                        <span>محجوزة</span>
                       </button>
                     ) : (
                       <button
-                        onClick={() => handleReserve(p)}
-                        className="py-2 bg-[#FAF4E8] hover:bg-[#F3E7CE] text-[#9A6817] border border-[#E4D5B8] text-[11px] font-bold rounded-xl transition flex items-center justify-center gap-1 cursor-pointer"
-                        title="حجز مؤقت يمنع أي شخص آخر من شرائه لمدة 15 دقيقة"
+                        onClick={() => onOpenCheckout(p)}
+                        className="flex-1 py-2 bg-[#C9972B] active:bg-[#B8851E] text-white text-[11px] font-black rounded-xl flex items-center justify-center gap-1 shadow-xs active:scale-98 transition"
                       >
-                        <Clock className="w-3 h-3" />
-                        <span>حجز 15 دقيقة</span>
+                        <ShoppingCart className="w-3.5 h-3.5" />
+                        <span>اقتناء</span>
                       </button>
                     )}
+
                     <button
                       onClick={() => handleWhatsAppOrder(p)}
-                      className="py-2 bg-[#25D366] hover:bg-[#1EBE5D] text-white text-[11px] font-bold rounded-xl transition flex items-center justify-center gap-1 cursor-pointer"
+                      title="طلب عبر واتساب"
+                      aria-label="طلب عبر واتساب"
+                      className="p-2 bg-[#25D366] active:bg-[#1EBE5D] text-white rounded-xl flex items-center justify-center shadow-xs active:scale-98 transition"
                     >
-                      <MessageCircle className="w-3 h-3" />
-                      <span>واتساب</span>
+                      <MessageCircle className="w-3.5 h-3.5" />
                     </button>
+                  </div>
+
+                  {/* --- DESKTOP ACTION BUTTONS (hidden on mobile) --- */}
+                  <div className="hidden sm:block">
+                    {cartItem && cartItem.id === p.id ? (
+                      <button
+                        onClick={() => onOpenCheckout(p)}
+                        className="w-full py-2.5 mb-2 bg-gradient-to-r from-[#9A6817] via-[#C9972B] to-[#E2B84B] hover:brightness-110 text-[#12100D] text-xs font-black rounded-xl transition flex items-center justify-center gap-2 shadow-md cursor-pointer animate-pulse"
+                      >
+                        <ShoppingCart className="w-3.5 h-3.5" />
+                        <span>إتمام الاقتناء (محجوزة باسمك)</span>
+                      </button>
+                    ) : p.status === 'RESERVED' ? (
+                      <button
+                        disabled
+                        className="w-full py-2.5 mb-2 bg-[#FAF4E8] text-[#9E9485] text-xs font-bold rounded-xl border border-[#EADBCE] flex items-center justify-center gap-2 cursor-not-allowed"
+                      >
+                        <Clock className="w-3.5 h-3.5 text-[#C9972B]" />
+                        <span>محجوزة مؤقتاً لعميل آخر</span>
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => onOpenCheckout(p)}
+                        className="w-full py-2.5 mb-2 bg-[#C9972B] hover:bg-[#B8851E] text-white text-xs font-black rounded-xl transition flex items-center justify-center gap-2 shadow-xs cursor-pointer"
+                      >
+                        <ShoppingCart className="w-3.5 h-3.5" />
+                        <span>اقتناء فوري أونلاين</span>
+                      </button>
+                    )}
+
+                    <div className="grid grid-cols-2 gap-2">
+                      {cartItem && cartItem.id === p.id ? (
+                        <div className="py-2 bg-emerald-50 text-emerald-800 border border-emerald-200 text-[11px] font-bold rounded-xl flex items-center justify-center gap-1">
+                          <Check className="w-3.5 h-3.5 text-emerald-600" />
+                          <span>محجوزة لك ✓</span>
+                        </div>
+                      ) : p.status === 'RESERVED' ? (
+                        <button
+                          disabled
+                          className="py-2 bg-[#F5EFE6] text-[#A89D8F] border border-[#E0D7C6] text-[11px] font-medium rounded-xl flex items-center justify-center gap-1 cursor-not-allowed"
+                          title="المسبحة محجوزة مؤقتاً لعميل آخر. ستصبح متاحة تلقائياً في حال انتهاء المهلة (15 دقيقة)."
+                        >
+                          <Clock className="w-3 h-3 text-[#B0A493]" />
+                          <span>محجوزة مؤقتاً</span>
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => handleReserve(p)}
+                          className="py-2 bg-[#FAF4E8] hover:bg-[#F3E7CE] text-[#9A6817] border border-[#E4D5B8] text-[11px] font-bold rounded-xl transition flex items-center justify-center gap-1 cursor-pointer"
+                          title="حجز مؤقت يمنع أي شخص آخر من شرائه لمدة 15 دقيقة"
+                        >
+                          <Clock className="w-3 h-3" />
+                          <span>حجز 15 دقيقة</span>
+                        </button>
+                      )}
+                      <button
+                        onClick={() => handleWhatsAppOrder(p)}
+                        className="py-2 bg-[#25D366] hover:bg-[#1EBE5D] text-white text-[11px] font-bold rounded-xl transition flex items-center justify-center gap-1 cursor-pointer"
+                      >
+                        <MessageCircle className="w-3 h-3" />
+                        <span>واتساب</span>
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>

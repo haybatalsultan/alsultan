@@ -27,6 +27,7 @@ import { InvoiceModal } from './components/InvoiceModal';
 import { CustomerAuthModal } from './components/CustomerAuthModal';
 import { CustomerOrdersModal } from './components/CustomerOrdersModal';
 import { CheckoutModal } from './components/CheckoutModal';
+import { MobileBottomNav } from './components/MobileBottomNav';
 import { RoyalNotifications } from './components/RoyalNotifications';
 import { toast } from './utils/toast';
 import { Clock, ShoppingBag, MessageCircle, X } from 'lucide-react';
@@ -793,6 +794,41 @@ export const App: React.FC = () => {
           />
         )}
       </main>
+
+      {/* Mobile App Bottom Navigation Bar (Active on Mobile Storefront) */}
+      {portal === 'storefront' && (
+        <MobileBottomNav
+          activeTab={storefrontFilterCategory}
+          onSelectTab={(tabId) => {
+            if (tabId === 'search') {
+              const el = document.getElementById('store-search-input') || document.getElementById('products-section');
+              if (el) el.scrollIntoView({ behavior: 'smooth' });
+              const input = document.getElementById('store-search-input') as HTMLInputElement;
+              if (input) input.focus();
+            } else {
+              handleSelectStorefrontMenuItem(tabId);
+            }
+          }}
+          cartItem={cartItem}
+          reservationRemaining={reservationRemaining}
+          onOpenCheckout={() => {
+            if (cartItem) {
+              setCheckoutProduct(cartItem);
+            } else {
+              const el = document.getElementById('products-section');
+              if (el) el.scrollIntoView({ behavior: 'smooth' });
+            }
+          }}
+          onOpenAccount={() => {
+            if (customerUser) {
+              setIsCustomerOrdersOpen(true);
+            } else {
+              setIsCustomerAuthOpen(true);
+            }
+          }}
+          customerUser={customerUser}
+        />
+      )}
 
       {/* Customer Modals */}
       <CustomerAuthModal

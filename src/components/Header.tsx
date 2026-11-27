@@ -112,8 +112,8 @@ export const Header: React.FC<HeaderProps> = ({
 
   return (
     <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-[#EBE3D5] shadow-[0_2px_15px_rgba(70,45,15,0.04)] selection:bg-[#C9972B]/20">
-      {/* Top Language & Currency Bar */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-1 flex items-center justify-between text-[11px] text-[#746A5D] border-b border-[#F5EFE6]">
+      {/* Top Language & Currency Bar (Desktop Only) */}
+      <div className="hidden md:flex max-w-7xl mx-auto px-4 sm:px-6 py-1 items-center justify-between text-[11px] text-[#746A5D] border-b border-[#F5EFE6]">
         <div className="flex items-center gap-3">
           <span className="flex items-center gap-1 font-semibold text-[#4B4338]">
             <Globe className="w-3.5 h-3.5 text-[#C9972B]" />
