@@ -618,6 +618,21 @@ async function initDatabase() {
     INSERT OR IGNORE INTO store_settings (id) VALUES (1);
   `);
 
+  // Store Banners / Announcement Slider Table
+  await query(`
+    CREATE TABLE IF NOT EXISTS banners (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      title TEXT DEFAULT '',
+      subtitle TEXT DEFAULT '',
+      image_url TEXT NOT NULL,
+      link_url TEXT DEFAULT '',
+      button_text TEXT DEFAULT '',
+      is_active INTEGER DEFAULT 1,
+      sort_order INTEGER DEFAULT 0,
+      created_at TEXT DEFAULT (datetime('now', 'localtime'))
+    );
+  `);
+
   // Expiring Password Reset Tokens Table (Item 17)
   await query(`
     CREATE TABLE IF NOT EXISTS password_reset_tokens (
@@ -3238,6 +3253,93 @@ app.put('/api/settings', requireAuth(['OWNER', 'ADMIN']), async (req, res) => {
     ]);
 
     res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 14.B Store Banners / Announcement Slider (Hero Slider)
+app.get('/api/banners', async (req, res) => {
+  try {
+    const includeAll = req.query.all === 'true' || req.query.all === '1';
+    let sql = 'SELECT * FROM banners';
+    if (!includeAll) {
+      sql += ' WHERE is_active = 1';
+    }
+    sql += ' ORDER BY sort_order ASC, id ASC';
+    const banners = await query(sql);
+    res.json(banners || []);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/banners', requireAuth(['OWNER', 'ADMIN']), async (req, res) => {
+  try {
+    const { title, subtitle, image_url, link_url, button_text, is_active, sort_order } = req.body;
+    if (!image_url || typeof image_url !== 'string' || !image_url.trim()) {
+      return res.status(400).json({ error: 'صورة الإعلان مطلوبة' });
+    }
+    const result = await query(`
+      INSERT INTO banners (title, subtitle, image_url, link_url, button_text, is_active, sort_order)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `, [
+      title ? String(title).trim() : '',
+      subtitle ? String(subtitle).trim() : '',
+      image_url.trim(),
+      link_url ? String(link_url).trim() : '',
+      button_text ? String(button_text).trim() : '',
+      is_active !== undefined ? (is_active ? 1 : 0) : 1,
+      sort_order !== undefined && !isNaN(Number(sort_order)) ? Number(sort_order) : 0
+    ]);
+
+    const newBanner = await queryOne('SELECT * FROM banners WHERE id = ?', [result.lastInsertRowid]);
+    res.status(201).json(newBanner);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.put('/api/banners/:id', requireAuth(['OWNER', 'ADMIN']), async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { title, subtitle, image_url, link_url, button_text, is_active, sort_order } = req.body;
+    if (!image_url || typeof image_url !== 'string' || !image_url.trim()) {
+      return res.status(400).json({ error: 'صورة الإعلان مطلوبة' });
+    }
+    await query(`
+      UPDATE banners SET
+        title = ?,
+        subtitle = ?,
+        image_url = ?,
+        link_url = ?,
+        button_text = ?,
+        is_active = ?,
+        sort_order = ?
+      WHERE id = ?
+    `, [
+      title ? String(title).trim() : '',
+      subtitle ? String(subtitle).trim() : '',
+      image_url.trim(),
+      link_url ? String(link_url).trim() : '',
+      button_text ? String(button_text).trim() : '',
+      is_active !== undefined ? (is_active ? 1 : 0) : 1,
+      sort_order !== undefined && !isNaN(Number(sort_order)) ? Number(sort_order) : 0,
+      id
+    ]);
+
+    const updated = await queryOne('SELECT * FROM banners WHERE id = ?', [id]);
+    res.json(updated);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete('/api/banners/:id', requireAuth(['OWNER', 'ADMIN']), async (req, res) => {
+  try {
+    const { id } = req.params;
+    await query('DELETE FROM banners WHERE id = ?', [id]);
+    res.json({ success: true, message: 'تم حذف الإعلان بنجاح' });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

@@ -26,8 +26,9 @@ import {
   Check
 } from 'lucide-react';
 import { api } from '../lib/api';
-import { Product } from '../types';
+import { Product, Banner } from '../types';
 import { toast } from '../utils/toast';
+import { HeroBannerSlider } from '../components/HeroBannerSlider';
 
 interface StorefrontPageProps {
   onOpenCheckout: (product: Product) => void;
@@ -55,6 +56,7 @@ export const StorefrontPage: React.FC<StorefrontPageProps> = ({
   onCategoryFilterChange
 }) => {
   const [products, setProducts] = useState<Product[]>([]);
+  const [banners, setBanners] = useState<Banner[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -108,8 +110,12 @@ export const StorefrontPage: React.FC<StorefrontPageProps> = ({
   const loadStore = async () => {
     setLoading(true);
     try {
-      const prods = await api.getProducts({ status: 'AVAILABLE' });
+      const [prods, bData] = await Promise.all([
+        api.getProducts({ status: 'AVAILABLE' }),
+        api.getBanners().catch(() => [])
+      ]);
       setProducts(prods);
+      setBanners(bData || []);
     } catch (e) {
       console.error(e);
     } finally {
@@ -208,51 +214,10 @@ export const StorefrontPage: React.FC<StorefrontPageProps> = ({
 
   return (
     <div className="min-h-full bg-[#FAF7F2] text-[#26221C] flex flex-col justify-between selection:bg-[#C9972B]/20">
-      {/* 1. Panoramic Hero Section (Desktop Web: Exact Match) */}
+      {/* 1. Panoramic Hero Section (Desktop Web: Luxury Slider with Permanent Base Image) */}
       <section id="hero" className="hidden md:block relative w-full bg-[#EFE8DC] overflow-hidden border-b border-[#EBE3D5]">
-        {/* Main Banner Image Container */}
-        <div className="relative w-full min-h-[380px] sm:min-h-[460px] md:min-h-[520px] flex items-center justify-center">
-          <img
-            src="/branding/hero-amber.jpg"
-            alt="هيبة الأصل... جمال الكهرمان"
-            fetchPriority="high"
-            decoding="async"
-            className="absolute inset-0 w-full h-full object-cover object-center"
-          />
-
-          {/* Subtle Gradient Overlay for Content Readability */}
-          <div className="absolute inset-0 bg-gradient-to-r from-black/25 via-transparent to-black/25 pointer-events-none" />
-
-          {/* Central Call to Action Content Box */}
-          <div className="relative z-10 text-center px-4 max-w-2xl mx-auto space-y-4">
-            <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-white drop-shadow-[0_2px_10px_rgba(0,0,0,0.75)] tracking-tight leading-tight">
-              هيبة الأصل... جمال الكهرمان
-            </h1>
-            <p className="text-sm sm:text-base md:text-lg font-medium text-white max-w-lg mx-auto leading-relaxed drop-shadow-[0_2px_8px_rgba(0,0,0,0.75)]">
-              مسابيح وأحجار طبيعية ونوادر مختارة بعناية لعشاق التميز
-            </p>
-            <div className="pt-2">
-              <button
-                onClick={() => {
-                  const el = document.getElementById('products-section');
-                  if (el) el.scrollIntoView({ behavior: 'smooth' });
-                }}
-                className="inline-flex items-center gap-2.5 px-7 py-3 rounded-full bg-[#C9972B] hover:bg-[#B8851E] text-white font-bold text-sm sm:text-base shadow-[0_6px_20px_rgba(201,151,43,0.35)] hover:shadow-xl transition-all transform hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
-              >
-                <ShoppingCart className="w-4 h-4" />
-                <span>تسوق المجموعة</span>
-              </button>
-            </div>
-          </div>
-
-          {/* Carousel Pagination Dots */}
-          <div className="absolute bottom-4 inset-x-0 flex items-center justify-center gap-2 z-20">
-            <span className="w-2.5 h-2.5 rounded-full bg-white shadow-sm ring-2 ring-[#C9972B]"></span>
-            <span className="w-2.5 h-2.5 rounded-full bg-white/70 hover:bg-white transition cursor-pointer"></span>
-            <span className="w-2.5 h-2.5 rounded-full bg-white/70 hover:bg-white transition cursor-pointer"></span>
-            <span className="w-2.5 h-2.5 rounded-full bg-white/70 hover:bg-white transition cursor-pointer"></span>
-          </div>
-        </div>
+        {/* Dynamic Hero Slider */}
+        <HeroBannerSlider banners={banners} />
 
         {/* 2. 4-Column Benefit Strip (Exact Match to User Attached Screenshot) */}
         <div className="bg-white border-t border-[#EBE3D5] shadow-xs">
@@ -306,28 +271,8 @@ export const StorefrontPage: React.FC<StorefrontPageProps> = ({
 
       {/* 1.B Mobile App Experience: Compact Hero & Category Stories Chips (Mobile App Only) */}
       <section className="block md:hidden px-3 pt-3 space-y-3">
-        {/* Compact App Hero Card */}
-        <div className="relative rounded-2xl overflow-hidden min-h-[155px] flex items-center p-4 shadow-xs border border-[#EBE3D5]">
-          <img
-            src="/branding/hero-amber.jpg"
-            alt="هيبة الأصل... جمال الكهرمان"
-            className="absolute inset-0 w-full h-full object-cover object-center"
-          />
-          <div className="absolute inset-0 bg-gradient-to-l from-black/85 via-black/55 to-black/25 pointer-events-none" />
-
-          <div className="relative z-10 space-y-1 text-right max-w-[75%]">
-            <span className="inline-flex items-center gap-1 text-[9px] font-black bg-[#C9972B] text-black px-2 py-0.5 rounded-full shadow-xs">
-              <Sparkles className="w-2.5 h-2.5 text-black" />
-              <span>نوادر هيبة السلطان 2026</span>
-            </span>
-            <h1 className="text-lg font-black text-white leading-tight drop-shadow-sm">
-              هيبة الأصل... جمال الكهرمان
-            </h1>
-            <p className="text-[10px] text-white/90 leading-relaxed font-medium">
-              مسابيح كهرمان بلطيقي ونوادر مفحوصة مخبرياً
-            </p>
-          </div>
-        </div>
+        {/* Compact App Hero Card with Dynamic Slider */}
+        <HeroBannerSlider banners={banners} compact />
 
         {/* Mobile Horizontal Category Stories Chips */}
         <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1 -mx-3 px-3">

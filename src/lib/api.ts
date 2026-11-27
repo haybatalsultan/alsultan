@@ -281,6 +281,22 @@ export const api = {
     const res = await axios.put(`${API_BASE}/settings`, data);
     return res.data;
   },
+  getBanners: async (all?: boolean) => {
+    const res = await axios.get(`${API_BASE}/banners`, { params: { all: all ? 'true' : undefined } });
+    return res.data;
+  },
+  createBanner: async (data: any) => {
+    const res = await axios.post(`${API_BASE}/banners`, data);
+    return res.data;
+  },
+  updateBanner: async (id: number, data: any) => {
+    const res = await axios.put(`${API_BASE}/banners/${id}`, data);
+    return res.data;
+  },
+  deleteBanner: async (id: number) => {
+    const res = await axios.delete(`${API_BASE}/banners/${id}`);
+    return res.data;
+  },
   getLicenseStatus: async () => {
     const res = await axios.get(`${API_BASE}/license/status`);
     return res.data;

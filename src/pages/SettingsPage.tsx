@@ -14,11 +14,17 @@ import {
   Search,
   Check,
   X,
-  AlertCircle
+  AlertCircle,
+  Image,
+  Sparkles,
+  Layers,
+  Edit2,
+  Upload
 } from 'lucide-react';
 import { api } from '../lib/api';
-import { StoreSettings, Country } from '../types';
+import { StoreSettings, Country, Banner } from '../types';
 import { toast } from '../utils/toast';
+import { compressImageFile } from '../lib/imageCompressor';
 
 export const SettingsPage: React.FC = () => {
   const [settings, setSettings] = useState<StoreSettings>({
@@ -41,6 +47,22 @@ export const SettingsPage: React.FC = () => {
   const [auditLogs, setAuditLogs] = useState<any[]>([]);
   const [saving, setSaving] = useState(false);
 
+  // Banners & Announcement Slider State
+  const [banners, setBanners] = useState<Banner[]>([]);
+  const [isBannerModalOpen, setIsBannerModalOpen] = useState(false);
+  const [editingBanner, setEditingBanner] = useState<Banner | null>(null);
+  const [bannerForm, setBannerForm] = useState({
+    title: '',
+    subtitle: '',
+    image_url: '',
+    button_text: 'تسوق المجموعة',
+    link_url: '#products-section',
+    is_active: true,
+    sort_order: 1
+  });
+  const [isUploadingBannerImage, setIsUploadingBannerImage] = useState(false);
+  const [savingBanner, setSavingBanner] = useState(false);
+
   // Countries & Destinations State
   const [countries, setCountries] = useState<Country[]>([]);
   const [countriesSearch, setCountriesSearch] = useState('');
@@ -61,20 +83,136 @@ export const SettingsPage: React.FC = () => {
 
   const loadAll = async () => {
     try {
-      const [s, lic, c, logs, countryData] = await Promise.all([
+      const [s, lic, c, logs, countryData, bannerData] = await Promise.all([
         api.getSettings(),
         api.getLicenseStatus(),
         fetch('/api/cloud/config').then((r) => r.json()).catch(() => ({})),
         api.getAuditLogs(),
-        api.getCountries(true).catch(() => [])
+        api.getCountries(true).catch(() => []),
+        api.getBanners(true).catch(() => [])
       ]);
       if (s && s.store_name_ar) setSettings(s);
       setLicense(lic);
       setCloud(c);
       setAuditLogs(logs || []);
       setCountries(countryData || []);
+      setBanners(bannerData || []);
     } catch (e) {
       console.error(e);
+    }
+  };
+
+  const loadBanners = async () => {
+    try {
+      const data = await api.getBanners(true);
+      setBanners(data || []);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleOpenAddBannerModal = () => {
+    setEditingBanner(null);
+    setBannerForm({
+      title: '',
+      subtitle: '',
+      image_url: '',
+      button_text: 'تسوق المجموعة',
+      link_url: '#products-section',
+      is_active: true,
+      sort_order: (banners.length + 1) * 10
+    });
+    setIsBannerModalOpen(true);
+  };
+
+  const handleOpenEditBannerModal = (b: Banner) => {
+    setEditingBanner(b);
+    setBannerForm({
+      title: b.title || '',
+      subtitle: b.subtitle || '',
+      image_url: b.image_url || '',
+      button_text: b.button_text || 'تسوق المجموعة',
+      link_url: b.link_url || '#products-section',
+      is_active: Boolean(b.is_active),
+      sort_order: b.sort_order || 1
+    });
+    setIsBannerModalOpen(true);
+  };
+
+  const handleBannerImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploadingBannerImage(true);
+    try {
+      const compressed = await compressImageFile(file, 1600, 0.85);
+      const res = await api.uploadImage(compressed.dataUrl, file.name);
+      if (res && res.url) {
+        setBannerForm((prev) => ({ ...prev, image_url: res.url }));
+        toast.success('تم رفع وضغط صورة الإعلان بنجاح');
+      }
+    } catch (err: any) {
+      console.error(err);
+      toast.error('فشل رفع صورة الإعلان');
+    } finally {
+      setIsUploadingBannerImage(false);
+    }
+  };
+
+  const handleSaveBanner = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!bannerForm.image_url.trim()) {
+      toast.error('يرجى اختيار أو رفع صورة للإعلان');
+      return;
+    }
+
+    setSavingBanner(true);
+    try {
+      if (editingBanner) {
+        await api.updateBanner(editingBanner.id, {
+          ...bannerForm,
+          is_active: bannerForm.is_active ? 1 : 0
+        });
+        toast.success('تم تحديث الإعلان بنجاح');
+      } else {
+        await api.createBanner({
+          ...bannerForm,
+          is_active: bannerForm.is_active ? 1 : 0
+        });
+        toast.success('تمت إضافة الإعلان الجديد بنجاح');
+      }
+      setIsBannerModalOpen(false);
+      await loadBanners();
+    } catch (err: any) {
+      console.error(err);
+      toast.error('فشل حفظ الإعلان');
+    } finally {
+      setSavingBanner(false);
+    }
+  };
+
+  const handleToggleBannerActive = async (banner: Banner) => {
+    try {
+      const newActive = banner.is_active ? 0 : 1;
+      await api.updateBanner(banner.id, {
+        ...banner,
+        is_active: newActive
+      });
+      toast.success(newActive ? 'تم تفعيل الإعلان في السلايدر' : 'تم تعطيل الإعلان مؤقتاً');
+      await loadBanners();
+    } catch (err) {
+      toast.error('فشل تعديل حالة الإعلان');
+    }
+  };
+
+  const handleDeleteBanner = async (id: number) => {
+    if (!window.confirm('هل أنت متأكد من حذف هذا الإعلان من السلايدر نهائياً؟')) return;
+    try {
+      await api.deleteBanner(id);
+      toast.success('تم حذف الإعلان من السلايدر');
+      await loadBanners();
+    } catch (err) {
+      toast.error('فشل حذف الإعلان');
     }
   };
 
@@ -291,7 +429,159 @@ export const SettingsPage: React.FC = () => {
           </div>
         </form>
 
-        {/* 2. Countries & Shipping Destinations Section (NEW) */}
+        {/* 2. Hero Banners & Announcements Slider Management */}
+        <div className="p-6 rounded-3xl bg-white border border-[#EBE3D5] space-y-5 shadow-sm">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#F2ECE1] pb-3">
+            <div>
+              <h3 className="font-bold text-sm text-[#26221C] flex items-center gap-2">
+                <Image className="w-4 h-4 text-[#C9972B]" />
+                <span>إدارة إعلانات وبنرات الواجهة الرئيسية (سلايدر العروض)</span>
+              </h3>
+              <p className="text-xs text-[#746A5D] mt-0.5">
+                تتبادل الصور تلقائياً في واجهة المتجر كشريط متحرك فاخر. الصورة الأساسية للمتجر تظل ثابتة كشريحة رئيسية دائماً.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] font-bold text-[#9A6817] bg-[#FAF4E8] px-3 py-1 rounded-xl border border-[#EADBCE]">
+                {banners.length + 1} شرائح (1 أساسية + {banners.length} إعلانات)
+              </span>
+              <button
+                type="button"
+                onClick={handleOpenAddBannerModal}
+                className="px-3.5 py-1.5 bg-[#C9972B] hover:bg-[#B8851E] text-white font-bold text-xs rounded-xl transition flex items-center gap-1.5 shadow-xs cursor-pointer"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>إضافة إعلان جديد</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Fixed Base Banner Display (Cannot be deleted or moved) */}
+          <div className="p-4 rounded-2xl bg-gradient-to-r from-[#FAF6EE] to-[#F5EFE3] border border-[#E8DEC8] flex flex-col sm:flex-row items-center gap-4">
+            <div className="relative w-full sm:w-48 h-24 rounded-xl overflow-hidden shrink-0 border border-[#D8CCA8] shadow-xs bg-black">
+              <img
+                src="/branding/hero-amber.jpg"
+                alt="هيبة الأصل... جمال الكهرمان"
+                className="w-full h-full object-cover"
+              />
+              <span className="absolute top-1.5 right-1.5 bg-black/75 backdrop-blur-xs text-[#E2B84B] text-[9px] font-black px-2 py-0.5 rounded-md">
+                الشريحة 1 (الرئيسية)
+              </span>
+            </div>
+
+            <div className="flex-1 space-y-1 text-center sm:text-right">
+              <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
+                <span className="font-extrabold text-sm text-[#26221C]">هيبة الأصل... جمال الكهرمان</span>
+                <span className="text-[10px] font-bold bg-[#C9972B] text-black px-2 py-0.5 rounded-md flex items-center gap-1">
+                  <Sparkles className="w-3 h-3 text-black" />
+                  <span>الصورة الأساسية الثابتة (دائمة)</span>
+                </span>
+              </div>
+              <p className="text-xs text-[#746A5D]">
+                مسابيح وأحجار طبيعية ونوادر مختارة بعناية لعشاق التميز • زر الإجراء: «تسوق المجموعة»
+              </p>
+              <p className="text-[10px] text-[#9E9485]">
+                🔒 هذه هي الصورة الأساسية للمتجر، تظل ثابتة دائماً وتتبادل مع أي صور إعلانات تضيفها أدناه.
+              </p>
+            </div>
+          </div>
+
+          {/* List of Custom Announcement Banners */}
+          <div className="space-y-3">
+            <h4 className="text-xs font-bold text-[#4B4338] flex items-center gap-1.5">
+              <Layers className="w-3.5 h-3.5 text-[#C9972B]" />
+              <span>الإعلانات والبنرات الإضافية المضافة:</span>
+            </h4>
+
+            {banners.length === 0 ? (
+              <div className="p-6 text-center border border-dashed border-[#E0D7C6] rounded-2xl bg-[#FAF8F5] text-xs text-[#8C8275] space-y-2">
+                <p>لا توجد إعلانات إضافية حالياً. السلايدر يعرض الصورة الأساسية الثابتة للمتجر.</p>
+                <button
+                  type="button"
+                  onClick={handleOpenAddBannerModal}
+                  className="px-4 py-1.5 bg-white hover:bg-[#FAF4E8] text-[#9A6817] border border-[#D8CCA8] rounded-xl text-xs font-bold inline-flex items-center gap-1.5 transition cursor-pointer"
+                >
+                  <Plus className="w-3 h-3" />
+                  <span>إضافة أول إعلان / بنر ترويجي الآن</span>
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 gap-3">
+                {banners.map((b, idx) => (
+                  <div
+                    key={b.id}
+                    className="p-3 bg-white border border-[#EBE3D5] rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-3 hover:border-[#C9972B] transition shadow-2xs"
+                  >
+                    <div className="flex items-center gap-3 w-full sm:w-auto">
+                      <div className="relative w-28 h-16 rounded-xl overflow-hidden shrink-0 border border-[#EADBCE] bg-[#F7F3EC]">
+                        <img
+                          src={b.image_url}
+                          alt={b.title || 'إعلان'}
+                          className="w-full h-full object-cover"
+                        />
+                        <span className="absolute bottom-1 right-1 bg-black/70 text-white text-[8px] font-bold px-1.5 py-0.5 rounded">
+                          #{idx + 2}
+                        </span>
+                      </div>
+                      <div className="space-y-0.5 min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-xs text-[#26221C] truncate">{b.title || 'بدون عنوان (صورة إعلانية فقط)'}</span>
+                          {b.is_active ? (
+                            <span className="bg-emerald-50 text-emerald-800 border border-emerald-200 text-[9px] font-bold px-1.5 py-0.5 rounded">
+                              نشط في السلايدر
+                            </span>
+                          ) : (
+                            <span className="bg-neutral-100 text-neutral-500 border border-neutral-200 text-[9px] font-bold px-1.5 py-0.5 rounded">
+                              معطل
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-[11px] text-[#746A5D] truncate">{b.subtitle || 'بدون وصف'}</p>
+                        <div className="text-[10px] text-[#9E9485] flex items-center gap-2">
+                          <span>الترتيب: {b.sort_order}</span>
+                          {b.link_url && <span className="font-mono text-[#9A6817] truncate">{b.link_url}</span>}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
+                      <button
+                        type="button"
+                        onClick={() => handleToggleBannerActive(b)}
+                        className={`px-2.5 py-1 text-[11px] font-bold rounded-xl border transition cursor-pointer ${
+                          b.is_active
+                            ? 'bg-amber-50 hover:bg-amber-100 text-amber-800 border-amber-200'
+                            : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border-emerald-200'
+                        }`}
+                      >
+                        {b.is_active ? 'تعطيل مؤقت' : 'تفعيل'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleOpenEditBannerModal(b)}
+                        className="p-1.5 text-[#746A5D] hover:text-[#26221C] hover:bg-[#FAF4E8] rounded-xl transition cursor-pointer"
+                        title="تعديل الإعلان"
+                      >
+                        <Edit2 className="w-4 h-4" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteBanner(b.id)}
+                        className="p-1.5 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-xl transition cursor-pointer"
+                        title="حذف الإعلان"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* 3. Countries & Shipping Destinations Section */}
         <div className="p-6 rounded-3xl bg-white border border-[#EBE3D5] space-y-4 shadow-sm">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#F2ECE1] pb-3">
             <div>
@@ -616,6 +906,185 @@ export const SettingsPage: React.FC = () => {
                   className="px-5 py-2 bg-[#C9972B] hover:bg-[#B8851E] text-white font-bold text-xs rounded-xl transition shadow-xs cursor-pointer disabled:opacity-50"
                 >
                   {addingCountry ? 'جار الحفظ...' : 'حفظ الدولة وتفعيلها'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* 5. Banner / Announcement Modal */}
+      {isBannerModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white rounded-3xl max-w-lg w-full border border-[#EBE3D5] shadow-2xl overflow-hidden my-8">
+            <div className="p-5 border-b border-[#F2ECE1] flex items-center justify-between bg-[#FAF7F2]">
+              <div className="flex items-center gap-2">
+                <Image className="w-5 h-5 text-[#C9972B]" />
+                <h3 className="font-extrabold text-sm text-[#26221C]">
+                  {editingBanner ? 'تعديل بيانات الإعلان' : 'إضافة إعلان جديد للسلايدر'}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsBannerModalOpen(false)}
+                className="text-[#8C8275] hover:text-[#26221C] p-1 rounded-lg hover:bg-white transition cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveBanner} className="p-6 space-y-4">
+              {/* Image Upload & Preview */}
+              <div>
+                <label className="block text-xs font-semibold text-[#4B4338] mb-1.5">
+                  صورة الإعلان <span className="text-rose-500">*</span>
+                </label>
+
+                {bannerForm.image_url ? (
+                  <div className="relative rounded-2xl overflow-hidden border border-[#D8CCA8] bg-black/5 aspect-21/9 mb-2.5">
+                    <img
+                      src={bannerForm.image_url}
+                      alt="معاينة الإعلان"
+                      className="w-full h-full object-cover"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setBannerForm({ ...bannerForm, image_url: '' })}
+                      className="absolute top-2 left-2 p-1.5 bg-black/70 hover:bg-black text-white rounded-lg backdrop-blur-xs transition cursor-pointer"
+                      title="إزالة الصورة"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="border-2 border-dashed border-[#D8CCA8] hover:border-[#C9972B] rounded-2xl p-5 text-center bg-[#FAF7F2] transition mb-2.5">
+                    <input
+                      type="file"
+                      id="banner-image-input"
+                      accept="image/*"
+                      onChange={handleBannerImageUpload}
+                      className="hidden"
+                    />
+                    <label
+                      htmlFor="banner-image-input"
+                      className="cursor-pointer flex flex-col items-center justify-center gap-2"
+                    >
+                      <div className="w-12 h-12 rounded-full bg-[#FAF4E8] border border-[#EADBCE] text-[#C9972B] flex items-center justify-center">
+                        <Upload className="w-5 h-5" />
+                      </div>
+                      <span className="text-xs font-bold text-[#26221C]">
+                        {isUploadingBannerImage ? 'جار رفع وضغط الصورة...' : 'انقر لرفع صورة من جهازك'}
+                      </span>
+                      <span className="text-[10px] text-[#8C8275]">
+                        يفضل استخدام صور أفقية بدقة عالية (PNG, JPG, WebP)
+                      </span>
+                    </label>
+                  </div>
+                )}
+
+                {/* Direct URL Input */}
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    placeholder="أو الصق رابط الصورة مباشرة (URL)..."
+                    value={bannerForm.image_url}
+                    onChange={(e) => setBannerForm({ ...bannerForm, image_url: e.target.value })}
+                    className="flex-1 bg-[#FAF7F2] border border-[#D8CCA8] rounded-xl px-3 py-2 text-xs font-mono text-[#26221C] focus:outline-none focus:border-[#C9972B]"
+                  />
+                </div>
+              </div>
+
+              {/* Title & Subtitle */}
+              <div>
+                <label className="block text-xs font-semibold text-[#4B4338] mb-1">
+                  عنوان الإعلان (يظهر بخط كبير)
+                </label>
+                <input
+                  type="text"
+                  placeholder="مثال: عروض شهر رمضان المبارك على نوادر الكهرمان"
+                  value={bannerForm.title}
+                  onChange={(e) => setBannerForm({ ...bannerForm, title: e.target.value })}
+                  className="w-full bg-[#FAF7F2] border border-[#D8CCA8] rounded-xl px-3 py-2 text-xs text-[#26221C] focus:outline-none focus:border-[#C9972B]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-[#4B4338] mb-1">
+                  الوصف الإعلاني المختصر
+                </label>
+                <input
+                  type="text"
+                  placeholder="مثال: خصم استثنائي وقطع حصرية متوفرة لفترة محدودة"
+                  value={bannerForm.subtitle}
+                  onChange={(e) => setBannerForm({ ...bannerForm, subtitle: e.target.value })}
+                  className="w-full bg-[#FAF7F2] border border-[#D8CCA8] rounded-xl px-3 py-2 text-xs text-[#26221C] focus:outline-none focus:border-[#C9972B]"
+                />
+              </div>
+
+              {/* CTA Button Text & Link */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-[#4B4338] mb-1">نص زر الشراء/الإجراء</label>
+                  <input
+                    type="text"
+                    placeholder="تسوق العرض الآن"
+                    value={bannerForm.button_text}
+                    onChange={(e) => setBannerForm({ ...bannerForm, button_text: e.target.value })}
+                    className="w-full bg-[#FAF7F2] border border-[#D8CCA8] rounded-xl px-3 py-2 text-xs text-[#26221C] focus:outline-none focus:border-[#C9972B]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-[#4B4338] mb-1">الرابط الموجه للزر</label>
+                  <input
+                    type="text"
+                    placeholder="#products-section أو رابط خارجي"
+                    value={bannerForm.link_url}
+                    onChange={(e) => setBannerForm({ ...bannerForm, link_url: e.target.value })}
+                    className="w-full bg-[#FAF7F2] border border-[#D8CCA8] rounded-xl px-3 py-2 text-xs font-mono text-[#26221C] focus:outline-none focus:border-[#C9972B]"
+                  />
+                </div>
+              </div>
+
+              {/* Sort Order & Active Toggle */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                <div>
+                  <label className="block text-xs font-semibold text-[#4B4338] mb-1">ترتيب الظهور في السلايدر</label>
+                  <input
+                    type="number"
+                    value={bannerForm.sort_order}
+                    onChange={(e) => setBannerForm({ ...bannerForm, sort_order: Number(e.target.value) })}
+                    className="w-full bg-[#FAF7F2] border border-[#D8CCA8] rounded-xl px-3 py-2 text-xs text-[#26221C] focus:outline-none focus:border-[#C9972B]"
+                  />
+                </div>
+
+                <div className="flex items-center gap-2 pt-6">
+                  <input
+                    type="checkbox"
+                    id="banner-is-active"
+                    checked={bannerForm.is_active}
+                    onChange={(e) => setBannerForm({ ...bannerForm, is_active: e.target.checked })}
+                    className="w-4 h-4 text-[#C9972B] rounded border-[#D8CCA8] focus:ring-[#C9972B] cursor-pointer"
+                  />
+                  <label htmlFor="banner-is-active" className="text-xs font-bold text-[#26221C] cursor-pointer">
+                    تفعيل وظهور الإعلان في السلايدر
+                  </label>
+                </div>
+              </div>
+
+              <div className="pt-4 border-t border-[#F2ECE1] flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsBannerModalOpen(false)}
+                  className="px-4 py-2 bg-white hover:bg-[#FAF7F2] border border-[#E0D7C6] text-[#4B4338] text-xs font-semibold rounded-xl cursor-pointer"
+                >
+                  إلغاء
+                </button>
+                <button
+                  type="submit"
+                  disabled={savingBanner || isUploadingBannerImage}
+                  className="px-6 py-2 bg-[#C9972B] hover:bg-[#B8851E] text-white font-bold text-xs rounded-xl transition shadow-xs cursor-pointer disabled:opacity-50"
+                >
+                  {savingBanner ? 'جار الحفظ...' : editingBanner ? 'حفظ التعديلات' : 'إضافة الإعلان'}
                 </button>
               </div>
             </form>

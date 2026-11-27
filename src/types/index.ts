@@ -198,6 +198,18 @@ export interface AccountantReport {
   countReceivables: number;
 }
 
+export interface Banner {
+  id: number;
+  title: string;
+  subtitle: string;
+  image_url: string;
+  link_url?: string;
+  button_text?: string;
+  is_active: number | boolean;
+  sort_order: number;
+  created_at?: string;
+}
+
 export interface StoreSettings {
   store_name_ar: string;
   store_name_en: string;
