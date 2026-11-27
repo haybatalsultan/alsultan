@@ -5,7 +5,30 @@ const API_BASE = '/api';
 
 // Automatically inject JWT bearer tokens for customer and staff requests
 axios.interceptors.request.use((config) => {
-  const token = localStorage.getItem('haybat_customer_token') || localStorage.getItem('haybat_staff_token');
+  const staffToken = localStorage.getItem('haybat_staff_token');
+  const customerToken = localStorage.getItem('haybat_customer_token');
+  const legacyToken = localStorage.getItem('haybat_token');
+
+  // If request is targeting administrative or management endpoints, prioritize staff token
+  const url = config.url || '';
+  const isAdminOrMgmt = url.includes('/admin') ||
+                        url.includes('/users') ||
+                        url.includes('/accountant') ||
+                        url.includes('/receivables') ||
+                        url.includes('/expenses') ||
+                        url.includes('/audit') ||
+                        url.includes('/settings') ||
+                        url.includes('/upload') ||
+                        ((config.method === 'post' || config.method === 'put' || config.method === 'delete') &&
+                         (url.includes('/products') || url.includes('/categories') || url.includes('/countries')));
+
+  let token = customerToken;
+  if (isAdminOrMgmt && staffToken) {
+    token = staffToken;
+  } else if (!token) {
+    token = staffToken || legacyToken;
+  }
+
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }

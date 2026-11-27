@@ -21,11 +21,52 @@ const cron = require('node-cron');
 const zlib = require('zlib');
 require('dotenv').config();
 
+/**
+ * Modern Cryptographic Key Derivation (scrypt) (Item 5)
+ * Salted scrypt key derivation (N: 16384, r: 8, p: 1, 64-byte key)
+ * Resistant to GPU/ASIC cracking and dictionary attacks.
+ */
 function hashPassword(pwd) {
+  const salt = crypto.randomBytes(16).toString('hex');
+  const derivedKey = crypto.scryptSync(String(pwd), salt, 64, { N: 16384, r: 8, p: 1 });
+  return `scrypt$${salt}$${derivedKey.toString('hex')}`;
+}
+
+function legacySha256(pwd) {
   return crypto.createHash('sha256').update(String(pwd) + '_haybat_salt_2026').digest('hex');
 }
-function comparePassword(pwd, hash) {
-  return hashPassword(pwd) === hash || pwd === hash;
+
+function comparePassword(pwd, storedHash) {
+  if (!storedHash || !pwd) return false;
+  try {
+    if (typeof storedHash === 'string' && storedHash.startsWith('scrypt$')) {
+      const parts = storedHash.split('$');
+      if (parts.length !== 3) return false;
+      const salt = parts[1];
+      const expectedKey = Buffer.from(parts[2], 'hex');
+      const actualKey = crypto.scryptSync(String(pwd), salt, 64, { N: 16384, r: 8, p: 1 });
+      if (expectedKey.length !== actualKey.length) return false;
+      return crypto.timingSafeEqual(expectedKey, actualKey);
+    }
+    // Backward compatibility for legacy SHA256 or plaintext passwords
+    const oldHash = legacySha256(pwd);
+    return oldHash === storedHash || pwd === storedHash;
+  } catch (e) {
+    return false;
+  }
+}
+
+function passwordNeedsMigration(storedHash) {
+  return !storedHash || typeof storedHash !== 'string' || !storedHash.startsWith('scrypt$');
+}
+
+// Input sanitization against XSS (Item 7)
+function sanitizeInput(val) {
+  if (typeof val !== 'string') return val;
+  return val
+    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+    .replace(/[<>]/g, tag => (tag === '<' ? '&lt;' : '&gt;'))
+    .trim();
 }
 
 const cloudConfig = require('./cloudConfig.cjs');
@@ -38,15 +79,148 @@ try {
 
 const app = express();
 const httpServer = http.createServer(app);
+
+// CORS configuration (Item 13)
+const rawAllowedOrigins = (process.env.ALLOWED_ORIGINS || process.env.CORS_ORIGIN || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+
+function isAllowedOrigin(origin) {
+  if (!origin) return true; // same-origin or server-to-server
+  const o = origin.toLowerCase();
+  if (o.startsWith('http://localhost:') || o.startsWith('http://127.0.0.1:') || o.startsWith('https://localhost:')) {
+    return true;
+  }
+  if (rawAllowedOrigins.length === 0) {
+    if (o.includes('haybatalsultan.com') || o.includes('besmartapps.com')) return true;
+    return false;
+  }
+  return rawAllowedOrigins.some(allowed => o === allowed || o.endsWith('.' + allowed.replace(/^https?:\/\//, '')));
+}
+
 const io = new SocketIOServer(httpServer, {
-  cors: { origin: '*', methods: ['GET', 'POST', 'PUT', 'DELETE'] }
+  cors: {
+    origin: (origin, callback) => callback(null, isAllowedOrigin(origin)),
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    credentials: true
+  }
 });
 
 const PORT = parseInt(process.env.PORT || process.env.SERVER_PORT || '3001', 10);
 const HOST = '0.0.0.0';
 
-// Global Middlewares
-app.use(cors({ origin: '*', methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'] }));
+// Global Security Hardening (Item 4 & 14)
+app.disable('x-powered-by');
+
+// Enforce HTTPS in production behind reverse proxies
+app.use((req, res, next) => {
+  if (process.env.NODE_ENV === 'production') {
+    const proto = req.headers['x-forwarded-proto'];
+    if (proto && proto.toLowerCase() !== 'https') {
+      return res.redirect(301, `https://${req.headers.host}${req.url}`);
+    }
+    res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
+  }
+
+  // Security Headers
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+  res.setHeader('Content-Security-Policy', "default-src 'self' 'unsafe-inline' https: data: blob:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.sheetjs.com; font-src 'self' data: https:; img-src 'self' data: blob: https:; connect-src 'self' ws: wss: https:;");
+
+  next();
+});
+
+// Sensitive path and hidden file access blocker (Item 23)
+app.use((req, res, next) => {
+  const p = req.path.toLowerCase();
+  const isSuspicious = 
+    p.includes('/.env') ||
+    p.includes('/.git') ||
+    p.includes('/node_modules') ||
+    p.includes('/data/haybat') ||
+    /\.(db|sqlite|sqlite3|log|cjs|mjs|ts|bat|sh|yml|yaml|sql|py)$/i.test(p);
+
+  if (isSuspicious) {
+    console.warn(`🛡️ [Security] Blocked access to sensitive path: ${req.path} from IP ${req.ip}`);
+    if (typeof recordAudit === 'function') {
+      recordAudit('ANONYMOUS', 'GUEST', 'SUSPICIOUS_PATH_SCAN', 'SECURITY', { path: req.path }, req.ip).catch(() => {});
+    }
+    return res.status(403).json({ error: 'Access Denied: Protected resource' });
+  }
+  next();
+});
+
+// Production-grade CORS middleware
+app.use(cors({
+  origin: (origin, callback) => {
+    if (isAllowedOrigin(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('CORS policy: Not allowed by CORS for origin: ' + origin));
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin']
+}));
+
+// In-Memory Sliding-Window Rate Limiting Engine (Item 12 & Item 1)
+const rateLimitBuckets = {
+  api: new Map(),
+  auth: new Map(),
+  orders: new Map(),
+  uploads: new Map()
+};
+const failedLoginTracker = new Map(); // identifier -> { count: number, lockedUntil: number }
+
+function checkRateLimit(bucketName, key, limit, windowMs) {
+  const bucket = rateLimitBuckets[bucketName];
+  if (!bucket) return { allowed: true, remaining: limit };
+  const now = Date.now();
+  const windowStart = now - windowMs;
+  let timestamps = bucket.get(key) || [];
+  timestamps = timestamps.filter(t => t > windowStart);
+  if (timestamps.length >= limit) {
+    bucket.set(key, timestamps);
+    return {
+      allowed: false,
+      remaining: 0,
+      retryAfter: Math.ceil((timestamps[0] + windowMs - now) / 1000)
+    };
+  }
+  timestamps.push(now);
+  bucket.set(key, timestamps);
+  return { allowed: true, remaining: limit - timestamps.length };
+}
+
+// Background cleanup every 10 minutes
+setInterval(() => {
+  const now = Date.now();
+  for (const bucket of Object.values(rateLimitBuckets)) {
+    for (const [key, timestamps] of bucket.entries()) {
+      const valid = timestamps.filter(t => t > now - 15 * 60 * 1000);
+      if (valid.length === 0) bucket.delete(key);
+      else bucket.set(key, valid);
+    }
+  }
+  for (const [key, data] of failedLoginTracker.entries()) {
+    if (data.lockedUntil && data.lockedUntil < now) failedLoginTracker.delete(key);
+  }
+}, 10 * 60 * 1000).unref();
+
+// Global API Rate Limiter (300 requests per 15 min per IP)
+app.use('/api', (req, res, next) => {
+  const result = checkRateLimit('api', req.ip, 300, 15 * 60 * 1000);
+  res.setHeader('RateLimit-Limit', '300');
+  res.setHeader('RateLimit-Remaining', String(result.remaining));
+  if (!result.allowed) {
+    res.setHeader('Retry-After', String(result.retryAfter));
+    return res.status(429).json({ error: 'تم تجاوز الحد المسموح من الطلبات، يرجى المحاولة بعد قليل.' });
+  }
+  next();
+});
+
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
@@ -444,6 +618,18 @@ async function initDatabase() {
     INSERT OR IGNORE INTO store_settings (id) VALUES (1);
   `);
 
+  // Expiring Password Reset Tokens Table (Item 17)
+  await query(`
+    CREATE TABLE IF NOT EXISTS password_reset_tokens (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      token TEXT NOT NULL UNIQUE,
+      expires_at INTEGER NOT NULL,
+      used INTEGER DEFAULT 0,
+      created_at TEXT DEFAULT (datetime('now', 'localtime'))
+    );
+  `);
+
   // Seed default Owner User
   const ownerExists = await queryOne('SELECT id FROM users WHERE role = ?', ['OWNER']);
   if (!ownerExists) {
@@ -732,7 +918,8 @@ app.get('/api/health', (req, res) => {
 });
 
 // 2. Authentication & Users
-const activeSessions = new Map(); // token -> { id, username, role }
+const activeSessions = new Map(); // token -> { id, username, role, last_active }
+const SESSION_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours (Item 1 & 15)
 
 async function getUserFromReq(req) {
   const auth = req.headers['authorization'];
@@ -740,8 +927,73 @@ async function getUserFromReq(req) {
   const token = auth.replace(/^Bearer\s+/i, '').trim();
   const sess = activeSessions.get(token);
   if (!sess) return null;
-  const user = await queryOne('SELECT id, username, role, full_name, company_name, commercial_register, tax_id, is_active FROM users WHERE id = ?', [sess.id]);
-  return user || null;
+
+  // Enforce session expiration
+  if (sess.last_active && Date.now() - sess.last_active > SESSION_TTL_MS) {
+    activeSessions.delete(token);
+    return null;
+  }
+  sess.last_active = Date.now();
+
+  const user = await queryOne('SELECT id, public_id, username, role, full_name, phone, email, company_name, commercial_register, tax_id, is_active FROM users WHERE id = ?', [sess.id]);
+  if (!user || user.is_active !== 1) {
+    activeSessions.delete(token);
+    return null;
+  }
+  return user;
+}
+
+// Role-Based Access Control (RBAC) Middleware (Item 9)
+function requireAuth(allowedRoles = []) {
+  return async (req, res, next) => {
+    try {
+      const user = await getUserFromReq(req);
+      if (!user) {
+        return res.status(401).json({ error: 'يرجى تسجيل الدخول أولاً للوصول إلى هذا القسم' });
+      }
+      if (allowedRoles.length > 0 && !allowedRoles.includes(user.role)) {
+        await recordAudit(user.full_name, user.role, 'UNAUTHORIZED_ACCESS_ATTEMPT', 'SECURITY', {
+          path: req.originalUrl,
+          method: req.method,
+          requiredRoles: allowedRoles
+        }, req.ip);
+        return res.status(403).json({ error: 'ليس لديك الصلاحية الكافية لإتمام هذا الإجراء' });
+      }
+      req.user = user;
+      next();
+    } catch (err) {
+      console.error('requireAuth error:', err);
+      res.status(500).json({ error: 'خطأ في التحقق من الصلاحيات' });
+    }
+  };
+}
+
+// Helper to check account lockout
+function checkAccountLockout(ip, identifier) {
+  const lockKey = `${ip}_${String(identifier).trim().toLowerCase()}`;
+  const lockInfo = failedLoginTracker.get(lockKey);
+  if (lockInfo && lockInfo.lockedUntil && lockInfo.lockedUntil > Date.now()) {
+    const remainingSec = Math.ceil((lockInfo.lockedUntil - Date.now()) / 1000);
+    return { isLocked: true, remainingMinutes: Math.ceil(remainingSec / 60) };
+  }
+  return { isLocked: false, remainingMinutes: 0 };
+}
+
+function handleFailedLogin(ip, identifier) {
+  const lockKey = `${ip}_${String(identifier).trim().toLowerCase()}`;
+  const lockInfo = failedLoginTracker.get(lockKey) || { count: 0, lockedUntil: 0 };
+  const count = lockInfo.count + 1;
+  if (count >= 5) {
+    failedLoginTracker.set(lockKey, { count, lockedUntil: Date.now() + 15 * 60 * 1000 });
+    return true; // Locked now
+  }
+  failedLoginTracker.set(lockKey, { count, lockedUntil: 0 });
+  return false;
+}
+
+function clearFailedLogin(ip, identifier) {
+  const lockKey = `${ip}_${String(identifier).trim().toLowerCase()}`;
+  failedLoginTracker.delete(lockKey);
 }
 
 // A) General / Legacy Login
@@ -751,20 +1003,47 @@ app.post('/api/auth/login', async (req, res) => {
     return res.status(400).json({ error: 'اسم المستخدم وكلمة المرور مطلوبان' });
   }
 
+  // 1. Account Lockout Check (Item 1)
+  const lockout = checkAccountLockout(req.ip, username);
+  if (lockout.isLocked) {
+    return res.status(429).json({
+      error: `تم قفل تسجيل الدخول مؤقتاً بسبب تكرار المحاولات غير الصحيحة. يرجى المحاولة بعد ${lockout.remainingMinutes} دقيقة.`
+    });
+  }
+
+  // 2. Rate Limiting Check (Item 12)
+  const rate = checkRateLimit('auth', req.ip, 10, 15 * 60 * 1000);
+  if (!rate.allowed) {
+    return res.status(429).json({ error: 'تم تجاوز عدد محاولات الدخول، يرجى الانتظار 15 دقيقة.' });
+  }
+
   try {
     const user = await queryOne('SELECT * FROM users WHERE (LOWER(username) = ? OR LOWER(email) = ?) AND is_active = 1', [
       username.trim().toLowerCase(),
       username.trim().toLowerCase()
     ]);
+
     if (!user || !comparePassword(password, user.password_hash)) {
-      await recordAudit(username, 'ANONYMOUS', 'LOGIN_FAILED', 'AUTH', { reason: 'Invalid credentials' }, req.ip);
+      const isLockedNow = handleFailedLogin(req.ip, username);
+      await recordAudit(username, 'ANONYMOUS', 'LOGIN_FAILED', 'AUTH', { reason: 'Invalid credentials', locked: isLockedNow }, req.ip);
+      if (isLockedNow) {
+        return res.status(429).json({ error: 'تم قفل الحساب مؤقتاً لمدة 15 دقيقة بسبب تكرار إدخال كلمة مرور خاطئة.' });
+      }
       return res.status(401).json({ error: 'اسم المستخدم أو كلمة المرور غير صحيحة' });
     }
 
+    clearFailedLogin(req.ip, username);
     await recordAudit(user.full_name, user.role, 'LOGIN_SUCCESS', 'AUTH', { userId: user.id }, req.ip);
     
-    const token = 'haybat_jwt_' + crypto.randomBytes(16).toString('hex');
-    activeSessions.set(token, { id: user.id, username: user.username, role: user.role });
+    // Auto-migrate legacy password to scrypt (Item 5)
+    if (passwordNeedsMigration(user.password_hash)) {
+      const newHash = hashPassword(password);
+      await query('UPDATE users SET password_hash = ? WHERE id = ?', [newHash, user.id]);
+      console.log(`🔒 [Security] Upgraded password hash to scrypt for user: ${user.username}`);
+    }
+
+    const token = 'haybat_jwt_' + crypto.randomBytes(24).toString('hex');
+    activeSessions.set(token, { id: user.id, username: user.username, role: user.role, last_active: Date.now() });
 
     // Return sanitized user object
     res.json({
@@ -792,6 +1071,15 @@ app.post('/api/auth/customer/register', async (req, res) => {
   if (!username || !password || !full_name) {
     return res.status(400).json({ error: 'الاسم، اسم المستخدم، وكلمة المرور مطلوبة' });
   }
+  if (password.length < 6) {
+    return res.status(400).json({ error: 'كلمة المرور يجب أن لا تقل عن 6 أحرف أو أرقام' });
+  }
+
+  // Rate Limiting (Item 12)
+  const rate = checkRateLimit('auth', req.ip, 10, 15 * 60 * 1000);
+  if (!rate.allowed) {
+    return res.status(429).json({ error: 'تم تجاوز الحد المسموح لإنشاء الحسابات، يرجى المحاولة لاحقاً.' });
+  }
 
   try {
     const existing = await queryOne(
@@ -803,28 +1091,31 @@ app.post('/api/auth/customer/register', async (req, res) => {
     }
 
     const publicId = crypto.randomUUID();
-    const passwordHash = hashPassword(password);
+    const passwordHash = hashPassword(password); // Uses scrypt (Item 5)
 
     await query(`
       INSERT INTO users (public_id, username, password_hash, full_name, role, phone, email, country, address, is_active)
       VALUES (?, ?, ?, ?, 'CUSTOMER', ?, ?, ?, ?, 1)
     `, [
       publicId,
-      username.trim().toLowerCase(),
+      sanitizeInput(username.trim().toLowerCase()),
       passwordHash,
-      full_name.trim(),
-      (phone || '').trim(),
-      (email || '').trim().toLowerCase(),
-      (country || 'الإمارات العربية المتحدة').trim(),
-      (address || '').trim()
+      sanitizeInput(full_name.trim()),
+      sanitizeInput((phone || '').trim()),
+      sanitizeInput((email || '').trim().toLowerCase()),
+      sanitizeInput((country || 'الإمارات العربية المتحدة').trim()),
+      sanitizeInput((address || '').trim())
     ]);
 
     const newUser = await queryOne('SELECT * FROM users WHERE public_id = ?', [publicId]);
     await recordAudit(newUser.full_name, 'CUSTOMER', 'CUSTOMER_REGISTER', 'AUTH', { userId: newUser.id }, req.ip);
 
+    const token = 'haybat_cust_' + crypto.randomBytes(24).toString('hex');
+    activeSessions.set(token, { id: newUser.id, username: newUser.username, role: 'CUSTOMER', last_active: Date.now() });
+
     res.status(201).json({
       success: true,
-      token: 'haybat_cust_' + crypto.randomBytes(16).toString('hex'),
+      token,
       user: {
         id: newUser.id,
         public_id: newUser.public_id,
@@ -849,6 +1140,20 @@ app.post('/api/auth/customer/login', async (req, res) => {
     return res.status(400).json({ error: 'يرجى إدخال اسم المستخدم / البريد / الهاتف وكلمة المرور' });
   }
 
+  // Account Lockout Check (Item 1)
+  const lockout = checkAccountLockout(req.ip, identifier);
+  if (lockout.isLocked) {
+    return res.status(429).json({
+      error: `تم قفل تسجيل الدخول مؤقتاً بسبب تكرار المحاولات غير الصحيحة. يرجى المحاولة بعد ${lockout.remainingMinutes} دقيقة.`
+    });
+  }
+
+  // Rate Limiting (Item 12)
+  const rate = checkRateLimit('auth', req.ip, 10, 15 * 60 * 1000);
+  if (!rate.allowed) {
+    return res.status(429).json({ error: 'تم تجاوز عدد محاولات الدخول، يرجى الانتظار 15 دقيقة.' });
+  }
+
   try {
     const cleanId = identifier.trim().toLowerCase();
     const user = await queryOne(
@@ -857,13 +1162,26 @@ app.post('/api/auth/customer/login', async (req, res) => {
     );
 
     if (!user || !comparePassword(password, user.password_hash)) {
+      const isLockedNow = handleFailedLogin(req.ip, identifier);
+      await recordAudit(identifier, 'ANONYMOUS', 'CUSTOMER_LOGIN_FAILED', 'AUTH', { locked: isLockedNow }, req.ip);
+      if (isLockedNow) {
+        return res.status(429).json({ error: 'تم قفل الحساب مؤقتاً لمدة 15 دقيقة بسبب تكرار إدخال كلمة مرور خاطئة.' });
+      }
       return res.status(401).json({ error: 'بيانات الدخول غير صحيحة، يرجى التأكد من البيانات' });
     }
 
+    clearFailedLogin(req.ip, identifier);
     await recordAudit(user.full_name, user.role, 'CUSTOMER_LOGIN', 'AUTH', { userId: user.id }, req.ip);
 
-    const token = 'haybat_cust_' + crypto.randomBytes(16).toString('hex');
-    activeSessions.set(token, { id: user.id, username: user.username, role: user.role });
+    // Auto-migrate to scrypt (Item 5)
+    if (passwordNeedsMigration(user.password_hash)) {
+      const newHash = hashPassword(password);
+      await query('UPDATE users SET password_hash = ? WHERE id = ?', [newHash, user.id]);
+      console.log(`🔒 [Security] Upgraded customer password hash to scrypt for user: ${user.username}`);
+    }
+
+    const token = 'haybat_cust_' + crypto.randomBytes(24).toString('hex');
+    activeSessions.set(token, { id: user.id, username: user.username, role: user.role, last_active: Date.now() });
 
     res.json({
       success: true,
@@ -988,6 +1306,20 @@ app.post('/api/auth/admin/login', async (req, res) => {
     return res.status(400).json({ error: 'اسم المستخدم وكلمة المرور مطلوبان' });
   }
 
+  // Account Lockout Check (Item 1)
+  const lockout = checkAccountLockout(req.ip, loginId);
+  if (lockout.isLocked) {
+    return res.status(429).json({
+      error: `تم قفل تسجيل الدخول مؤقتاً بسبب تكرار المحاولات غير الصحيحة. يرجى المحاولة بعد ${lockout.remainingMinutes} دقيقة.`
+    });
+  }
+
+  // Rate Limiting Check (Item 12)
+  const rate = checkRateLimit('auth', req.ip, 10, 15 * 60 * 1000);
+  if (!rate.allowed) {
+    return res.status(429).json({ error: 'تم تجاوز عدد محاولات الدخول، يرجى الانتظار 15 دقيقة.' });
+  }
+
   try {
     const cleanId = loginId.toLowerCase();
     const aliasUsername = cleanId === 'admin' ? 'owner' : cleanId;
@@ -997,7 +1329,11 @@ app.post('/api/auth/admin/login', async (req, res) => {
     );
 
     if (!user || !comparePassword(password, user.password_hash)) {
-      await recordAudit(loginId, 'ANONYMOUS', 'ADMIN_LOGIN_FAILED', 'SECURITY', { reason: 'Bad credentials' }, req.ip);
+      const isLockedNow = handleFailedLogin(req.ip, loginId);
+      await recordAudit(loginId, 'ANONYMOUS', 'ADMIN_LOGIN_FAILED', 'SECURITY', { reason: 'Bad credentials', locked: isLockedNow }, req.ip);
+      if (isLockedNow) {
+        return res.status(429).json({ error: 'تم قفل الحساب مؤقتاً لمدة 15 دقيقة بسبب تكرار إدخال كلمة مرور خاطئة.' });
+      }
       return res.status(401).json({ error: 'اسم المستخدم أو كلمة المرور غير صحيحة' });
     }
 
@@ -1009,10 +1345,18 @@ app.post('/api/auth/admin/login', async (req, res) => {
       });
     }
 
+    clearFailedLogin(req.ip, loginId);
     await recordAudit(user.full_name, user.role, 'ADMIN_LOGIN_SUCCESS', 'AUTH', { userId: user.id, role: user.role }, req.ip);
 
-    const token = 'haybat_admin_' + crypto.randomBytes(16).toString('hex');
-    activeSessions.set(token, { id: user.id, username: user.username, role: user.role });
+    // Auto-migrate to scrypt (Item 5)
+    if (passwordNeedsMigration(user.password_hash)) {
+      const newHash = hashPassword(password);
+      await query('UPDATE users SET password_hash = ? WHERE id = ?', [newHash, user.id]);
+      console.log(`🔒 [Security] Upgraded staff password hash to scrypt for user: ${user.username}`);
+    }
+
+    const token = 'haybat_admin_' + crypto.randomBytes(24).toString('hex');
+    activeSessions.set(token, { id: user.id, username: user.username, role: user.role, last_active: Date.now() });
 
     res.json({
       success: true,
@@ -1027,6 +1371,90 @@ app.post('/api/auth/admin/login', async (req, res) => {
         email: user.email,
         permissions: JSON.parse(user.permissions || '{}')
       }
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// D2) Expiring Password Reset Endpoints (Item 17)
+app.post('/api/auth/forgot-password', async (req, res) => {
+  const { email } = req.body;
+  if (!email || typeof email !== 'string') {
+    return res.status(400).json({ error: 'يرجى إدخال البريد الإلكتروني المسجل' });
+  }
+
+  // Rate Limiting (Item 12)
+  const rate = checkRateLimit('auth', req.ip + '_forgot', 5, 15 * 60 * 1000);
+  if (!rate.allowed) {
+    return res.status(429).json({ error: 'تم تجاوز عدد محاولات طلب الاستعادة، يرجى الانتظار 15 دقيقة.' });
+  }
+
+  try {
+    const cleanEmail = email.trim().toLowerCase();
+    const user = await queryOne('SELECT id, email, full_name FROM users WHERE LOWER(email) = ? AND is_active = 1', [cleanEmail]);
+
+    // Constant-response mitigation to prevent email enumeration
+    if (!user) {
+      return res.json({
+        success: true,
+        message: 'إذا كان البريد الإلكتروني مسجلاً في النظام، فسيتم إرسال رابط إعادة تعيين كلمة المرور.'
+      });
+    }
+
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const expiresAt = Date.now() + 15 * 60 * 1000; // 15 minutes strict expiry (Item 17)
+
+    await query(`
+      INSERT INTO password_reset_tokens (user_id, token, expires_at, used)
+      VALUES (?, ?, ?, 0)
+    `, [user.id, resetToken, expiresAt]);
+
+    await recordAudit(user.full_name, 'USER', 'PASSWORD_RESET_REQUESTED', 'AUTH', { userId: user.id }, req.ip);
+
+    res.json({
+      success: true,
+      message: 'تم إنشاء رابط استعادة كلمة المرور بنجاح، الرابط صالح لمدة 15 دقيقة فقط.',
+      token: process.env.NODE_ENV !== 'production' ? resetToken : undefined
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/auth/reset-password', async (req, res) => {
+  const { token, new_password } = req.body;
+  if (!token || !new_password) {
+    return res.status(400).json({ error: 'رمز الاستعادة وكلمة المرور الجديدة مطلوبان' });
+  }
+  if (typeof new_password !== 'string' || new_password.length < 8) {
+    return res.status(400).json({ error: 'يجب أن لا تقل كلمة المرور الجديدة عن 8 خانات' });
+  }
+
+  try {
+    const row = await queryOne('SELECT * FROM password_reset_tokens WHERE token = ?', [token]);
+    if (!row) {
+      return res.status(400).json({ error: 'رمز الاستعادة غير صالح أو منتهي الصلاحية' });
+    }
+    if (row.used === 1) {
+      return res.status(400).json({ error: 'تم استخدام رمز الاستعادة هذا مسبقاً ولا يمكن إعادة استخدامه' });
+    }
+    if (row.expires_at < Date.now()) {
+      return res.status(400).json({ error: 'انتهت صلاحية رمز الاستعادة (المدة المحددة 15 دقيقة فقط)' });
+    }
+
+    // Invalidate single-use token immediately
+    await query('UPDATE password_reset_tokens SET used = 1 WHERE id = ?', [row.id]);
+
+    // Update password with modern scrypt hash
+    const newHash = hashPassword(new_password);
+    await query('UPDATE users SET password_hash = ? WHERE id = ?', [newHash, row.user_id]);
+
+    await recordAudit('USER_' + row.user_id, 'USER', 'PASSWORD_RESET_SUCCESS', 'AUTH', { userId: row.user_id }, req.ip);
+
+    res.json({
+      success: true,
+      message: 'تم تحديث كلمة المرور بنجاح، يمكنك الآن تسجيل الدخول بكلمة المرور الجديدة.'
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -1056,8 +1484,8 @@ app.get('/api/customer/my-orders', async (req, res) => {
   }
 });
 
-// G) Users & Granular Permissions Management
-app.get('/api/users', async (req, res) => {
+// G) Users & Granular Permissions Management (Item 9: RBAC Protected)
+app.get('/api/users', requireAuth(['OWNER', 'ADMIN', 'SUPERVISOR']), async (req, res) => {
   try {
     const { role, include_customers } = req.query;
     let sql = 'SELECT id, public_id, username, full_name, role, phone, email, permissions, is_active, created_at FROM users WHERE 1=1';
@@ -1081,7 +1509,7 @@ app.get('/api/users', async (req, res) => {
   }
 });
 
-app.post('/api/users', async (req, res) => {
+app.post('/api/users', requireAuth(['OWNER', 'ADMIN']), async (req, res) => {
   const { username, password, full_name, role, phone, email, permissions, is_active, actor_name } = req.body;
   if (!username || !password || !full_name || !role) {
     return res.status(400).json({ error: 'اسم المستخدم، كلمة المرور، الاسم الكامل والدور الوظيفي حقول مطلوبة' });
@@ -1134,7 +1562,7 @@ app.post('/api/users', async (req, res) => {
   }
 });
 
-app.put('/api/users/:id', async (req, res) => {
+app.put('/api/users/:id', requireAuth(['OWNER', 'ADMIN']), async (req, res) => {
   const { full_name, role, phone, email, password, permissions, is_active, actor_name } = req.body;
   const userId = req.params.id;
 
@@ -1198,7 +1626,7 @@ app.put('/api/users/:id', async (req, res) => {
   }
 });
 
-app.delete('/api/users/:id', async (req, res) => {
+app.delete('/api/users/:id', requireAuth(['OWNER', 'ADMIN']), async (req, res) => {
   const userId = req.params.id;
   const actorName = req.query.actor_name || 'Admin';
 
@@ -1225,8 +1653,14 @@ app.delete('/api/users/:id', async (req, res) => {
   }
 });
 
-// F) Online Store Checkout (Customer Order Placement)
+// F) Online Store Checkout (Customer Order Placement - Item 6 & 19: Price & Input Verified)
 app.post('/api/orders/checkout', async (req, res) => {
+  // Rate limiting (Item 12)
+  const orderRate = checkRateLimit('orders', req.ip, 25, 15 * 60 * 1000);
+  if (!orderRate.allowed) {
+    return res.status(429).json({ error: 'تم تجاوز الحد المسموح لإنشاء الطلبات، يرجى الانتظار قليلاً.' });
+  }
+
   const {
     product_id,
     customer_name,
@@ -1241,6 +1675,21 @@ app.post('/api/orders/checkout', async (req, res) => {
 
   if (!product_id || !customer_name || !customer_phone) {
     return res.status(400).json({ error: 'بيانات المسبحة واسم العميل ورقم الهاتف مطلوبة' });
+  }
+
+  const cleanName = sanitizeInput(String(customer_name));
+  const cleanPhone = sanitizeInput(String(customer_phone));
+  const cleanEmail = sanitizeInput(String(customer_email || ''));
+  const cleanCountry = sanitizeInput(String(country || 'الإمارات العربية المتحدة'));
+  const cleanCity = sanitizeInput(String(city || 'أبوظبي'));
+  const cleanAddress = sanitizeInput(String(address || 'توصيل منزلي فاخر'));
+  const cleanNotes = sanitizeInput(String(notes || ''));
+
+  if (cleanName.length < 2 || cleanName.length > 100) {
+    return res.status(400).json({ error: 'اسم العميل يجب أن يتراوح بين 2 و 100 حرف' });
+  }
+  if (cleanPhone.length < 6 || cleanPhone.length > 25) {
+    return res.status(400).json({ error: 'رقم الهاتف غير صالح' });
   }
 
   const lockAcquired = await acquireProductLock(product_id);
@@ -1275,9 +1724,9 @@ app.post('/api/orders/checkout', async (req, res) => {
         payment_method, paid_amount, outstanding_amount, additional_notes, delivered_at
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0.0, 0.0, ?, 'AED', 'ONLINE', 'COURIER', 'PENDING', 'UNPAID', ?, 0.0, ?, ?, datetime('now', 'localtime'))
     `, [
-      orderPublicId, orderRef, customer_name.trim(), customer_phone.trim(), (customer_email || '').trim(),
-      (country || 'الإمارات العربية المتحدة').trim(), (city || 'أبوظبي').trim(), (address || 'توصيل منزلي فاخر').trim(), price, price,
-      payment_method || 'CASH_ON_DELIVERY', price, notes || ''
+      orderPublicId, orderRef, cleanName, cleanPhone, cleanEmail,
+      cleanCountry, cleanCity, cleanAddress, price, price,
+      payment_method || 'CASH_ON_DELIVERY', price, cleanNotes
     ]);
 
     const order = await queryOne('SELECT * FROM orders WHERE public_id = ?', [orderPublicId]);
@@ -1677,10 +2126,15 @@ app.get('/api/products/:id', async (req, res) => {
   }
 });
 
-// Upload and store rosary image (supports compressed base64 webp/jpeg/png)
-app.post('/api/upload', (req, res) => {
+// Upload and store rosary image (supports compressed base64 webp/jpeg/png - Item 18)
+app.post('/api/upload', requireAuth(['OWNER', 'ADMIN', 'SUPERVISOR', 'SALES']), (req, res) => {
   try {
-    const { dataUrl, filename } = req.body;
+    const uploadRate = checkRateLimit('uploads', req.ip, 20, 15 * 60 * 1000);
+    if (!uploadRate.allowed) {
+      return res.status(429).json({ error: 'تم تجاوز الحد المسموح لرفع الصور، يرجى الانتظار قليلاً.' });
+    }
+
+    const { dataUrl } = req.body;
     if (!dataUrl || typeof dataUrl !== 'string') {
       return res.status(400).json({ error: 'لم يتم توفير بيانات الصورة' });
     }
@@ -1690,19 +2144,36 @@ app.post('/api/upload', (req, res) => {
       return res.status(400).json({ error: 'صيغة الصورة غير صالحة أو غير مدعومة' });
     }
 
-    const mimeType = matches[1].toLowerCase();
     const base64Data = matches[2];
     const buffer = Buffer.from(base64Data, 'base64');
 
-    if (buffer.length > 15 * 1024 * 1024) {
-      return res.status(400).json({ error: 'حجم الصورة كبير جداً (الحد الأقصى 15 ميجابايت)' });
+    if (buffer.length > 5 * 1024 * 1024) {
+      return res.status(400).json({ error: 'حجم الصورة كبير جداً (الحد الأقصى المسموح 5 ميجابايت)' });
     }
 
+    // Magic Bytes Verification (Item 18)
+    let validImage = false;
     let ext = 'webp';
-    if (mimeType.includes('jpeg') || mimeType.includes('jpg')) ext = 'jpg';
-    else if (mimeType.includes('png')) ext = 'png';
-    else if (mimeType.includes('webp')) ext = 'webp';
-    else if (mimeType.includes('gif')) ext = 'gif';
+
+    // JPEG: FF D8 FF
+    if (buffer.length > 3 && buffer[0] === 0xFF && buffer[1] === 0xD8 && buffer[2] === 0xFF) {
+      validImage = true;
+      ext = 'jpg';
+    }
+    // PNG: 89 50 4E 47 0D 0A 1A 0A
+    else if (buffer.length > 8 && buffer[0] === 0x89 && buffer[1] === 0x50 && buffer[2] === 0x4E && buffer[3] === 0x47) {
+      validImage = true;
+      ext = 'png';
+    }
+    // WebP: RIFF (bytes 0-3) ... WEBP (bytes 8-11)
+    else if (buffer.length > 12 && buffer.toString('ascii', 0, 4) === 'RIFF' && buffer.toString('ascii', 8, 12) === 'WEBP') {
+      validImage = true;
+      ext = 'webp';
+    }
+
+    if (!validImage) {
+      return res.status(400).json({ error: 'الملف المرفوع ليس صورة مدعومة أو يحتوي على بيانات غير صالحة (يُسمح فقط بصيغ WebP, JPEG, PNG الحقيقية)' });
+    }
 
     const safeRand = crypto.randomBytes(6).toString('hex');
     const safeFilename = `rosary_${Date.now()}_${safeRand}.${ext}`;
@@ -1719,11 +2190,11 @@ app.post('/api/upload', (req, res) => {
     });
   } catch (err) {
     console.error('❌ Upload error:', err);
-    res.status(500).json({ error: 'حدث خطأ أثناء رفع وحفظ الصورة: ' + err.message });
+    res.status(500).json({ error: 'حدث خطأ أثناء رفع وحفظ الصورة' });
   }
 });
 
-app.post('/api/products', async (req, res) => {
+app.post('/api/products', requireAuth(['OWNER', 'ADMIN', 'SUPERVISOR', 'SALES']), async (req, res) => {
   try {
     const b = req.body;
     if (!b.name_ar || b.selling_price === undefined) {
@@ -1773,7 +2244,7 @@ app.post('/api/products', async (req, res) => {
   }
 });
 
-app.put('/api/products/:id', async (req, res) => {
+app.put('/api/products/:id', requireAuth(['OWNER', 'ADMIN', 'SUPERVISOR', 'SALES']), async (req, res) => {
   try {
     const b = req.body;
     const existing = await queryOne('SELECT * FROM products WHERE id = ?', [req.params.id]);
@@ -1824,7 +2295,7 @@ app.put('/api/products/:id', async (req, res) => {
   }
 });
 
-app.delete('/api/products/:id', async (req, res) => {
+app.delete('/api/products/:id', requireAuth(['OWNER', 'ADMIN', 'SUPERVISOR']), async (req, res) => {
   const productId = req.params.id;
   const actorName = req.query.actor_name || req.body?.actor_name || 'Admin';
 
@@ -1868,7 +2339,7 @@ app.get('/api/categories', async (req, res) => {
 });
 
 // Add new category
-app.post('/api/categories', async (req, res) => {
+app.post('/api/categories', requireAuth(['OWNER', 'ADMIN', 'SUPERVISOR']), async (req, res) => {
   const { name_ar, name_en, slug, sort_order, is_active } = req.body;
   if (!name_ar || !name_ar.trim()) {
     return res.status(400).json({ error: 'اسم التصنيف بالعربية مطلوب' });
@@ -1906,7 +2377,7 @@ app.post('/api/categories', async (req, res) => {
 });
 
 // Update category
-app.put('/api/categories/:id', async (req, res) => {
+app.put('/api/categories/:id', requireAuth(['OWNER', 'ADMIN', 'SUPERVISOR']), async (req, res) => {
   const categoryId = req.params.id;
   const { name_ar, name_en, slug, sort_order, is_active } = req.body;
   if (!name_ar || !name_ar.trim()) {
@@ -1939,7 +2410,7 @@ app.put('/api/categories/:id', async (req, res) => {
 });
 
 // Delete category
-app.delete('/api/categories/:id', async (req, res) => {
+app.delete('/api/categories/:id', requireAuth(['OWNER', 'ADMIN', 'SUPERVISOR']), async (req, res) => {
   const categoryId = req.params.id;
   try {
     const existing = await queryOne('SELECT * FROM categories WHERE id = ?', [categoryId]);
@@ -1986,7 +2457,7 @@ app.get('/api/countries', async (req, res) => {
   }
 });
 
-app.post('/api/countries', async (req, res) => {
+app.post('/api/countries', requireAuth(['OWNER', 'ADMIN', 'SUPERVISOR']), async (req, res) => {
   const { name_ar, name_en, code, phone_code, currency, sort_order } = req.body;
   if (!name_ar || !name_ar.trim()) {
     return res.status(400).json({ error: 'اسم الدولة بالعربية مطلوب' });
@@ -2021,7 +2492,7 @@ app.post('/api/countries', async (req, res) => {
   }
 });
 
-app.put('/api/countries/:id', async (req, res) => {
+app.put('/api/countries/:id', requireAuth(['OWNER', 'ADMIN', 'SUPERVISOR']), async (req, res) => {
   const countryId = req.params.id;
   const { name_ar, name_en, code, phone_code, currency, sort_order, is_active } = req.body;
 
@@ -2054,7 +2525,7 @@ app.put('/api/countries/:id', async (req, res) => {
   }
 });
 
-app.delete('/api/countries/:id', async (req, res) => {
+app.delete('/api/countries/:id', requireAuth(['OWNER', 'ADMIN', 'SUPERVISOR']), async (req, res) => {
   const countryId = req.params.id;
   try {
     const existing = await queryOne('SELECT * FROM countries WHERE id = ?', [countryId]);
@@ -2150,7 +2621,7 @@ app.post('/api/products/:id/unreserve', async (req, res) => {
 });
 
 // 6. Quick Sale & Exhibition POS (Strict Financial Truth & Double-Selling Prevention)
-app.post('/api/quick-sale', async (req, res) => {
+app.post('/api/quick-sale', requireAuth(['OWNER', 'ADMIN', 'SUPERVISOR', 'SALES', 'CASHIER']), async (req, res) => {
   const {
     product_id,
     customer_name,
@@ -2278,7 +2749,7 @@ app.post('/api/quick-sale', async (req, res) => {
 });
 
 // 7. Rosary Custody Management (Append-Only Immutable Records)
-app.get('/api/products/:id/custody', async (req, res) => {
+app.get('/api/products/:id/custody', requireAuth(['OWNER', 'ADMIN', 'SUPERVISOR', 'SALES']), async (req, res) => {
   try {
     const history = await query(`
       SELECT * FROM custody_history WHERE product_id = ? ORDER BY id DESC
@@ -2289,7 +2760,7 @@ app.get('/api/products/:id/custody', async (req, res) => {
   }
 });
 
-app.post('/api/products/:id/custody', async (req, res) => {
+app.post('/api/products/:id/custody', requireAuth(['OWNER', 'ADMIN', 'SUPERVISOR', 'SALES']), async (req, res) => {
   const { holder_name, location_name, placed_on, note, actor_name } = req.body;
   if (!holder_name || !location_name) {
     return res.status(400).json({ error: 'اسم الحائز وموقع العهدة مطلوبان' });
@@ -2324,7 +2795,7 @@ app.post('/api/products/:id/custody', async (req, res) => {
 });
 
 // 8. Custom Rosary Bead Adjustments (Workshop & Sizing)
-app.get('/api/bead-adjustments', async (req, res) => {
+app.get('/api/bead-adjustments', requireAuth(['OWNER', 'ADMIN', 'SUPERVISOR', 'SALES']), async (req, res) => {
   try {
     const list = await query(`
       SELECT b.*, p.name_ar as product_name_ar, p.image_url as product_image_url
@@ -2338,7 +2809,7 @@ app.get('/api/bead-adjustments', async (req, res) => {
   }
 });
 
-app.post('/api/bead-adjustments', async (req, res) => {
+app.post('/api/bead-adjustments', requireAuth(['OWNER', 'ADMIN', 'SUPERVISOR', 'SALES']), async (req, res) => {
   const {
     order_id,
     product_id,
@@ -2384,7 +2855,7 @@ app.post('/api/bead-adjustments', async (req, res) => {
   }
 });
 
-app.patch('/api/bead-adjustments/:id/status', async (req, res) => {
+app.patch('/api/bead-adjustments/:id/status', requireAuth(['OWNER', 'ADMIN', 'SUPERVISOR', 'SALES']), async (req, res) => {
   const { status, actor_name } = req.body;
   try {
     const completedAt = status === 'COMPLETED' ? new Date().toISOString() : null;
@@ -2398,8 +2869,8 @@ app.patch('/api/bead-adjustments/:id/status', async (req, res) => {
   }
 });
 
-// 9. Orders & Invoices
-app.get('/api/orders', async (req, res) => {
+// 9. Orders & Invoices (Item 9: Staff Protected)
+app.get('/api/orders', requireAuth(['OWNER', 'ADMIN', 'SUPERVISOR', 'ACCOUNTANT', 'SALES', 'CASHIER']), async (req, res) => {
   try {
     const { status, payment_status, search } = req.query;
     let sql = 'SELECT * FROM orders WHERE 1=1';
@@ -2459,8 +2930,8 @@ app.get('/api/orders/:id', async (req, res) => {
   }
 });
 
-// 10. Smart Accountant & Financial Truth Engine
-app.get('/api/accountant/report', async (req, res) => {
+// 10. Smart Accountant & Financial Truth Engine (Item 9: Protected Financial Records)
+app.get('/api/accountant/report', requireAuth(['OWNER', 'ADMIN', 'SUPERVISOR', 'ACCOUNTANT']), async (req, res) => {
   try {
     const { period, start, end } = req.query;
     let dateFilter = '1=1';
@@ -2543,7 +3014,7 @@ app.get('/api/accountant/report', async (req, res) => {
 });
 
 // Receivables List
-app.get('/api/receivables', async (req, res) => {
+app.get('/api/receivables', requireAuth(['OWNER', 'ADMIN', 'SUPERVISOR', 'ACCOUNTANT']), async (req, res) => {
   try {
     const list = await query(`
       SELECT * FROM orders
@@ -2557,7 +3028,7 @@ app.get('/api/receivables', async (req, res) => {
 });
 
 // Pay towards Receivable
-app.post('/api/receivables/:id/payment', async (req, res) => {
+app.post('/api/receivables/:id/payment', requireAuth(['OWNER', 'ADMIN', 'SUPERVISOR', 'ACCOUNTANT']), async (req, res) => {
   const { amount, payment_method, note, actor_name } = req.body;
   const payAmt = Number(amount);
   if (!payAmt || payAmt <= 0) {
@@ -2601,7 +3072,7 @@ app.post('/api/receivables/:id/payment', async (req, res) => {
 });
 
 // 11. Operational Expenses (Packaging, Bags, Shipping)
-app.get('/api/expenses', async (req, res) => {
+app.get('/api/expenses', requireAuth(['OWNER', 'ADMIN', 'SUPERVISOR', 'ACCOUNTANT']), async (req, res) => {
   try {
     const expenses = await query('SELECT * FROM expenses ORDER BY incurred_on DESC, id DESC');
     res.json(expenses);
@@ -2610,7 +3081,7 @@ app.get('/api/expenses', async (req, res) => {
   }
 });
 
-app.post('/api/expenses', async (req, res) => {
+app.post('/api/expenses', requireAuth(['OWNER', 'ADMIN', 'SUPERVISOR', 'ACCOUNTANT']), async (req, res) => {
   const { category, description, amount, incurred_on, supplier, actor_name } = req.body;
   if (!description || !amount) {
     return res.status(400).json({ error: 'وصف المصروف والمبلغ مطلوبان' });
@@ -2633,7 +3104,7 @@ app.post('/api/expenses', async (req, res) => {
   }
 });
 
-app.post('/api/expenses/:id/void', async (req, res) => {
+app.post('/api/expenses/:id/void', requireAuth(['OWNER', 'ADMIN', 'SUPERVISOR', 'ACCOUNTANT']), async (req, res) => {
   const { reason, actor_name } = req.body;
   if (!reason || !reason.trim()) {
     return res.status(400).json({ error: 'سبب الإلغاء إلزامي ولا يمكن حذف المصاريف مباشرة' });
@@ -2656,7 +3127,7 @@ app.post('/api/expenses/:id/void', async (req, res) => {
 });
 
 // 12. Ambassador Program & Affiliates
-app.get('/api/ambassadors', async (req, res) => {
+app.get('/api/ambassadors', requireAuth(['OWNER', 'ADMIN', 'SUPERVISOR', 'SALES']), async (req, res) => {
   try {
     const list = await query('SELECT * FROM ambassadors ORDER BY id DESC');
     res.json(list);
@@ -2665,7 +3136,7 @@ app.get('/api/ambassadors', async (req, res) => {
   }
 });
 
-app.post('/api/ambassadors', async (req, res) => {
+app.post('/api/ambassadors', requireAuth(['OWNER', 'ADMIN', 'SUPERVISOR', 'SALES']), async (req, res) => {
   const { name, phone, email } = req.body;
   if (!name || !phone) return res.status(400).json({ error: 'الاسم ورقم الهاتف مطلوبان' });
 
@@ -2682,7 +3153,7 @@ app.post('/api/ambassadors', async (req, res) => {
 });
 
 // 13. Audit Trail Records
-app.get('/api/audit', async (req, res) => {
+app.get('/api/audit', requireAuth(['OWNER', 'ADMIN']), async (req, res) => {
   try {
     const logs = await query('SELECT * FROM audit_logs ORDER BY id DESC LIMIT 200');
     res.json(logs);
@@ -2701,7 +3172,7 @@ app.get('/api/settings', async (req, res) => {
   }
 });
 
-app.put('/api/settings', async (req, res) => {
+app.put('/api/settings', requireAuth(['OWNER', 'ADMIN']), async (req, res) => {
   const b = req.body;
   try {
     await query(`
@@ -2723,7 +3194,7 @@ app.put('/api/settings', async (req, res) => {
 });
 
 // 15. License & Hardware ID Management
-app.get('/api/license/status', (req, res) => {
+app.get('/api/license/status', requireAuth(['OWNER', 'ADMIN']), (req, res) => {
   if (licenseHelper) {
     res.json(licenseHelper.checkLicenseStatus());
   } else {
@@ -2731,7 +3202,7 @@ app.get('/api/license/status', (req, res) => {
   }
 });
 
-app.post('/api/license/activate', (req, res) => {
+app.post('/api/license/activate', requireAuth(['OWNER', 'ADMIN']), (req, res) => {
   const { key } = req.body;
   if (!key) return res.status(400).json({ error: 'مفتاح الترخيص مطلوب' });
   if (licenseHelper) {
@@ -2742,11 +3213,11 @@ app.post('/api/license/activate', (req, res) => {
 });
 
 // 16. Cloud Configuration & Database Sync
-app.get('/api/cloud/config', (req, res) => {
+app.get('/api/cloud/config', requireAuth(['OWNER', 'ADMIN']), (req, res) => {
   res.json(cloudConfig.getCloudConfig());
 });
 
-app.post('/api/cloud/config', (req, res) => {
+app.post('/api/cloud/config', requireAuth(['OWNER', 'ADMIN']), (req, res) => {
   res.json(cloudConfig.saveCloudConfig(req.body));
 });
 
@@ -2808,6 +3279,20 @@ if (fs.existsSync(distPath)) {
     `);
   });
 }
+
+// Centralized Error Handler (Item 20: Disable debug mode in production)
+app.use((err, req, res, next) => {
+  console.error('❌ [Server Error Caught]:', err.message);
+  if (process.env.NODE_ENV === 'production') {
+    return res.status(err.status || 500).json({
+      error: 'حدث خطأ في معالجة الطلب، يرجى المحاولة لاحقاً.'
+    });
+  }
+  res.status(err.status || 500).json({
+    error: err.message,
+    stack: err.stack
+  });
+});
 
 // Socket.IO Events
 io.on('connection', (socket) => {
