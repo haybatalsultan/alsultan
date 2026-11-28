@@ -873,7 +873,7 @@ async function initDatabase() {
         await query('PRAGMA foreign_keys = OFF');
         const masterRow = await queryOne("SELECT sql FROM sqlite_master WHERE type='table' AND name='products'");
         if (masterRow && masterRow.sql) {
-          const newSql = masterRow.sql.replace(/bead_size_mm\s+REAL/i, 'bead_size_mm TEXT');
+          const newSql = masterRow.sql.replace(/bead_size_mm\s+(REAL|NUMERIC|INTEGER|FLOAT|DOUBLE)/ig, 'bead_size_mm TEXT');
           if (newSql !== masterRow.sql) {
             await query("CREATE TABLE IF NOT EXISTS products_temp_migration AS SELECT * FROM products");
             await query("DROP TABLE products");
@@ -888,6 +888,10 @@ async function initDatabase() {
         console.warn('⚠️ bead_size_mm migration warning:', colErr.message);
       }
     }
+    // Cast any remaining non-text values to TEXT in products
+    try {
+      await query("UPDATE products SET bead_size_mm = CAST(bead_size_mm AS TEXT) WHERE bead_size_mm IS NOT NULL AND typeof(bead_size_mm) != 'text'");
+    } catch (_) {}
 
     if (!prodColNames.includes('sales_channel')) await query("ALTER TABLE products ADD COLUMN sales_channel TEXT DEFAULT 'both'");
     if (!prodColNames.includes('price_b2c')) {
@@ -2163,9 +2167,10 @@ app.get('/api/products/:id', async (req, res) => {
     `, [req.params.id, req.params.id, req.params.id, req.params.id]);
 
     if (!product) return res.status(404).json({ error: 'المسبحة غير موجودة' });
-    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0');
     res.setHeader('Pragma', 'no-cache');
     res.setHeader('Expires', '0');
+    res.setHeader('Surrogate-Control', 'no-store');
     res.json(product);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -2353,7 +2358,12 @@ app.put('/api/products/:id', requireAuth(['OWNER', 'ADMIN', 'SUPERVISOR', 'SALES
     await recordAudit(req.body.actor_name || 'Admin', 'OWNER', 'UPDATE_PRODUCT', 'CATALOG', { id: req.params.id });
     
     io.emit('product:updated', updated);
-    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    io.emit('product:specs_updated', updated);
+    io.emit('catalog:updated', { id: req.params.id });
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    res.setHeader('Surrogate-Control', 'no-store');
     res.json(updated);
   } catch (err) {
     res.status(500).json({ error: err.message });

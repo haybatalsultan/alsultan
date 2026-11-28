@@ -30,7 +30,7 @@ import { CheckoutModal } from './components/CheckoutModal';
 import { MobileBottomNav } from './components/MobileBottomNav';
 import { RoyalNotifications } from './components/RoyalNotifications';
 import { toast } from './utils/toast';
-import { Clock, ShoppingBag, MessageCircle, X } from 'lucide-react';
+import { Clock, ShoppingBag, MessageCircle, X, PanelRightOpen } from 'lucide-react';
 
 import { Product, Order, Category, Material, User } from './types';
 import { api, socket } from './lib/api';
@@ -471,6 +471,19 @@ export const App: React.FC = () => {
           onClose={() => setIsAdminSidebarOpen(false)}
         />
 
+        {/* Floating Quick Re-open Button when Sidebar is Hidden */}
+        {!isAdminSidebarOpen && (
+          <button
+            type="button"
+            onClick={() => setIsAdminSidebarOpen(true)}
+            className="fixed top-20 right-0 z-40 bg-[#26221C] hover:bg-[#3D352E] text-[#E2B84B] border-t border-b border-l border-[#C9972B] shadow-2xl px-3 py-2 rounded-l-2xl flex items-center gap-2 transition-all hover:pr-4 cursor-pointer group active:scale-95"
+            title="إظهار القائمة الجانبية (تكبير الشاشة)"
+          >
+            <PanelRightOpen className="w-4 h-4 text-[#C9972B] group-hover:scale-115 transition-transform" />
+            <span className="text-xs font-bold hidden sm:inline text-white">إظهار القائمة</span>
+          </button>
+        )}
+
         {/* Main App Content Viewport */}
         <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
           <Header
@@ -766,7 +779,7 @@ export const App: React.FC = () => {
       <main className="flex-1">
         {portal === 'product' && viewingProduct ? (
           <ProductDetailPage
-            key={viewingProduct.id}
+            key={`${viewingProduct.id}-${viewingProduct.updated_at || ''}-${refreshTrigger}`}
             product={viewingProduct}
             allProducts={allStoreProducts}
             onBackToStore={() => handleSelectStorefrontMenuItem('home')}

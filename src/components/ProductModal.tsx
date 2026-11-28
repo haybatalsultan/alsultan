@@ -356,7 +356,9 @@ export const ProductModal: React.FC<ProductModalProps> = ({
                 />
               </div>
               <div>
-                <label className="block text-[11px] font-semibold text-[#4B4338] mb-1">قياس الخرز (نص وأبعاد ورموز)</label>
+                <label className="block text-[11px] font-semibold text-[#4B4338] mb-1">
+                  قياس الخرز (حقل نصي: حروف وأرقام ورموز مثل 11×13)
+                </label>
                 <input
                   type="text"
                   dir="auto"

@@ -54,7 +54,7 @@ export interface Product {
   origin: string;
   color: string;
   bead_count: number;
-  bead_size_mm: string | number;
+  bead_size_mm: string;
   weight_g: number;
   shape: string;
   tassel_type: string;

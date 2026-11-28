@@ -182,7 +182,7 @@ export const Header: React.FC<HeaderProps> = ({
       </div>
 
       {/* 3. Main Header Navigation */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-2.5 flex items-center justify-between gap-4">
+      <div className={`${portalMode === 'admin' ? 'w-full px-4 sm:px-6' : 'max-w-7xl mx-auto px-4 sm:px-6'} py-2.5 flex items-center justify-between gap-4`}>
         {/* Right: Golden Logo and Admin Sidebar Toggle */}
         <div className="flex items-center gap-3">
           {portalMode === 'admin' && onToggleSidebar && (

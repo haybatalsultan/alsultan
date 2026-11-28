@@ -69,17 +69,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
       {/* Sidebar Aside */}
       <aside
         className={`
-          fixed md:static inset-y-0 right-0 z-50
+          fixed md:static inset-y-0 right-0 z-50 shrink-0
           bg-[#FDFBF7] border-l border-[#EBE3D5] flex flex-col justify-between select-none
           shadow-[2px_0_15px_rgba(70,45,15,0.02)] transition-all duration-300 ease-in-out
           ${
             isOpen
-              ? 'w-64 translate-x-0 opacity-100'
-              : 'w-0 translate-x-full md:translate-x-0 md:w-0 opacity-0 overflow-hidden border-none pointer-events-none'
+              ? 'w-64 min-w-[16rem] translate-x-0 opacity-100'
+              : 'w-0 min-w-0 max-w-0 translate-x-full md:translate-x-0 opacity-0 overflow-hidden border-none pointer-events-none'
           }
         `}
       >
-        <div className="w-64 min-w-[16rem] flex flex-col justify-between h-full">
+        <div className={`w-64 flex flex-col justify-between h-full transition-opacity duration-200 ${isOpen ? 'min-w-[16rem] opacity-100' : 'min-w-0 opacity-0 pointer-events-none'}`}>
           <div>
             {/* Brand Header */}
             <div className="p-4 border-b border-[#EBE3D5] flex items-center justify-between bg-gradient-to-b from-[#FFFDF8] to-[#FBF8F2]">
@@ -106,10 +106,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <button
                   type="button"
                   onClick={onToggle}
-                  className="p-1.5 rounded-xl text-[#746A5D] hover:text-[#9A6817] hover:bg-[#F2ECE1] transition border border-transparent hover:border-[#E4D5B8] cursor-pointer"
+                  className="px-2 py-1 rounded-xl text-[#746A5D] hover:text-[#9A6817] hover:bg-[#F2ECE1] transition border border-[#EADBCE] hover:border-[#C9972B] cursor-pointer flex items-center gap-1 shadow-2xs active:scale-95"
                   title="إخفاء القائمة الجانبية لتوسيع الشاشة"
                 >
-                  <PanelRightClose className="w-4 h-4" />
+                  <PanelRightClose className="w-4 h-4 text-[#9A6817]" />
+                  <span className="text-[11px] font-bold text-[#746A5D]">إخفاء</span>
                 </button>
               )}
             </div>

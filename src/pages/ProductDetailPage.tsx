@@ -62,7 +62,9 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
 
   // Sync state if initialProduct prop updates
   useEffect(() => {
-    setProduct(initialProduct);
+    if (initialProduct) {
+      setProduct((prev) => ({ ...prev, ...initialProduct }));
+    }
   }, [initialProduct]);
 
   // Strict fresh fetch on mount / ID change bypassing any browser or proxy cache
@@ -72,7 +74,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
     setIsSyncing(true);
     try {
       const fresh = await api.getProduct(idToFetch);
-      if (fresh) {
+      if (fresh && fresh.id) {
         setProduct(fresh);
       }
     } catch (e) {
@@ -84,6 +86,28 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
 
   useEffect(() => {
     fetchFreshData();
+
+    // 1. Strict live polling every 2.5 seconds to guarantee technical specs never lag behind admin edits
+    const pollInterval = setInterval(() => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+        fetchFreshData();
+      }
+    }, 2500);
+
+    // 2. Immediate fresh fetch on window focus and tab visibility change
+    const handleActive = () => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+        fetchFreshData();
+      }
+    };
+    window.addEventListener('focus', handleActive);
+    document.addEventListener('visibilitychange', handleActive);
+
+    return () => {
+      clearInterval(pollInterval);
+      window.removeEventListener('focus', handleActive);
+      document.removeEventListener('visibilitychange', handleActive);
+    };
   }, [fetchFreshData]);
 
   // Real-time Socket.IO live sync for instant specification updates
@@ -94,22 +118,35 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
       const myPublicId = initialProduct.public_id;
       const mySku = initialProduct.sku;
 
-      if (
-        (myId && updated.id === myId) ||
-        (myPublicId && updated.public_id === myPublicId) ||
-        (mySku && updated.sku === mySku)
-      ) {
+      const isMatch = (
+        (myId && String(updated.id) === String(myId)) ||
+        (myPublicId && String(updated.public_id) === String(myPublicId)) ||
+        (mySku && String(updated.sku) === String(mySku))
+      );
+
+      if (isMatch) {
         setProduct((prev) => ({ ...prev, ...updated }));
         setJustUpdated(true);
         setTimeout(() => setJustUpdated(false), 4000);
+        // Also fetch from API to get full fresh DB joined rows
+        fetchFreshData();
       }
     };
 
     socket.on('product:updated', handleProductUpdated);
+    socket.on('product:specs_updated', handleProductUpdated);
+    socket.on('catalog:updated', (payload: any) => {
+      if (!payload || !payload.id || String(payload.id) === String(initialProduct.id)) {
+        fetchFreshData();
+      }
+    });
+
     return () => {
       socket.off('product:updated', handleProductUpdated);
+      socket.off('product:specs_updated', handleProductUpdated);
+      socket.off('catalog:updated');
     };
-  }, [initialProduct.id, initialProduct.public_id, initialProduct.sku]);
+  }, [initialProduct.id, initialProduct.public_id, initialProduct.sku, fetchFreshData]);
 
   const [copiedLink, setCopiedLink] = useState(false);
   const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);

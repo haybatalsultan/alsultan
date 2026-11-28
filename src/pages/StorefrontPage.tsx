@@ -25,7 +25,7 @@ import {
   Filter,
   Check
 } from 'lucide-react';
-import { api } from '../lib/api';
+import { api, socket } from '../lib/api';
 import { Product, Banner } from '../types';
 import { toast } from '../utils/toast';
 import { HeroBannerSlider } from '../components/HeroBannerSlider';
@@ -65,6 +65,7 @@ export const StorefrontPage: React.FC<StorefrontPageProps> = ({
   const [maxPrice, setMaxPrice] = useState<string>('');
   const [selectedPreset, setSelectedPreset] = useState<string>('all');
   const [sortBy, setSortBy] = useState<'featured' | 'price_asc' | 'price_desc'>('featured');
+  const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
 
   const pricePresets = [
     { id: 'all', label: 'كافة الأسعار', min: '', max: '' },
@@ -105,6 +106,33 @@ export const StorefrontPage: React.FC<StorefrontPageProps> = ({
 
   useEffect(() => {
     loadStore();
+
+    const handleUpdate = (updated: any) => {
+      if (!updated || !updated.id) return;
+      setProducts((prev) =>
+        prev.map((p) =>
+          String(p.id) === String(updated.id) || p.public_id === updated.public_id
+            ? { ...p, ...updated }
+            : p
+        )
+      );
+    };
+
+    socket.on('product:updated', handleUpdate);
+    socket.on('product:specs_updated', handleUpdate);
+
+    const handleFocus = () => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+        loadStore();
+      }
+    };
+    window.addEventListener('focus', handleFocus);
+
+    return () => {
+      socket.off('product:updated', handleUpdate);
+      socket.off('product:specs_updated', handleUpdate);
+      window.removeEventListener('focus', handleFocus);
+    };
   }, []);
 
   const loadStore = async () => {
@@ -352,8 +380,78 @@ export const StorefrontPage: React.FC<StorefrontPageProps> = ({
           </div>
         )}
 
-        {/* 4. Luxury Search & Price Range Filter Control Panel */}
-        <div className="bg-white border border-[#EBE3D5] rounded-3xl p-5 shadow-xs space-y-4">
+        {/* 4.A Mobile App Search & Quick Filter Bar (Native Mobile Experience - < sm) */}
+        <div className="block sm:hidden space-y-2.5">
+          {/* App Search Input */}
+          <div className="relative">
+            <input
+              id="store-search-input"
+              type="text"
+              placeholder="ابحث عن مسبحة، خامة، أو كود SKU..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full py-2.5 pr-10 pl-8 text-xs rounded-2xl bg-white border border-[#DDD3C1] text-[#26221C] placeholder-[#9E9485] shadow-xs focus:outline-none focus:border-[#C9972B]"
+            />
+            <Search className="w-4 h-4 text-[#9A6817] absolute right-3.5 top-3" />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery('')}
+                className="absolute left-3 top-3 text-[#9E9485] p-0.5 cursor-pointer"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+
+          {/* Mobile Filter & Sort Action Row */}
+          <div className="flex items-center justify-between gap-2 text-xs">
+            {/* Filter Trigger Button */}
+            <button
+              type="button"
+              onClick={() => setIsMobileFilterOpen(true)}
+              className={`flex-1 py-2 px-3 rounded-xl border flex items-center justify-center gap-1.5 font-bold transition shadow-2xs active:scale-95 cursor-pointer ${
+                minPrice || maxPrice || activeCategoryFilter !== 'all'
+                  ? 'bg-[#26221C] text-[#E2B84B] border-[#26221C]'
+                  : 'bg-white text-[#4B4338] border-[#DDD3C1]'
+              }`}
+            >
+              <Filter className="w-3.5 h-3.5 text-[#C9972B]" />
+              <span>تصفية الأسعار</span>
+              {(minPrice || maxPrice) && (
+                <span className="w-2 h-2 rounded-full bg-[#E2B84B]" />
+              )}
+            </button>
+
+            {/* Sorting Pill */}
+            <div className="flex-1 bg-white border border-[#DDD3C1] px-2.5 py-1.5 rounded-xl flex items-center justify-between gap-1 shadow-2xs">
+              <ArrowUpDown className="w-3 h-3 text-[#C9972B] shrink-0" />
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as any)}
+                className="w-full bg-transparent text-[11px] font-bold text-[#26221C] focus:outline-none cursor-pointer text-center"
+              >
+                <option value="featured">المميز والأحدث</option>
+                <option value="price_asc">الأقل سعراً</option>
+                <option value="price_desc">الأعلى سعراً</option>
+              </select>
+            </div>
+
+            {hasActiveFilter && (
+              <button
+                type="button"
+                onClick={handleResetFilters}
+                className="p-2 bg-rose-50 text-rose-700 border border-rose-200 rounded-xl transition shrink-0 cursor-pointer"
+                title="إعادة ضبط الفلاتر"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* 4.B Desktop Web: Luxury Search & Price Range Filter Control Panel (hidden on mobile) */}
+        <div className="hidden sm:block bg-white border border-[#EBE3D5] rounded-3xl p-5 shadow-xs space-y-4">
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
             {/* Search Input */}
             <div className="relative flex-1 max-w-md">
@@ -478,6 +576,93 @@ export const StorefrontPage: React.FC<StorefrontPageProps> = ({
             )}
           </div>
         </div>
+
+        {/* 4.C Mobile Filter Bottom Sheet Modal */}
+        {isMobileFilterOpen && (
+          <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-end sm:hidden animate-fade-in">
+            <div className="w-full bg-white rounded-t-3xl border-t border-[#EBE3D5] p-5 space-y-4 max-h-[85vh] overflow-y-auto shadow-2xl">
+              <div className="flex items-center justify-between pb-3 border-b border-[#F2ECE1]">
+                <div className="flex items-center gap-2">
+                  <Filter className="w-4 h-4 text-[#C9972B]" />
+                  <h3 className="font-extrabold text-sm text-[#26221C]">تصفية نطاق الأسعار</h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsMobileFilterOpen(false)}
+                  className="p-1 text-[#8C8275] hover:text-[#26221C] cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Price inputs */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="bg-[#FAF7F2] border border-[#DDD3C1] p-2.5 rounded-xl space-y-1">
+                  <span className="text-[10px] text-[#8C8275] font-bold block">الحد الأدنى (د.إ):</span>
+                  <input
+                    type="number"
+                    min="0"
+                    step="100"
+                    placeholder="0"
+                    value={minPrice}
+                    onChange={(e) => handleCustomMinChange(e.target.value)}
+                    className="w-full text-xs font-bold text-[#26221C] bg-transparent focus:outline-none font-mono"
+                  />
+                </div>
+                <div className="bg-[#FAF7F2] border border-[#DDD3C1] p-2.5 rounded-xl space-y-1">
+                  <span className="text-[10px] text-[#8C8275] font-bold block">الحد الأقصى (د.إ):</span>
+                  <input
+                    type="number"
+                    min="0"
+                    step="100"
+                    placeholder="أقصى سعر"
+                    value={maxPrice}
+                    onChange={(e) => handleCustomMaxChange(e.target.value)}
+                    className="w-full text-xs font-bold text-[#26221C] bg-transparent focus:outline-none font-mono"
+                  />
+                </div>
+              </div>
+
+              {/* Quick Presets */}
+              <div className="space-y-1.5">
+                <span className="text-[11px] font-bold text-[#746A5D]">نطاقات سريعة:</span>
+                <div className="grid grid-cols-2 gap-2">
+                  {pricePresets.map((pr) => (
+                    <button
+                      key={pr.id}
+                      type="button"
+                      onClick={() => handleSelectPreset(pr)}
+                      className={`p-2 rounded-xl text-xs font-bold text-center border transition cursor-pointer ${
+                        selectedPreset === pr.id
+                          ? 'bg-[#26221C] text-[#E2B84B] border-[#26221C]'
+                          : 'bg-[#FAF7F2] text-[#4B4338] border-[#E8DEC8]'
+                      }`}
+                    >
+                      {pr.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="pt-2 flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleResetFilters}
+                  className="flex-1 py-3 bg-[#FAF7F2] border border-[#E8DEC8] text-[#746A5D] font-bold text-xs rounded-xl cursor-pointer"
+                >
+                  إعادة ضبط
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsMobileFilterOpen(false)}
+                  className="flex-2 py-3 bg-[#C9972B] active:bg-[#B8851E] text-white font-extrabold text-xs rounded-xl shadow-xs cursor-pointer"
+                >
+                  عرض النتائج ({filteredProducts.length})
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Product Cards */}
         {loading ? (
